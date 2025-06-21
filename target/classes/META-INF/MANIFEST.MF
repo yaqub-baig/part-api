@@ -1,0 +1,7 @@
+Manifest-Version: 1.0
+Build-Jdk-Spec: 23
+Implementation-Title: PartsManagementService
+Implementation-Version: 0.0.1-SNAPSHOT
+Main-Class: com.platform.parts.App
+Created-By: Maven Integration for Eclipse
+
