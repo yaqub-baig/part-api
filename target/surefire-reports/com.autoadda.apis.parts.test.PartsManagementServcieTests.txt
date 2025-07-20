@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: com.autoadda.apis.parts.test.PartsManagementServcieTests
+-------------------------------------------------------------------------------
+Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 9.731 s -- in com.autoadda.apis.parts.test.PartsManagementServcieTests

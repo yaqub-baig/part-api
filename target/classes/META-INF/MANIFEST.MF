@@ -1,0 +1,7 @@
+Manifest-Version: 1.0
+Build-Jdk-Spec: 23
+Implementation-Title: PartsManagementService
+Implementation-Version: 0.1
+Main-Class: com.autoadda.apis.parts.PartsManagementServcieApplication
+Created-By: Maven Integration for Eclipse
+
