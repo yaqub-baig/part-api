@@ -16,10 +16,10 @@ import com.autoadda.apis.parts.request.LocationRequest;
 import com.autoadda.apis.parts.request.SupplierRequest;
 import com.autoadda.apis.parts.response.GenericResponse;
 import com.autoadda.apis.parts.response.SupplierResponse;
-import com.autoadda.apis.parts.service.SupplierService;
 import com.autoadda.apis.parts.util.GUIDGenerator;
 import com.autoadda.apis.parts.validator.PartsDataValidator;
 
+import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -66,6 +66,7 @@ public class SupplierService {
 	 * 
 	 * @return GenericResponse
 	 */
+	@Transactional
 	public GenericResponse getAllSuppliers() {
 		List<SupplierResponse> responseBody = new ArrayList<>();
 		List<Supplier> suppliers = supplierRepository.findAll();
@@ -86,6 +87,7 @@ public class SupplierService {
 	 * @return GenericResponse
 	 * @throws AlreadyExistException
 	 */
+	@Transactional
 	public GenericResponse createSupplier(List<SupplierRequest> supplierRequestList) throws AlreadyExistException {
 
 		List<Supplier> supplierList = new ArrayList<>();
@@ -115,6 +117,7 @@ public class SupplierService {
 	 * @return GenericResponse
 	 * @throws NotFoundException
 	 */
+	@Transactional
 	public GenericResponse getSupplierById(String id) throws NotFoundException {
 		List<SupplierResponse> responseBody = new ArrayList<>();
 
@@ -140,6 +143,7 @@ public class SupplierService {
 	 * @return GenericResponse
 	 * @throws NotFoundException
 	 */
+	@Transactional
 	public GenericResponse getSupplierByName(String name) throws NotFoundException {
 		List<SupplierResponse> responseBody = new ArrayList<>();
 
@@ -162,6 +166,7 @@ public class SupplierService {
 	 * @return GenericResponse
 	 * @throws NotFoundException
 	 */
+	@Transactional
 	public GenericResponse updateSupplier(SupplierRequest request) throws NotFoundException {
 		log.info("perform Supplier input validation");
 		partsDataValidator.validateSupplierId(request.getId());
@@ -189,6 +194,7 @@ public class SupplierService {
 	 * @return GenericResponse
 	 * @throws NotFoundException
 	 */
+	@Transactional
 	public GenericResponse deleteSupplierById(String id) throws NotFoundException {
 		log.info("perform Supplier input validation");
 		partsDataValidator.validateSupplierId(id);
