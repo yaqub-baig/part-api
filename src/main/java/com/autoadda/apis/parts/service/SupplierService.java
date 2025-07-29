@@ -19,7 +19,7 @@ import com.autoadda.apis.parts.response.SupplierResponse;
 import com.autoadda.apis.parts.util.GUIDGenerator;
 import com.autoadda.apis.parts.validator.PartsDataValidator;
 
-import jakarta.transaction.Transactional;
+import javax.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
