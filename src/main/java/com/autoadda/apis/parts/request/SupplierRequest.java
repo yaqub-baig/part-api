@@ -1,35 +1,39 @@
 package com.autoadda.apis.parts.request;
 
+import com.autoadda.apis.parts.entity.Location;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
+import java.util.List;
+
+/**
+ * DTO for creating or updating a Supplier
+ */
+@Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Setter
-@Getter
-@Data
 public class SupplierRequest {
 
-	private String id;
+    private String name;
+    private String supplierBrandName;
+    private String supplierArabicName;
+    private String trnNumber;
+    private String email;
+    private String phoneNumber;
+    private String mobileNumber;
+    private Location location;
+    private String brands;
+    private String models;
+    private String website;
+    private String openingHours;
+    private String closingHours;
+    private String workingDays;
+    private Long shopLogoId;
+    private List<Long> shopImageIds;
+    private List<Long> tradeLicenseIds;
+    private List<Long> vatCertificateIds;
 
-	private String name;
-
-	private String remarks;
-
-	private String email;
-
-	private String phoneNumber;
-
-	private String website;
-
-	private String timings;
-
-	private String googleMapLink;
-
-	private LocationRequest location;
 }

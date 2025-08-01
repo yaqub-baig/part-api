@@ -15,8 +15,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import com.autoadda.apis.parts.response.GenericResponse;
 
-import jakarta.persistence.EntityNotFoundException;
-import jakarta.validation.ConstraintViolationException;
+import javax.persistence.EntityNotFoundException;
+import javax.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j

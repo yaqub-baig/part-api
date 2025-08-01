@@ -11,8 +11,8 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2025-07-22T17:33:47-0500",
-    comments = "version: 1.5.5.Final, compiler: Eclipse JDT (IDE) 3.42.0.v20250526-2018, environment: Java 23.0.2 (Eclipse Adoptium)"
+    date = "2025-08-01T15:05:35+0530",
+    comments = "version: 1.5.5.Final, compiler: javac, environment: Java 17.0.7 (Oracle Corporation)"
 )
 @Component
 public class ProductMapperImpl implements ProductMapper {
@@ -23,27 +23,9 @@ public class ProductMapperImpl implements ProductMapper {
             return null;
         }
 
-        Product.ProductBuilder product = Product.builder();
+        Product product = new Product();
 
-        product.categoryId( request.getCategoryId() );
-        product.description( request.getDescription() );
-        product.id( request.getId() );
-        product.imageId( request.getImageId() );
-        product.make( request.getMake() );
-        product.manufacturerId( request.getManufacturerId() );
-        product.model( request.getModel() );
-        product.name( request.getName() );
-        product.otherNames( request.getOtherNames() );
-        product.partCondition( request.getPartCondition() );
-        product.partNumber( request.getPartNumber() );
-        product.price( request.getPrice() );
-        product.sku( request.getSku() );
-        product.stock( request.getStock() );
-        product.supplierId( request.getSupplierId() );
-        product.tag( request.getTag() );
-        product.year( request.getYear() );
-
-        return product.build();
+        return product;
     }
 
     @Override
@@ -66,14 +48,9 @@ public class ProductMapperImpl implements ProductMapper {
             return null;
         }
 
-        ProductAttribute.ProductAttributeBuilder productAttribute = ProductAttribute.builder();
+        ProductAttribute productAttribute = new ProductAttribute();
 
-        productAttribute.attributeId( request.getAttributeId() );
-        productAttribute.attributeValue( request.getAttributeValue() );
-        productAttribute.id( request.getId() );
-        productAttribute.productId( request.getProductId() );
-
-        return productAttribute.build();
+        return productAttribute;
     }
 
     @Override

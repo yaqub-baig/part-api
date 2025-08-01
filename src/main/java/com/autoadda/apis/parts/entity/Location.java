@@ -1,9 +1,7 @@
 package com.autoadda.apis.parts.entity;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Table;
-import javax.persistence.Id;
+import javax.persistence.*;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -22,8 +20,9 @@ import lombok.Setter;
 
 public class Location {
 	@Id
+	@GeneratedValue(strategy = GenerationType.AUTO)
 	@Column(name = "id")
-	private String id;
+	private Integer id;
 
 	@Column(name = "street_address_1")
 	private String streetAddress1;
@@ -34,19 +33,16 @@ public class Location {
 	@Column(name = "city")
 	private String city;
 
-	@Column(name = "county")
-	private String county;
-
 	@Column(name = "postal_code")
 	private String postalCode;
-
+	@Column(name = "area")
+	private String area;
 	@Column(name = "state")
 	private String state;
 
 	@Column(name = "country")
 	private String country;
-
-	@Column(name = "type")
-	private String type;
+	@Column(name = "gmap")
+	private String gmap;
 
 }
