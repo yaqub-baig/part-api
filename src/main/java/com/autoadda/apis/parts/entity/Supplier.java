@@ -40,8 +40,6 @@ public class Supplier {
     @OneToOne
     @JoinColumn(name = "shop_logo")
     private MediaFile shopLogo;
-    @OneToOne
-    private Location garageLocation;
     @Column(name = "account_status")
     private Status accountStatus;
     @Column(name = "created_at")
