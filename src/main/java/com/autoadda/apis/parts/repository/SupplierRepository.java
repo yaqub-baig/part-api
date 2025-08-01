@@ -16,4 +16,6 @@ public interface SupplierRepository extends JpaRepository<Supplier, Integer> {
 	List<Supplier> findByNameContaining(String name);
 
 	List<Supplier> findBySparePartShopOwner(Integer i);
+
+	long countByShopLogoId(Long mediaFileId);
 }

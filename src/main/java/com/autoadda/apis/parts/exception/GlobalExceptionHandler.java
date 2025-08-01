@@ -1,6 +1,7 @@
 package com.autoadda.apis.parts.exception;
 
 import java.nio.file.AccessDeniedException;
+import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 
 import com.autoadda.apis.parts.service.ForbiddenException;
