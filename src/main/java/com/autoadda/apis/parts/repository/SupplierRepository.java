@@ -9,7 +9,7 @@ import org.springframework.stereotype.Repository;
 import com.autoadda.apis.parts.entity.Supplier;
 
 @Repository
-public interface SupplierRepository extends JpaRepository<Supplier, String> {
+public interface SupplierRepository extends JpaRepository<Supplier, Integer> {
 
 	Supplier findByName(String name);
 

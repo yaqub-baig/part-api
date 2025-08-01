@@ -104,12 +104,12 @@ public class PartsDataValidator {
 		}
 	}
 
-	public void validateSupplierId(String id) throws NotFoundException {
-		Optional<Supplier> optSupplier = supplierRepository.findById(id);
-		if (!optSupplier.isPresent()) {
-			throw new NotFoundException("Supplier not found");
-		}
-	}
+//	public void validateSupplierId(String id) throws NotFoundException {
+//		Optional<Supplier> optSupplier = supplierRepository.findById(id);
+//		if (!optSupplier.isPresent()) {
+//			throw new NotFoundException("Supplier not found");
+//		}
+//	}
 
 	public void validateSupplierName(String name) throws NotFoundException {
 		Supplier supplier = supplierRepository.findByName(name);

@@ -70,11 +70,11 @@ public class SupplierController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "successful deleting suppliers")})
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteSupplierById(@PathVariable String id,
+    public ResponseEntity<Void> deleteSupplierById(@PathVariable Integer id,
                                                    @RequestHeader(value = "X-User-Id") String userId,
                                                    @RequestHeader(value = "X-User-Role") String userRole,
                                                    @RequestHeader(value = "X-Auto-Adda-Id") String autoAddaId) {
-        return supplierService.deleteSupplierById ( id );
+        return supplierService.deleteSupplierById ( id, autoAddaId );
     }
 
 

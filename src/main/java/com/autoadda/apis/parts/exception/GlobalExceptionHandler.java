@@ -3,6 +3,7 @@ package com.autoadda.apis.parts.exception;
 import java.nio.file.AccessDeniedException;
 import java.util.stream.Collectors;
 
+import com.autoadda.apis.parts.service.ForbiddenException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -35,6 +36,12 @@ public class GlobalExceptionHandler {
 		log.warn("Constraint violation: {}", ex.getMessage());
 		return buildResponse(ex, HttpStatus.BAD_REQUEST,
 				ErrorMessage.ERROR_CONSTRAINT_VIOLATION + ": " + ex.getMessage());
+	}
+
+	@ExceptionHandler(ForbiddenException.class)
+	public ResponseEntity<GenericResponse> handleForbidden(ForbiddenException ex) {
+		log.warn("Forbidden", ex);
+		return buildResponse(ex, HttpStatus.FORBIDDEN, ErrorMessage.ERROR_FORBIDDEN);
 	}
 
 	@ExceptionHandler(DataIntegrityViolationException.class)

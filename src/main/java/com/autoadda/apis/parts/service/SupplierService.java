@@ -22,8 +22,6 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SupplierService {
 
-
-    private final PartsDataValidator partsDataValidator;
     private final SupplierRepository supplierRepository;
     private final MediaFileRepository mediaFileRepository;
     private final LocationService locationService;
@@ -74,9 +72,9 @@ public class SupplierService {
                 .toList ( ), HttpStatus.OK );
     }
 
-    public ResponseEntity<List<Supplier>> getSupplier(Integer autoAddaId) {
+    public ResponseEntity<List<Supplier>> getSupplier(Integer supplierId) {
         return new ResponseEntity<> ( supplierRepository
-                .findBySparePartShopOwner ( autoAddaId )
+                .findById ( supplierId )
                 .stream ( )
                 .filter ( Supplier::isActive )
                 .toList ( ), HttpStatus.OK );
@@ -92,114 +90,13 @@ public class SupplierService {
     }
 
 
-    /**
-     * Get all suppliers
-     *
-     * @return GenericResponse
-     */
-//	@Transactional
-//	public GenericResponse getAllSuppliers() {
-//		List<SupplierResponse> responseBody = new ArrayList<>();
-//		List<Supplier> suppliers = supplierRepository.findAll();
-//		for (Supplier supplier : suppliers) {
-//			responseBody.add(SupplierResponse.builder().id(supplier.getId()).name(supplier.getName())
-//					.website(supplier.getWebSite()).email(supplier.getEmail())
-//					.locationId(supplier.getLocationId())
-//					.phoneNumber(supplier.getPhoneNumber()).remarks(supplier.getRemarks())
-//					.timings(supplier.getTimings()).build());
-//		}
-//		return GenericResponse.builder().body(responseBody).code("200").message("success").status("success").build();
-//	}
 
-    /**
-     * Create a new supplier
-     *
-     * @param supplierRequestList
-     * @return GenericResponse
-     * @throws AlreadyExistException
-     */
-//	@Transactional
-//	public GenericResponse createSupplier(List<SupplierRequest> supplierRequestList) throws AlreadyExistException {
-//
-//		List<Supplier> supplierList = new ArrayList<>();
-//		for (SupplierRequest supplierRequest : supplierRequestList) {
-//
-//			log.info("perform Supplier input validation");
-//			partsDataValidator.isSupplierAlreadyExists(supplierRequest.getName());
-//
-//			Location location = locationRepository.save(prepareLocation(supplierRequest.getLocation()));
-//			log.info("Location created - " + location.toString());
-//			supplierRequest.getLocation().setId(location.getId());
-//
-//			Supplier supplier = supplierRepository.save(prepareSupplier(supplierRequest));
-//			log.info("Supplier created - " + supplierRequest.toString());
-//			supplierList.add(supplier);
-//		}
-//
-//		return GenericResponse.builder().body(supplierList).code("201").message("successfully Created  Supplier")
-//				.status("success").build();
-//
-//	}
-
-    /**
-     * Get supplier by ID
-     *
-     * @param id
-     * @return GenericResponse
-     * @throws NotFoundException
-     */
-//	@Transactional
-//	public GenericResponse getSupplierById(String id) throws NotFoundException {
-//		List<SupplierResponse> responseBody = new ArrayList<>();
-//
-//		log.info("perform Supplier input validation");
-//		partsDataValidator.validateSupplierId(id);
-//		Supplier supplier = supplierRepository.findById(id).get();
-//		if (supplier != null && supplier.getId() != null) {
-//			responseBody.add(SupplierResponse.builder().id(supplier.getId()).name(supplier.getName())
-//					.website(supplier.getWebsite()).email(supplier.getEmail())
-//					.googleMapLink(supplier.getGoogleMapLink()).locationId(supplier.getLocationId())
-//					.phoneNumber(supplier.getPhoneNumber()).remarks(supplier.getRemarks())
-//					.timings(supplier.getTimings()).build());
-//		}
-//		return GenericResponse.builder().body(responseBody).code("200")
-//				.message("successfully Retrived " + id + " Supplier").status("success").build();
-//
-//	}
-
-    /**
-     * Get supplier by name
-     *
-     * @param name
-     * @return GenericResponse
-     * @throws NotFoundException
-     */
-//	@Transactional
-//	public GenericResponse getSupplierByName(String name) throws NotFoundException {
-//		List<SupplierResponse> responseBody = new ArrayList<>();
-//
-//		List<Supplier> suppliers = supplierRepository.findByNameContaining(name);
-//		for (Supplier supplier : suppliers) {
-//			responseBody.add(SupplierResponse.builder().id(supplier.getId()).name(supplier.getName())
-//					.website(supplier.getWebsite()).email(supplier.getEmail())
-//					.googleMapLink(supplier.getGoogleMapLink()).locationId(supplier.getLocationId())
-//					.phoneNumber(supplier.getPhoneNumber()).remarks(supplier.getRemarks())
-//					.timings(supplier.getTimings()).build());
-//		}
-//		return GenericResponse.builder().body(responseBody).code("200")
-//				.message("successfully Retrived " + name + " Supplier").status("success").build();
-//	}
-
-    /**
-     * Update supplier details
-     *
-     * @param request
-     * @return GenericResponse
-     * @throws NotFoundException
-     */
-
-    public ResponseEntity<Void> deleteSupplierById(String id) {
+    public ResponseEntity<Void> deleteSupplierById(Integer id, String autoAddaId) {
         Supplier supplier = supplierRepository.findById ( id ).orElseThrow ( () -> new ResourceNotFoundException ( "Supplier not found" ) );
+        Integer ownerId = Integer.parseInt ( autoAddaId );
+        if ( !supplier.getSparePartShopOwner ( ).equals ( ownerId ) ) {
+            throw  new ForbiddenException ( "You are not authorized to delete this supplier" );
+        }
         supplier.setActive ( false );
         supplierRepository.save ( supplier );
         return new ResponseEntity<> ( HttpStatus.OK );
