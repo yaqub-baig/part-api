@@ -3,6 +3,7 @@ package com.autoadda.apis.parts.service;
 import com.autoadda.apis.parts.entity.Location;
 import com.autoadda.apis.parts.entity.MediaFile;
 import com.autoadda.apis.parts.entity.Supplier;
+import com.autoadda.apis.parts.exception.AlreadyExistException;
 import com.autoadda.apis.parts.exception.ResourceNotFoundException;
 import com.autoadda.apis.parts.repository.MediaFileRepository;
 import com.autoadda.apis.parts.repository.SupplierRepository;
@@ -31,6 +32,7 @@ public class SupplierService {
 
     public ResponseEntity<Supplier> createSupplier(SupplierRequest request, String autoAddaId) {
         Supplier supplier = prepareSupplier ( request );
+        validTradingLicense ( request );
         supplier.setShopLogo ( mediaFileRepository.findById ( request.getShopLogoId ( ) ).orElseThrow ( () -> new ResourceNotFoundException ( "Shop logo not found" ) ) );
         supplier.setShopImages ( mediaFileRepository.findAllById ( request.getShopImageIds ( ) ) );
         supplier.setTradeLicenseAttachment ( mediaFileRepository.findAllById ( request.getTradeLicenseIds ( ) ) );
@@ -40,6 +42,12 @@ public class SupplierService {
         supplier.setSparePartShopOwner ( Integer.parseInt ( autoAddaId ) );
         supplierRepository.save ( supplier );
         return ResponseEntity.ok ( supplier );
+    }
+
+    private void validTradingLicense(SupplierRequest supplier) {
+        supplierRepository.findByTradeLicenceNumber ( supplier.getTradeLicenceNumber ( ) ).ifPresent ( supplier1 -> {
+            throw new AlreadyExistException ( "Supplier with this trade license already exists" );
+        } );
     }
 
     /**
@@ -53,6 +61,7 @@ public class SupplierService {
         supplier.setName ( request.getName ( ) );
         supplier.setSupplierBrandName ( request.getSupplierBrandName ( ) );
         supplier.setSupplierArabicName ( request.getSupplierArabicName ( ) );
+        supplier.setTradeLicenceNumber ( request.getTradeLicenceNumber ( ) );
         supplier.setTrnNumber ( request.getTrnNumber ( ) );
         supplier.setEmail ( request.getEmail ( ) );
         supplier.setPhoneNumber ( request.getPhoneNumber ( ) );
@@ -101,7 +110,7 @@ public class SupplierService {
         }
         supplier.setActive ( false );
         supplierRepository.save ( supplier );
-        return new ResponseEntity<> ("Deleted successfully", HttpStatus.OK );
+        return new ResponseEntity<> ( "Deleted successfully", HttpStatus.OK );
     }
 
     public ResponseEntity<Supplier> updateSupplier(SupplierRequest request, String autoAddaId, Integer id) {
@@ -124,18 +133,24 @@ public class SupplierService {
             existing.setSupplierArabicName ( request.getSupplierArabicName ( ) );
         }
 
-        if(request.getOpeningHours() != null) {
+        if ( request.getTradeLicenceNumber ( ) != null ) {
+            validTradingLicense ( request );
+            existing.setTradeLicenceNumber ( request.getTradeLicenceNumber ( ) );
+        }
+
+        if ( request.getOpeningHours ( ) != null ) {
             existing.setOpeningHours ( request.getOpeningHours ( ) );
         }
-        if(request.getClosingHours() != null) {
+        if ( request.getClosingHours ( ) != null ) {
             existing.setClosingHours ( request.getClosingHours ( ) );
         }
-        if(request.getWorkingDays() != null) {
+        if ( request.getWorkingDays ( ) != null ) {
             existing.setWorkingDays ( request.getWorkingDays ( ) );
         }
         if ( request.getEmail ( ) != null ) {
             existing.setEmail ( request.getEmail ( ) );
         }
+
 
         if ( request.getSupplierBrandName ( ) != null ) {
             existing.setSupplierBrandName ( request.getSupplierBrandName ( ) );
@@ -160,51 +175,81 @@ public class SupplierService {
 
         // Handle garage logo update
         if ( request.getShopLogoId ( ) != null ) {
-            Long prevLogoId = existing.getShopLogo ( ) != null ? existing.getShopLogo ( ).getId ( ) : null;
-            MediaFile mediaFile = mediaFileRepository.findById ( request.getShopLogoId ( ) ).orElseThrow ( () -> new ResourceNotFoundException ( "File not found" ) );
+            if ( existing.getShopLogo ( ) != null ) {
+                filesToCleanup.add ( existing.getShopLogo ( ).getId ( ) );
+            }
+            MediaFile mediaFile = mediaFileRepository.findById ( request.getShopLogoId ( ) )
+                    .orElseThrow ( () -> new ResourceNotFoundException ( "File not found" ) );
             existing.setShopLogo ( mediaFile );
-            // Schedule old logo for cleanup if changed
-            if ( prevLogoId != null && ! prevLogoId.equals ( mediaFile.getId ( ) ) ) {
-                filesToCleanup.add ( prevLogoId );
+        }
+
+
+        if ( request.getTradeLicenseIds ( ) != null ) {
+            // Schedule old trade licenses for cleanup
+            List<Long> oldTradeLicenseIds = existing.getTradeLicenseAttachment ( ).stream ( )
+                    .map ( MediaFile::getId )
+                    .toList ( );
+            if ( ! oldTradeLicenseIds.isEmpty ( ) ) {
+                filesToCleanup.addAll ( oldTradeLicenseIds );
             }
 
-        }
-
-
-        if ( request.getTradeLicenseIds ( ) != null && ! request.getTradeLicenseIds ( ).isEmpty ( ) ) {
-
-            filesToCleanup.addAll ( existing.getTradeLicenseAttachment ( ).stream ( ).map ( MediaFile::getId ).toList ( ) );
-            existing.getTradeLicenseAttachment ( ).clear ( );
-            request.getTradeLicenseIds ( ).forEach ( mediaFileId -> {
-                MediaFile mediaFile = mediaFileRepository.findById ( mediaFileId ).orElseThrow ( () -> new ResourceNotFoundException ( "File not found" ) );
-                existing.getTradeLicenseAttachment ( ).add ( mediaFile );
+            // Create new trade license collection
+            List<MediaFile> newTradeLicenseAttachments = new ArrayList<> ( );
+            request.getTradeLicenseIds ( ).forEach ( tid -> {
+                MediaFile mediaFile = mediaFileRepository.findById ( tid )
+                        .orElseThrow ( () -> new ResourceNotFoundException ( "File not found" ) );
+                newTradeLicenseAttachments.add ( mediaFile );
             } );
+            existing.getTradeLicenseAttachment().addAll ( newTradeLicenseAttachments );
         }
 
 
-        if ( request.getShopImageIds ( ) != null && ! request.getShopImageIds ( ).isEmpty ( ) ) {
-            filesToCleanup.addAll ( existing.getShopImages ( ).stream ( ).map ( MediaFile::getId ).toList ( ) );
-            existing.getShopImages ( ).clear ( );
-            request.getShopImageIds ( ).forEach ( mediaFileId -> {
-                MediaFile mediaFile = mediaFileRepository.findById ( mediaFileId ).orElseThrow ( () -> new ResourceNotFoundException ( "File not found" ) );
-                existing.getShopImages ( ).add ( mediaFile );
+        if ( request.getShopImageIds ( ) != null ) {
+            // Schedule old company images for cleanup
+            List<Long> oldShopImageIds = existing.getShopImages ( ).stream ( )
+                    .map ( MediaFile::getId )
+                    .toList ( );
+            if ( ! oldShopImageIds.isEmpty ( ) ) {
+                filesToCleanup.addAll ( oldShopImageIds );
+            }
+
+            // Create new shop images collection
+            List<MediaFile> newShopImages = new ArrayList<> ( );
+            request.getShopImageIds ( ).forEach ( cid -> {
+                MediaFile mediaFile = mediaFileRepository.findById ( cid )
+                        .orElseThrow ( () -> new ResourceNotFoundException ( "File not found" ) );
+                newShopImages.add ( mediaFile );
             } );
+            existing.getShopImages().addAll ( newShopImages );
         }
 
-        if ( request.getVatCertificateIds ( ) != null && ! request.getVatCertificateIds ( ).isEmpty ( ) ) {
-            filesToCleanup.addAll ( existing.getVatCertificate ( ).stream ( ).map ( MediaFile::getId ).toList ( ) );
-            existing.getVatCertificate ( ).clear ( );
-            request.getVatCertificateIds ( ).forEach ( mediaFileId -> {
-                MediaFile mediaFile = mediaFileRepository.findById ( mediaFileId ).orElseThrow ( () -> new ResourceNotFoundException ( "File not found" ) );
-                existing.getVatCertificate ( ).add ( mediaFile );
+        if ( request.getVatCertificateIds ( ) != null ) {
+            // Schedule old VAT certificates for cleanup
+            List<Long> oldVatCertIds = existing.getVatCertificate ( ).stream ( )
+                    .map ( MediaFile::getId )
+                    .toList ( );
+            if ( ! oldVatCertIds.isEmpty ( ) ) {
+                filesToCleanup.addAll ( oldVatCertIds );
+            }
+
+            // Create new VAT certificates collection
+            List<MediaFile> newVatCertificates = new ArrayList<> ( );
+            request.getVatCertificateIds ( ).forEach ( vid -> {
+                MediaFile mediaFile = mediaFileRepository.findById ( vid )
+                        .orElseThrow ( () -> new ResourceNotFoundException ( "File not found" ) );
+                newVatCertificates.add ( mediaFile );
             } );
+            existing.getVatCertificate().addAll ( newVatCertificates );
         }
+        ResponseEntity<Supplier> supplierResponseEntity = new ResponseEntity<> ( supplierRepository.save ( existing ), HttpStatus.OK );
+
+
         if ( ! filesToCleanup.isEmpty ( ) ) {
             scheduleMediaFileCleanup ( filesToCleanup );
         }
 
 
-        return new ResponseEntity<> ( supplierRepository.save ( existing ), HttpStatus.OK );
+        return supplierResponseEntity;
     }
 
     @Async
@@ -212,8 +257,7 @@ public class SupplierService {
     public void scheduleMediaFileCleanup(List<Long> mediaFileIds) {
         // Small delay to ensure transaction is committed
         try {
-            Thread.sleep ( 3000 );
-
+            Thread.sleep ( 5000 );
             for (Long fileId : mediaFileIds) {
                 try {
                     // Check if file is still referenced elsewhere before deleting
@@ -236,10 +280,14 @@ public class SupplierService {
     }
 
     private boolean isMediaFileStillReferenced(Long mediaFileId) {
-        // Check if this media file is still referenced by any garage
-        // This is a safety check to prevent deleting files that might still be in use
-        long count = supplierRepository.countByShopLogoId ( mediaFileId );
-        return count > 0;
+
+        long logoCount = supplierRepository.countByShopLogoId ( mediaFileId );
+        long shopImageCount = supplierRepository.countByShopImageId ( mediaFileId );
+        long tradeLicenseCount = supplierRepository.countByTradeLicenseId ( mediaFileId );
+        long vatCertCount = supplierRepository.countByVatCertificateId ( mediaFileId );
+
+        return (logoCount + shopImageCount + tradeLicenseCount + vatCertCount) > 0;
+
     }
 
 }

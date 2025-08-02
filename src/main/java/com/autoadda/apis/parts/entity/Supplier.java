@@ -27,6 +27,8 @@ public class Supplier {
     private String supplierArabicName;
     @Column(name = "supplier_name")
     private String name;
+    @Column(name = "trade_licence_number",unique = true)
+    private String tradeLicenceNumber;
     @Column(name = "trn_number")
     private String trnNumber;
     @Column(name = "website")
@@ -60,14 +62,14 @@ public class Supplier {
     private String closingHours;
     @Column(name = "is_active")
     private boolean isActive;
-    @OneToMany
+    @OneToMany(orphanRemoval = true)
     @JoinColumn(name = "shop_trade_license")
     private List<MediaFile> tradeLicenseAttachment = new ArrayList<> ( );
-    @OneToMany
+    @OneToMany(orphanRemoval = true)
     @JoinColumn(name = "shop_vat_certificate")
     private List<MediaFile> vatCertificate = new ArrayList<> ( );
-    @OneToMany
-    @JoinColumn(name = "shop_images")
+    @OneToMany(orphanRemoval = true)
+    @JoinColumn
     private List<MediaFile> shopImages = new ArrayList<> ( );
 
 

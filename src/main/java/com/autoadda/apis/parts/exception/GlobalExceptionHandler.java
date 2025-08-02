@@ -99,7 +99,11 @@ public class GlobalExceptionHandler {
 		log.warn("Resource not found", ex);
 		return buildResponse(ex, HttpStatus.NOT_FOUND, ErrorMessage.ERROR_NOT_FOUND);
 	}
-
+	@ExceptionHandler(AlreadyExistException.class)
+	public ResponseEntity<GenericResponse> handleAlreadyExist(AlreadyExistException ex) {
+		log.warn("Already exist", ex);
+		return buildResponse(ex, HttpStatus.CONFLICT, ex.getMessage());
+	}
 	@ExceptionHandler(CustomerNotFoundException.class)
 	public ResponseEntity<GenericResponse> handleCustomerNotFound(CustomerNotFoundException ex) {
 		log.warn("Customer not found", ex);

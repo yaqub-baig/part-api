@@ -21,6 +21,7 @@ public class SupplierRequest {
     private String supplierBrandName;
     private String supplierArabicName;
     private String trnNumber;
+    private String tradeLicenceNumber;
     private String email;
     private String phoneNumber;
     private String mobileNumber;
