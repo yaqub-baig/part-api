@@ -25,7 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @RestController
-@RequestMapping("/v1")
+@RequestMapping("/manufacturers")
 public class ManufacturerController {
 
 	@Autowired
@@ -36,7 +36,7 @@ public class ManufacturerController {
 			@ApiResponse(responseCode = "201", description = "Successfull sign up process with return success message and registered manufacturer details", content = {
 					@Content(mediaType = "application/json", schema = @Schema(implementation = GenericResponse.class)) }),
 			@ApiResponse(responseCode = "404", description = "register Manufacturer api not found", content = @Content) })
-	@PostMapping("manufacturers")
+	@PostMapping
 	public GenericResponse createManufacturer(@RequestBody ManufacturerListPayload payload) {
 		GenericResponse response = null;
 		try {
@@ -54,7 +54,7 @@ public class ManufacturerController {
 			@ApiResponse(responseCode = "200", description = "successfull retrieving all manufacturers", content = {
 					@Content(mediaType = "application/json", schema = @Schema(implementation = GenericResponse.class)) }),
 			@ApiResponse(responseCode = "404", description = "retrieve all manufacturers api not found", content = @Content) })
-	@GetMapping("manufacturers")
+	@GetMapping
 	public GenericResponse getAllManufacturers() {
 		GenericResponse response = null;
 		try {
@@ -71,7 +71,7 @@ public class ManufacturerController {
 			@ApiResponse(responseCode = "200", description = "successfull retrieving all manufacturers", content = {
 					@Content(mediaType = "application/json", schema = @Schema(implementation = GenericResponse.class)) }),
 			@ApiResponse(responseCode = "404", description = "retrieve all manufacturers api not found", content = @Content) })
-	@GetMapping("manufacturers/{id}")
+	@GetMapping("/{id}")
 	public GenericResponse getManufacturerById(@PathVariable String id) {
 		GenericResponse response = null;
 		try {
@@ -88,7 +88,7 @@ public class ManufacturerController {
 			@ApiResponse(responseCode = "200", description = "successfull retrieving manufacturers", content = {
 					@Content(mediaType = "application/json", schema = @Schema(implementation = GenericResponse.class)) }),
 			@ApiResponse(responseCode = "404", description = "retrieve manufacturers api not found", content = @Content) })
-	@GetMapping("manufacturers/name/{name}")
+	@GetMapping("/name/{name}")
 	public GenericResponse getManufacturerByName(@PathVariable String name) {
 		GenericResponse response = null;
 		try {
@@ -105,7 +105,7 @@ public class ManufacturerController {
 			@ApiResponse(responseCode = "200", description = "successfull updating manufacturers", content = {
 					@Content(mediaType = "application/json", schema = @Schema(implementation = GenericResponse.class)) }),
 			@ApiResponse(responseCode = "404", description = "update manufacturers api not found", content = @Content) })
-	@PutMapping("manufacturers")
+	@PutMapping
 	public GenericResponse updateManufacturerById(@RequestBody ManufacturerRequest manufacturer) {
 		GenericResponse response = null;
 		try {
@@ -122,7 +122,7 @@ public class ManufacturerController {
 			@ApiResponse(responseCode = "200", description = "successfull deleting manufacturers", content = {
 					@Content(mediaType = "application/json", schema = @Schema(implementation = GenericResponse.class)) }),
 			@ApiResponse(responseCode = "404", description = "delete manufacturer api not found", content = @Content) })
-	@DeleteMapping("manufacturers/{id}")
+	@DeleteMapping("/{id}")
 	public GenericResponse deleteManufacturerById(@PathVariable String id) {
 		GenericResponse response = null;
 		try {

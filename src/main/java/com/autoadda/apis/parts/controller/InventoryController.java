@@ -18,7 +18,7 @@ import com.autoadda.apis.parts.service.InventoryService;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/api/inventory")
+@RequestMapping("/inventory")
 @RequiredArgsConstructor
 public class InventoryController {
 

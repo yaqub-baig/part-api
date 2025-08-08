@@ -25,7 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @RestController
-@RequestMapping("/v1")
+@RequestMapping("/engines")
 public class EngineController {
 
 	@Autowired
@@ -36,7 +36,7 @@ public class EngineController {
 			@ApiResponse(responseCode = "201", description = "Successfull sign up process with return success message and registered engine details", content = {
 					@Content(mediaType = "application/json", schema = @Schema(implementation = GenericResponse.class)) }),
 			@ApiResponse(responseCode = "404", description = "register Engine api not found", content = @Content) })
-	@PostMapping("engines")
+	@PostMapping
 	public GenericResponse createEngine(@RequestBody EngineListPayload paylaod) {
 		GenericResponse response = null;
 		try {
@@ -54,7 +54,7 @@ public class EngineController {
 			@ApiResponse(responseCode = "200", description = "successfull retrieving all engines", content = {
 					@Content(mediaType = "application/json", schema = @Schema(implementation = GenericResponse.class)) }),
 			@ApiResponse(responseCode = "404", description = "retrieve all engines api not found", content = @Content) })
-	@GetMapping("engines")
+	@GetMapping
 	public GenericResponse getAllEngines() {
 		GenericResponse response = null;
 		try {
@@ -71,7 +71,7 @@ public class EngineController {
 			@ApiResponse(responseCode = "200", description = "successfull retrieving all engines", content = {
 					@Content(mediaType = "application/json", schema = @Schema(implementation = GenericResponse.class)) }),
 			@ApiResponse(responseCode = "404", description = "retrieve all engines api not found", content = @Content) })
-	@GetMapping("engines/{id}")
+	@GetMapping("/{id}")
 	public GenericResponse getEngineById(@PathVariable String id) {
 		GenericResponse response = null;
 		try {
@@ -88,7 +88,7 @@ public class EngineController {
 			@ApiResponse(responseCode = "200", description = "successfull retrieving engines", content = {
 					@Content(mediaType = "application/json", schema = @Schema(implementation = GenericResponse.class)) }),
 			@ApiResponse(responseCode = "404", description = "retrieve engines api not found", content = @Content) })
-	@GetMapping("engines/name/{name}")
+	@GetMapping("/name/{name}")
 	public GenericResponse getEngineByName(@PathVariable String name) {
 		GenericResponse response = null;
 		try {
@@ -104,7 +104,7 @@ public class EngineController {
 	@ApiResponses(value = { @ApiResponse(responseCode = "200", description = "successfull updating engines", content = {
 			@Content(mediaType = "application/json", schema = @Schema(implementation = GenericResponse.class)) }),
 			@ApiResponse(responseCode = "404", description = "update engines api not found", content = @Content) })
-	@PutMapping("engines")
+	@PutMapping
 	public GenericResponse updateEngineById(@RequestBody EngineRequest engine) {
 		GenericResponse response = null;
 		try {
@@ -120,7 +120,7 @@ public class EngineController {
 	@ApiResponses(value = { @ApiResponse(responseCode = "200", description = "successfull deleting engines", content = {
 			@Content(mediaType = "application/json", schema = @Schema(implementation = GenericResponse.class)) }),
 			@ApiResponse(responseCode = "404", description = "delete engine api not found", content = @Content) })
-	@DeleteMapping("engines/{id}")
+	@DeleteMapping("/{id}")
 	public GenericResponse deleteEngineById(@PathVariable String id) {
 		GenericResponse response = null;
 		try {
@@ -137,7 +137,7 @@ public class EngineController {
 			@ApiResponse(responseCode = "200", description = "successfull retrieving engines", content = {
 					@Content(mediaType = "application/json", schema = @Schema(implementation = GenericResponse.class)) }),
 			@ApiResponse(responseCode = "404", description = "retrieve engines api not found", content = @Content) })
-	@GetMapping("engines/model/{modelId}")
+	@GetMapping("/model/{modelId}")
 	public GenericResponse getEnginesByModelId(@PathVariable String modelId) {
 		GenericResponse response = null;
 		try {
@@ -154,7 +154,7 @@ public class EngineController {
 			@ApiResponse(responseCode = "200", description = "successfull retrieving engines", content = {
 					@Content(mediaType = "application/json", schema = @Schema(implementation = GenericResponse.class)) }),
 			@ApiResponse(responseCode = "404", description = "retrieve engines api not found", content = @Content) })
-	@GetMapping("engines/fueltype/{fuelType}")
+	@GetMapping("/fueltype/{fuelType}")
 	public GenericResponse getEnginesByFuelTypeId(@PathVariable String fuelType) {
 		GenericResponse response = null;
 		try {
@@ -171,7 +171,7 @@ public class EngineController {
 			@ApiResponse(responseCode = "200", description = "successfull retrieving engines", content = {
 					@Content(mediaType = "application/json", schema = @Schema(implementation = GenericResponse.class)) }),
 			@ApiResponse(responseCode = "404", description = "retrieve engines api not found", content = @Content) })
-	@GetMapping("engines/transmissiontype/{transmissionType}")
+	@GetMapping("/transmissiontype/{transmissionType}")
 	public GenericResponse getEnginesByTransmissionTypeId(@PathVariable String transmissionType) {
 		GenericResponse response = null;
 		try {

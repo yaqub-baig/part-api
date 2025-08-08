@@ -12,7 +12,7 @@ import java.io.IOException;
 import java.util.List;
 
 @RestController
-@RequestMapping("/v1/mediafiles")
+@RequestMapping("/mediafiles")
 @RequiredArgsConstructor
 public class MediaFileController {
     private final MediaFileService mediaFileService;

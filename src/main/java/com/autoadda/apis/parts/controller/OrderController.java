@@ -11,7 +11,7 @@ import com.autoadda.apis.parts.entity.Order;
 import com.autoadda.apis.parts.service.OrderService;
 
 @RestController
-@RequestMapping("/api/orders")
+@RequestMapping("/orders")
 public class OrderController {
 	@Autowired
 	private OrderService orderService;

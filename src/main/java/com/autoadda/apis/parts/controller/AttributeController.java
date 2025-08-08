@@ -25,7 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @RestController
-@RequestMapping("/v1")
+@RequestMapping("/attributes")
 public class AttributeController {
 
 	@Autowired
@@ -36,7 +36,7 @@ public class AttributeController {
 			@ApiResponse(responseCode = "201", description = "Successfull sign up process with return success message and registered attribute details", content = {
 					@Content(mediaType = "application/json", schema = @Schema(implementation = GenericResponse.class)) }),
 			@ApiResponse(responseCode = "404", description = "register Attribute api not found", content = @Content) })
-	@PostMapping("attributes")
+	@PostMapping
 	public GenericResponse createAttribute(@RequestBody AttributeListPayload payload) {
 		GenericResponse response = null;
 		try {
@@ -54,7 +54,7 @@ public class AttributeController {
 			@ApiResponse(responseCode = "200", description = "successfull retrieving all attributes", content = {
 					@Content(mediaType = "application/json", schema = @Schema(implementation = GenericResponse.class)) }),
 			@ApiResponse(responseCode = "404", description = "retrieve all attributes api not found", content = @Content) })
-	@GetMapping("attributes")
+	@GetMapping
 	public GenericResponse getAllAttributes() {
 		GenericResponse response = null;
 		try {
@@ -71,7 +71,7 @@ public class AttributeController {
 			@ApiResponse(responseCode = "200", description = "successfull retrieving all attributes", content = {
 					@Content(mediaType = "application/json", schema = @Schema(implementation = GenericResponse.class)) }),
 			@ApiResponse(responseCode = "404", description = "retrieve all attributes api not found", content = @Content) })
-	@GetMapping("attributes/{id}")
+	@GetMapping("/{id}")
 	public GenericResponse getAttributeById(@PathVariable String id) {
 		GenericResponse response = null;
 		try {
@@ -88,7 +88,7 @@ public class AttributeController {
 			@ApiResponse(responseCode = "200", description = "successfull retrieving attributes", content = {
 					@Content(mediaType = "application/json", schema = @Schema(implementation = GenericResponse.class)) }),
 			@ApiResponse(responseCode = "404", description = "retrieve attributes api not found", content = @Content) })
-	@GetMapping("attributes/name/{name}")
+	@GetMapping("/name/{name}")
 	public GenericResponse getAttributeByName(@PathVariable String name) {
 		GenericResponse response = null;
 		try {
@@ -105,7 +105,7 @@ public class AttributeController {
 			@ApiResponse(responseCode = "200", description = "successfull updating attributes", content = {
 					@Content(mediaType = "application/json", schema = @Schema(implementation = GenericResponse.class)) }),
 			@ApiResponse(responseCode = "404", description = "update attributes api not found", content = @Content) })
-	@PutMapping("attributes")
+	@PutMapping
 	public GenericResponse updateAttributeById(@RequestBody AttributeRequest attribute) {
 		GenericResponse response = null;
 		try {
@@ -122,7 +122,7 @@ public class AttributeController {
 			@ApiResponse(responseCode = "200", description = "successfull deleting attributes", content = {
 					@Content(mediaType = "application/json", schema = @Schema(implementation = GenericResponse.class)) }),
 			@ApiResponse(responseCode = "404", description = "delete attribute api not found", content = @Content) })
-	@DeleteMapping("attributes/{id}")
+	@DeleteMapping("/{id}")
 	public GenericResponse deleteAttributeById(@PathVariable String id) {
 		GenericResponse response = null;
 		try {

@@ -25,7 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @RestController
-@RequestMapping("/v1")
+@RequestMapping("/products")
 public class ProductController {
 
 	@Autowired
@@ -37,7 +37,7 @@ public class ProductController {
 			@ApiResponse(responseCode = "200", description = "successfull retrieving all products", content = {
 					@Content(mediaType = "application/json", schema = @Schema(implementation = GenericResponse.class)) }),
 			@ApiResponse(responseCode = "404", description = "retrieve all products api not found", content = @Content) })
-	@GetMapping("products")
+	@GetMapping
 	public GenericResponse getAllTopLevelProducts() {
 		GenericResponse response = null;
 		try {
@@ -54,7 +54,7 @@ public class ProductController {
 			@ApiResponse(responseCode = "200", description = "successfull retrieving products", content = {
 					@Content(mediaType = "application/json", schema = @Schema(implementation = GenericResponse.class)) }),
 			@ApiResponse(responseCode = "404", description = "retrieve products api not found", content = @Content) })
-	@GetMapping("products/{id}")
+	@GetMapping("/{id}")
 	public GenericResponse getProductByName(@PathVariable String id) {
 		GenericResponse response = null;
 		try {
@@ -71,7 +71,7 @@ public class ProductController {
 			@ApiResponse(responseCode = "201", description = "Successfull sign up process with return success message and registered product details", content = {
 					@Content(mediaType = "application/json", schema = @Schema(implementation = GenericResponse.class)) }),
 			@ApiResponse(responseCode = "404", description = "register PartProduct api not found", content = @Content) })
-	@PostMapping("products")
+	@PostMapping
 	public GenericResponse createPartProduct(@RequestBody ProductListPayload payload) {
 		GenericResponse response = null;
 		try {
@@ -88,7 +88,7 @@ public class ProductController {
 			@ApiResponse(responseCode = "200", description = "successfull updating products", content = {
 					@Content(mediaType = "application/json", schema = @Schema(implementation = GenericResponse.class)) }),
 			@ApiResponse(responseCode = "404", description = "update products api not found", content = @Content) })
-	@PutMapping("products")
+	@PutMapping
 	public GenericResponse updateProductById(@RequestBody ProductRequest product) {
 		GenericResponse response = null;
 		try {
@@ -105,7 +105,7 @@ public class ProductController {
 			@ApiResponse(responseCode = "200", description = "successfull deleting products", content = {
 					@Content(mediaType = "application/json", schema = @Schema(implementation = GenericResponse.class)) }),
 			@ApiResponse(responseCode = "404", description = "delete product api not found", content = @Content) })
-	@DeleteMapping("products/{id}")
+	@DeleteMapping("/{id}")
 	public GenericResponse deleteProductById(@PathVariable String id) {
 		GenericResponse response = null;
 		try {
@@ -122,7 +122,7 @@ public class ProductController {
 			@ApiResponse(responseCode = "200", description = "successfull retrieving products", content = {
 					@Content(mediaType = "application/json", schema = @Schema(implementation = GenericResponse.class)) }),
 			@ApiResponse(responseCode = "404", description = "retrieve products api not found", content = @Content) })
-	@GetMapping("products/name/{name}")
+	@GetMapping("/name/{name}")
 	public GenericResponse searchProductsByName(@PathVariable String name) {
 		GenericResponse response = null;
 		try {
@@ -139,7 +139,7 @@ public class ProductController {
 			@ApiResponse(responseCode = "200", description = "successfull Searching products", content = {
 					@Content(mediaType = "application/json", schema = @Schema(implementation = GenericResponse.class)) }),
 			@ApiResponse(responseCode = "404", description = "Search products api not found", content = @Content) })
-	@GetMapping("products/othernames/{otherNames}")
+	@GetMapping("/othernames/{otherNames}")
 	public GenericResponse searchProductsByOtherNames(@PathVariable String otherNames) {
 		GenericResponse response = null;
 		try {
@@ -156,7 +156,7 @@ public class ProductController {
 			@ApiResponse(responseCode = "200", description = "successfull searching products", content = {
 					@Content(mediaType = "application/json", schema = @Schema(implementation = GenericResponse.class)) }),
 			@ApiResponse(responseCode = "404", description = "Search products api not found", content = @Content) })
-	@GetMapping("products/tag/{tag}")
+	@GetMapping("/tag/{tag}")
 	public GenericResponse searchProductsByTag(@PathVariable String tag) {
 		GenericResponse response = null;
 		try {
@@ -173,7 +173,7 @@ public class ProductController {
 			@ApiResponse(responseCode = "200", description = "successfull searching products", content = {
 					@Content(mediaType = "application/json", schema = @Schema(implementation = GenericResponse.class)) }),
 			@ApiResponse(responseCode = "404", description = "Search products api not found", content = @Content) })
-	@GetMapping("products/sku/{sku}")
+	@GetMapping("/sku/{sku}")
 	public GenericResponse searchProductsBySku(@PathVariable String sku) {
 		GenericResponse response = null;
 		try {
@@ -190,7 +190,7 @@ public class ProductController {
 			@ApiResponse(responseCode = "200", description = "successfull searching products", content = {
 					@Content(mediaType = "application/json", schema = @Schema(implementation = GenericResponse.class)) }),
 			@ApiResponse(responseCode = "404", description = "Search products api not found", content = @Content) })
-	@GetMapping("products/category/{category}")
+	@GetMapping("/category/{category}")
 	public GenericResponse searchProductsByCategory(@PathVariable String category) {
 		GenericResponse response = null;
 		try {
@@ -207,7 +207,7 @@ public class ProductController {
 			@ApiResponse(responseCode = "200", description = "successfull searching products", content = {
 					@Content(mediaType = "application/json", schema = @Schema(implementation = GenericResponse.class)) }),
 			@ApiResponse(responseCode = "404", description = "Search products api not found", content = @Content) })
-	@GetMapping("products/supplier/{supplierId}")
+	@GetMapping("/supplier/{supplierId}")
 	public GenericResponse searchProductsBySupplier(@PathVariable String supplierId) {
 		GenericResponse response = null;
 		try {
@@ -224,7 +224,7 @@ public class ProductController {
 			@ApiResponse(responseCode = "200", description = "successfull searching products", content = {
 					@Content(mediaType = "application/json", schema = @Schema(implementation = GenericResponse.class)) }),
 			@ApiResponse(responseCode = "404", description = "Search products api not found", content = @Content) })
-	@GetMapping("products/partnumber/{partNumber}")
+	@GetMapping("/partnumber/{partNumber}")
 	public GenericResponse searchProductsByPartNumber(@PathVariable String partNumber) {
 		GenericResponse response = null;
 		try {
@@ -241,7 +241,7 @@ public class ProductController {
 			@ApiResponse(responseCode = "200", description = "successfull searching products", content = {
 					@Content(mediaType = "application/json", schema = @Schema(implementation = GenericResponse.class)) }),
 			@ApiResponse(responseCode = "404", description = "Search products api not found", content = @Content) })
-	@GetMapping("products/year/{year}/make/{make}/model/{model}")
+	@GetMapping("/year/{year}/make/{make}/model/{model}")
 	public GenericResponse searchProductsByPartNumber(@PathVariable Integer year, @PathVariable String make,
 			@PathVariable String model) {
 		GenericResponse response = null;

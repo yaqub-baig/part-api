@@ -16,7 +16,7 @@ import java.util.List;
 
 @Slf4j
 @RestController
-@RequestMapping("/v1/suppliers")
+@RequestMapping("/suppliers")
 @RequiredArgsConstructor
 public class SupplierController {
 

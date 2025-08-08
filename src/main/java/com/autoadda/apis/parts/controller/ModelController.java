@@ -25,7 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @RestController
-@RequestMapping("/v1")
+@RequestMapping("/models")
 public class ModelController {
 
 	@Autowired
@@ -36,7 +36,7 @@ public class ModelController {
 			@ApiResponse(responseCode = "201", description = "Successfull sign up process with return success message and registered model details", content = {
 					@Content(mediaType = "application/json", schema = @Schema(implementation = GenericResponse.class)) }),
 			@ApiResponse(responseCode = "404", description = "register Model api not found", content = @Content) })
-	@PostMapping("models")
+	@PostMapping
 	public GenericResponse createModel(@RequestBody ModelListPayload payload) {
 		GenericResponse response = null;
 		try {
@@ -54,7 +54,7 @@ public class ModelController {
 			@ApiResponse(responseCode = "200", description = "successfull retrieving all models", content = {
 					@Content(mediaType = "application/json", schema = @Schema(implementation = GenericResponse.class)) }),
 			@ApiResponse(responseCode = "404", description = "retrieve all models api not found", content = @Content) })
-	@GetMapping("models")
+	@GetMapping
 	public GenericResponse getAllModels() {
 		GenericResponse response = null;
 		try {
@@ -71,7 +71,7 @@ public class ModelController {
 			@ApiResponse(responseCode = "200", description = "successfull retrieving all models", content = {
 					@Content(mediaType = "application/json", schema = @Schema(implementation = GenericResponse.class)) }),
 			@ApiResponse(responseCode = "404", description = "retrieve all models api not found", content = @Content) })
-	@GetMapping("models/{id}")
+	@GetMapping("/{id}")
 	public GenericResponse getModelById(@PathVariable String id) {
 		GenericResponse response = null;
 		try {
@@ -88,7 +88,7 @@ public class ModelController {
 			@ApiResponse(responseCode = "200", description = "successfull retrieving models", content = {
 					@Content(mediaType = "application/json", schema = @Schema(implementation = GenericResponse.class)) }),
 			@ApiResponse(responseCode = "404", description = "retrieve models api not found", content = @Content) })
-	@GetMapping("models/name/{name}")
+	@GetMapping("/name/{name}")
 	public GenericResponse getModelByName(@PathVariable String name) {
 		GenericResponse response = null;
 		try {
@@ -104,7 +104,7 @@ public class ModelController {
 	@ApiResponses(value = { @ApiResponse(responseCode = "200", description = "successfull updating models", content = {
 			@Content(mediaType = "application/json", schema = @Schema(implementation = GenericResponse.class)) }),
 			@ApiResponse(responseCode = "404", description = "update models api not found", content = @Content) })
-	@PutMapping("models")
+	@PutMapping
 	public GenericResponse updateModelById(@RequestBody ModelRequest model) {
 		GenericResponse response = null;
 		try {
@@ -120,7 +120,7 @@ public class ModelController {
 	@ApiResponses(value = { @ApiResponse(responseCode = "200", description = "successfull deleting models", content = {
 			@Content(mediaType = "application/json", schema = @Schema(implementation = GenericResponse.class)) }),
 			@ApiResponse(responseCode = "404", description = "delete model api not found", content = @Content) })
-	@DeleteMapping("models/{id}")
+	@DeleteMapping("/{id}")
 	public GenericResponse deleteModelById(@PathVariable String id) {
 		GenericResponse response = null;
 		try {
@@ -137,7 +137,7 @@ public class ModelController {
 			@ApiResponse(responseCode = "200", description = "successfull retrieving models", content = {
 					@Content(mediaType = "application/json", schema = @Schema(implementation = GenericResponse.class)) }),
 			@ApiResponse(responseCode = "404", description = "retrieve models api not found", content = @Content) })
-	@GetMapping("models/make/{makeId}")
+	@GetMapping("/make/{makeId}")
 	public GenericResponse getModelsByMakeId(@PathVariable String makeId) {
 		GenericResponse response = null;
 		try {
@@ -154,7 +154,7 @@ public class ModelController {
 			@ApiResponse(responseCode = "200", description = "successfull retrieving models", content = {
 					@Content(mediaType = "application/json", schema = @Schema(implementation = GenericResponse.class)) }),
 			@ApiResponse(responseCode = "404", description = "retrieve models api not found", content = @Content) })
-	@GetMapping("models/vehicletype/{vehicleTypeId}")
+	@GetMapping("/vehicletype/{vehicleTypeId}")
 	public GenericResponse getModelsByVehicleTypeId(@PathVariable String vehicleTypeId) {
 		GenericResponse response = null;
 		try {

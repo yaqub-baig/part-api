@@ -24,7 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @RestController
-@RequestMapping("/v1")
+@RequestMapping("/vehicletypes")
 public class VehicleTypeController {
 
 	@Autowired
@@ -35,7 +35,7 @@ public class VehicleTypeController {
 			@ApiResponse(responseCode = "201", description = "Successfull sign up process with return success message and registered vehicleType details", content = {
 					@Content(mediaType = "application/json", schema = @Schema(implementation = GenericResponse.class)) }),
 			@ApiResponse(responseCode = "404", description = "register VehicleType api not found", content = @Content) })
-	@PostMapping("vehicletypes")
+	@PostMapping
 	public GenericResponse createVehicleType(@RequestBody VehicleTypeListPayload payload) {
 		GenericResponse response = null;
 		try {
@@ -52,7 +52,7 @@ public class VehicleTypeController {
 			@ApiResponse(responseCode = "200", description = "successfull retrieving all vehicleTypes", content = {
 					@Content(mediaType = "application/json", schema = @Schema(implementation = GenericResponse.class)) }),
 			@ApiResponse(responseCode = "404", description = "retrieve all vehicleTypes api not found", content = @Content) })
-	@GetMapping("vehicletypes")
+	@GetMapping
 	public GenericResponse getAllCategories() {
 		GenericResponse response = null;
 		try {
@@ -69,7 +69,7 @@ public class VehicleTypeController {
 			@ApiResponse(responseCode = "200", description = "successfull retrieving all vehicleTypes", content = {
 					@Content(mediaType = "application/json", schema = @Schema(implementation = GenericResponse.class)) }),
 			@ApiResponse(responseCode = "404", description = "retrieve all vehicleTypes api not found", content = @Content) })
-	@GetMapping("vehicletypes/{id}")
+	@GetMapping("/{id}")
 	public GenericResponse getVehicleTypeById(@PathVariable String id) {
 		GenericResponse response = null;
 		try {
@@ -86,7 +86,7 @@ public class VehicleTypeController {
 			@ApiResponse(responseCode = "200", description = "successfull retrieving vehicleTypes", content = {
 					@Content(mediaType = "application/json", schema = @Schema(implementation = GenericResponse.class)) }),
 			@ApiResponse(responseCode = "404", description = "retrieve vehicleTypes api not found", content = @Content) })
-	@GetMapping("vehicletypes/name/{name}")
+	@GetMapping("/name/{name}")
 	public GenericResponse getVehicleTypeByName(@PathVariable String name) {
 		GenericResponse response = null;
 		try {
@@ -103,7 +103,7 @@ public class VehicleTypeController {
 			@ApiResponse(responseCode = "200", description = "successfull updating vehicleTypes", content = {
 					@Content(mediaType = "application/json", schema = @Schema(implementation = GenericResponse.class)) }),
 			@ApiResponse(responseCode = "404", description = "update vehicleTypes api not found", content = @Content) })
-	@PutMapping("vehicletypes")
+	@PutMapping
 	public GenericResponse updateVehicleTypeById(@RequestBody VehicleTypeRequest vehicleType) {
 		GenericResponse response = null;
 		try {
@@ -120,7 +120,7 @@ public class VehicleTypeController {
 			@ApiResponse(responseCode = "200", description = "successfull deleting vehicleTypes", content = {
 					@Content(mediaType = "application/json", schema = @Schema(implementation = GenericResponse.class)) }),
 			@ApiResponse(responseCode = "404", description = "delete vehicleType api not found", content = @Content) })
-	@DeleteMapping("vehicletypes/{id}")
+	@DeleteMapping("/{id}")
 	public GenericResponse deleteVehicleTypeById(@PathVariable String id) {
 		GenericResponse response = null;
 		try {

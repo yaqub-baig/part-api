@@ -25,7 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @RestController
-@RequestMapping("/v1")
+@RequestMapping("/makes")
 public class MakeController {
 
 	@Autowired
@@ -36,7 +36,7 @@ public class MakeController {
 			@ApiResponse(responseCode = "201", description = "Successfull sign up process with return success message and registered make details", content = {
 					@Content(mediaType = "application/json", schema = @Schema(implementation = GenericResponse.class)) }),
 			@ApiResponse(responseCode = "404", description = "register Make api not found", content = @Content) })
-	@PostMapping("makes")
+	@PostMapping
 	public GenericResponse createMake(@RequestBody MakeListPayload payload) {
 		GenericResponse response = null;
 		try {
@@ -54,7 +54,7 @@ public class MakeController {
 			@ApiResponse(responseCode = "200", description = "successfull retrieving all makes", content = {
 					@Content(mediaType = "application/json", schema = @Schema(implementation = GenericResponse.class)) }),
 			@ApiResponse(responseCode = "404", description = "retrieve all makes api not found", content = @Content) })
-	@GetMapping("makes")
+	@GetMapping
 	public GenericResponse getAllMakes() {
 		GenericResponse response = null;
 		try {
@@ -71,7 +71,7 @@ public class MakeController {
 			@ApiResponse(responseCode = "200", description = "successfull retrieving all makes", content = {
 					@Content(mediaType = "application/json", schema = @Schema(implementation = GenericResponse.class)) }),
 			@ApiResponse(responseCode = "404", description = "retrieve all makes api not found", content = @Content) })
-	@GetMapping("makes/{id}")
+	@GetMapping("/{id}")
 	public GenericResponse getMakeById(@PathVariable String id) {
 		GenericResponse response = null;
 		try {
@@ -87,7 +87,7 @@ public class MakeController {
 	@ApiResponses(value = { @ApiResponse(responseCode = "200", description = "successfull retrieving makes", content = {
 			@Content(mediaType = "application/json", schema = @Schema(implementation = GenericResponse.class)) }),
 			@ApiResponse(responseCode = "404", description = "retrieve makes api not found", content = @Content) })
-	@GetMapping("makes/name/{name}")
+	@GetMapping("/name/{name}")
 	public GenericResponse getMakeByName(@PathVariable String name) {
 		GenericResponse response = null;
 		try {
@@ -103,7 +103,7 @@ public class MakeController {
 	@ApiResponses(value = { @ApiResponse(responseCode = "200", description = "successfull updating makes", content = {
 			@Content(mediaType = "application/json", schema = @Schema(implementation = GenericResponse.class)) }),
 			@ApiResponse(responseCode = "404", description = "update makes api not found", content = @Content) })
-	@PutMapping("makes")
+	@PutMapping
 	public GenericResponse updateMakeById(@RequestBody MakeRequest make) {
 		GenericResponse response = null;
 		try {
@@ -119,7 +119,7 @@ public class MakeController {
 	@ApiResponses(value = { @ApiResponse(responseCode = "200", description = "successfull deleting makes", content = {
 			@Content(mediaType = "application/json", schema = @Schema(implementation = GenericResponse.class)) }),
 			@ApiResponse(responseCode = "404", description = "delete make api not found", content = @Content) })
-	@DeleteMapping("makes/{id}")
+	@DeleteMapping("/{id}")
 	public GenericResponse deleteMakeById(@PathVariable String id) {
 		GenericResponse response = null;
 		try {

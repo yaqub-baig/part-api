@@ -14,7 +14,7 @@ import com.autoadda.apis.parts.entity.ShoppingCart;
 import com.autoadda.apis.parts.service.ShoppingCartService;
 
 @RestController
-@RequestMapping("/api/cart")
+@RequestMapping("/cart")
 public class ShoppingCartController {
 	@Autowired
 	private ShoppingCartService cartService;

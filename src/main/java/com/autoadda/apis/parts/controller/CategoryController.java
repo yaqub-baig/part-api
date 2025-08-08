@@ -1,5 +1,6 @@
 package com.autoadda.apis.parts.controller;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -23,11 +24,11 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @RestController
-@RequestMapping("/v1")
+@RequestMapping("categories")
+@RequiredArgsConstructor
 public class CategoryController {
 
-	@Autowired
-	private CategoryService categoryService;
+	private final CategoryService categoryService;
 
 	@CrossOrigin
 	@Operation(summary = "Retrieving All Top Level Categories")
@@ -35,7 +36,7 @@ public class CategoryController {
 			@ApiResponse(responseCode = "200", description = "successfull retrieving all categories", content = {
 					@Content(mediaType = "application/json", schema = @Schema(implementation = GenericResponse.class)) }),
 			@ApiResponse(responseCode = "404", description = "retrieve all categories api not found", content = @Content) })
-	@GetMapping("toplevelcategories")
+	@GetMapping("/toplevelcategories")
 	public GenericResponse getAllTopLevelCategories() {
 		GenericResponse response = null;
 		try {
@@ -52,7 +53,7 @@ public class CategoryController {
 			@ApiResponse(responseCode = "200", description = "successfull retrieving all categories", content = {
 					@Content(mediaType = "application/json", schema = @Schema(implementation = GenericResponse.class)) }),
 			@ApiResponse(responseCode = "404", description = "retrieve all categories api not found", content = @Content) })
-	@GetMapping("categories/{id}")
+	@GetMapping("/{id}")
 	public GenericResponse getCategoryById(@PathVariable String id) {
 		GenericResponse response = null;
 		try {
@@ -69,7 +70,7 @@ public class CategoryController {
 			@ApiResponse(responseCode = "200", description = "successfull retrieving categories", content = {
 					@Content(mediaType = "application/json", schema = @Schema(implementation = GenericResponse.class)) }),
 			@ApiResponse(responseCode = "404", description = "retrieve categories api not found", content = @Content) })
-	@GetMapping("categories/name/{name}")
+	@GetMapping("/name/{name}")
 	public GenericResponse getCategoryByName(@PathVariable String name) {
 		GenericResponse response = null;
 		try {
@@ -86,7 +87,7 @@ public class CategoryController {
 			@ApiResponse(responseCode = "201", description = "Successfull sign up process with return success message and registered category details", content = {
 					@Content(mediaType = "application/json", schema = @Schema(implementation = GenericResponse.class)) }),
 			@ApiResponse(responseCode = "404", description = "register PartCategory api not found", content = @Content) })
-	@PostMapping("categories")
+	@PostMapping
 	public GenericResponse createPartCategory(@RequestBody CategoryListPayload payload) {
 		GenericResponse response = null;
 		try {
@@ -103,7 +104,7 @@ public class CategoryController {
 			@ApiResponse(responseCode = "200", description = "successfull deleting categories", content = {
 					@Content(mediaType = "application/json", schema = @Schema(implementation = GenericResponse.class)) }),
 			@ApiResponse(responseCode = "404", description = "delete category api not found", content = @Content) })
-	@DeleteMapping("categories/{id}")
+	@DeleteMapping("/{id}")
 	public GenericResponse deleteCategoryById(@PathVariable String id) {
 		GenericResponse response = null;
 		try {
