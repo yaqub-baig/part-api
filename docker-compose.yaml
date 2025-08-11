@@ -17,7 +17,7 @@ services:
     networks:
       - auto-adda-network
 
-  parts-service:
+  part-service:
     build:
       context: .
     container_name: part-service
