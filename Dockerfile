@@ -5,10 +5,10 @@ FROM eclipse-temurin:17-jdk-alpine
 WORKDIR /app
 
 # Copy the Spring Boot executable JAR with correct artifact name
-COPY target/PartsManagementService-0.0.1-SNAPSHOT.jar app.jar
+COPY target/PartApi-0.0.1-SNAPSHOT.jar app.jar
 
 # Expose the default port
-EXPOSE 8097
+EXPOSE 8060
 # Set environment variable inside container
 ENV SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/auto_parts?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
 

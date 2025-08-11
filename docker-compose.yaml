@@ -1,11 +1,11 @@
-version: '3.8'
+
 
 services:
   mysql-docker:
     image: mysql:8
     container_name: mysql-docker
     environment:
-      MYSQL_ROOT_PASSWORD: password
+      MYSQL_ROOT_PASSWORD: root123
       MYSQL_DATABASE: auto_adda_parts
     ports:
       - "3308:3306"
@@ -20,15 +20,15 @@ services:
   parts-service:
     build:
       context: .
-    container_name: parts-service
+    container_name: part-service
     depends_on:
       mysql-docker:
         condition: service_healthy
     environment:
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-docker:3306/car_adda_parts
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-docker:3306/auto_adda_parts
       SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: password
-      DOCUMENT_STORAGE_PATH: /app/documents  # 👈 Add document path environment variable
+      SPRING_DATASOURCE_PASSWORD: root123
+      FILE_UPLOAD-DIR: /app/documents  # 👈 Add document path environment variable
     ports:
       - "8060:8061"
     volumes:
@@ -42,5 +42,5 @@ volumes:
   documents-volume:                            # 👈 Named volume for document storage
 
 networks:
-  car-adda-network:
+  auto-adda-network:
     driver: bridge
