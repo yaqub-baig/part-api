@@ -17,10 +17,10 @@ services:
     networks:
       - auto-adda-network
 
-  partsservice:
+  parts-service:
     build:
       context: .
-    container_name: partservice
+    container_name: parts-service
     depends_on:
       mysql-docker:
         condition: service_healthy
@@ -30,7 +30,7 @@ services:
       SPRING_DATASOURCE_PASSWORD: password
       DOCUMENT_STORAGE_PATH: /app/documents  # 👈 Add document path environment variable
     ports:
-      - "8090:8095"
+      - "8060:8061"
     volumes:
       - documents-volume:/app/documents       # 👈 Mount volume for document storage
       - ./src:/app/src          # 👈 Mount source code
