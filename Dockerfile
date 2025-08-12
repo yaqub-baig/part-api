@@ -10,7 +10,7 @@ COPY target/PartApi-0.0.1-SNAPSHOT.jar app.jar
 # Expose the default port
 EXPOSE 8060
 # Set environment variable inside container
-ENV SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/auto_parts?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+ENV SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/auto_adda_parts?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
 
 # Run the app
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]
