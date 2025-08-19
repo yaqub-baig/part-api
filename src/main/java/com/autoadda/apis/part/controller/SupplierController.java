@@ -28,8 +28,6 @@ public class SupplierController {
             @ApiResponse(responseCode = "404", description = "register Supplier api not found", content = @Content)})
     @PostMapping
     public ResponseEntity<Supplier> createSupplier(
-            @RequestHeader(value = "X-User-Id") String userId,
-            @RequestHeader(value = "X-User-Role") String userRole,
             @RequestHeader(value = "X-Auto-Adda-Id") String autoAddaId,
             @RequestBody SupplierRequest payload) {
         return supplierService.createSupplier ( payload, autoAddaId );
@@ -60,8 +58,6 @@ public class SupplierController {
             @ApiResponse(responseCode = "404", description = "retrieve suppliers api not found", content = @Content)})
     @GetMapping
     public ResponseEntity<List<Supplier>> getSupplierByName(
-            @RequestHeader(value = "X-User-Id") String userId,
-            @RequestHeader(value = "X-User-Role") String userRole,
             @RequestHeader(value = "X-Auto-Adda-Id") String autoAddaId) {
         return supplierService.getSupplier ( autoAddaId );
     }
@@ -71,26 +67,21 @@ public class SupplierController {
             @ApiResponse(responseCode = "200", description = "successful deleting suppliers")})
     @DeleteMapping("/{id}")
     public ResponseEntity<String> deleteSupplierById(@PathVariable Integer id,
-                                                   @RequestHeader(value = "X-User-Id") String userId,
-                                                   @RequestHeader(value = "X-User-Role") String userRole,
-                                                   @RequestHeader(value = "X-Auto-Adda-Id") String autoAddaId) {
+                                                     @RequestHeader(value = "X-Auto-Adda-Id") String autoAddaId) {
         return supplierService.deleteSupplierById ( id, autoAddaId );
     }
 
 
-
-	@Operation(summary = "Updating Suppliers by Id")
-	@ApiResponses(value = {
-			@ApiResponse(responseCode = "200", description = "successfull updating suppliers"),
-			@ApiResponse(responseCode = "404", description = "update suppliers api not found", content = @Content) })
-	@PutMapping("/{id}")
-	public ResponseEntity<Supplier> updateSupplierById(@PathVariable Integer id,
+    @Operation(summary = "Updating Suppliers by Id")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "successfull updating suppliers"),
+            @ApiResponse(responseCode = "404", description = "update suppliers api not found", content = @Content)})
+    @PutMapping("/{id}")
+    public ResponseEntity<Supplier> updateSupplierById(@PathVariable Integer id,
                                                        @RequestBody SupplierRequest supplier,
-                                                       @RequestHeader(value = "X-User-Id") String userId,
-                                                       @RequestHeader(value = "X-User-Role") String userRole,
                                                        @RequestHeader(value = "X-Auto-Adda-Id") String autoAddaId) {
-		return supplierService.updateSupplier(supplier, autoAddaId, id);
+        return supplierService.updateSupplier ( supplier, autoAddaId, id );
 
-	}
+    }
 
 }
