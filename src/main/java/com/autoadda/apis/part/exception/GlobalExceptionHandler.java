@@ -31,6 +31,7 @@ public class GlobalExceptionHandler {
 		return buildResponse(ex, HttpStatus.BAD_REQUEST, ErrorMessage.ERROR_VALIDATION_FAILED + ": " + errors);
 	}
 
+
 	@ExceptionHandler(ConstraintViolationException.class)
 	public ResponseEntity<GenericResponse> handleConstraintViolation(ConstraintViolationException ex) {
 		log.warn("Constraint violation: {}", ex.getMessage());
@@ -96,7 +97,7 @@ public class GlobalExceptionHandler {
 	@ExceptionHandler(ResourceNotFoundException.class)
 	public ResponseEntity<GenericResponse> handleResourceNotFound(ResourceNotFoundException ex) {
 		log.warn("Resource not found", ex);
-		return buildResponse(ex, HttpStatus.NOT_FOUND, ErrorMessage.ERROR_NOT_FOUND);
+		return buildResponse(ex, HttpStatus.NOT_FOUND, ex.getMessage ());
 	}
 	@ExceptionHandler(AlreadyExistException.class)
 	public ResponseEntity<GenericResponse> handleAlreadyExist(AlreadyExistException ex) {
