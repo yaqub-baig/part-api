@@ -44,7 +44,7 @@ public class BrandOnboardService {
         return new GenericResponse ( "success", "200", "Brand updated Successfully Successfully",brandOnboardMapper.toResponse ( save ));
     }
 
-    private String generateRequestRefrenceId() {
+    public String generateRequestRefrenceId() {
         // Get current year and month
         LocalDateTime now = LocalDateTime.now ( );
         String yearMonth = now.format ( DateTimeFormatter.ofPattern ( "yyMM" ) );
