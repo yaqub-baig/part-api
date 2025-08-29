@@ -12,4 +12,7 @@ import java.util.List;
 public interface BrandOnboardRepository extends JpaRepository<BrandOnboard,Integer>{
     @Query("SELECT b.requestReferenceId FROM BrandOnboard b WHERE b.requestReferenceId LIKE :prefix% ORDER BY b.requestReferenceId DESC")
     List<String> findLatestCodesByPrefix(@Param("prefix")String codePrefix);
+
+    @Query("SELECT b.requestReferenceId FROM BrandOnboard b WHERE b.requestReferenceId LIKE %:prefix% ORDER BY b.requestReferenceId DESC")
+    List<String> findAllCodesForGlobalSequence(@Param("prefix") String prefix);
 }
