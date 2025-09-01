@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -24,52 +25,59 @@ public class BrandOnboardService {
     private final MakeRepository makeRepository;
 
     public GenericResponse brandOnboard(BrandOnboardRequest request, String autoAddaId) {
-        Make byName = makeRepository.findByName ( request.getBrandName ( ) );
-        if ( byName != null ) {
-         throw new ResourceNotFoundException ( "brand already exists" );
+        Make byName = makeRepository.findByName(request.getBrandName());
+        if (byName != null) {
+            throw new ResourceNotFoundException("brand already exists");
         }
 
-        BrandOnboard entity = brandOnboardMapper.toEntity ( request );
-        entity.setRequestBy ( Integer.parseInt ( autoAddaId ));
-        entity.setRequestReferenceId (  generateRequestRefrenceId ());
+        BrandOnboard entity = brandOnboardMapper.toEntity(request);
+        entity.setRequestBy(Integer.parseInt(autoAddaId));
+        entity.setRequestReferenceId(generateRequestReferenceId(entity));
 
-        BrandOnboard save = brandOnboardRepository.save ( entity );
-        return new GenericResponse ( "success", "200", "Your request is successfully taken our team will look into it and add brand if needed",brandOnboardMapper.toResponse ( save ));
+        BrandOnboard save = brandOnboardRepository.save(entity);
+        return new GenericResponse("success", "200", "Your request is successfully taken our team will look into it and add brand if needed", brandOnboardMapper.toResponse(save));
     }
 
     public GenericResponse updateBrand(Integer id, BrandOnboardRequest request) {
-        BrandOnboard tempVehicle = brandOnboardRepository.findById ( id ).orElseThrow ( () -> new ResourceNotFoundException ( "update Brand request not found" ) );
+        BrandOnboard tempVehicle = brandOnboardRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("update Brand request not found"));
 
-        BrandOnboard save = brandOnboardRepository.save ( tempVehicle );
-        return new GenericResponse ( "success", "200", "Brand updated Successfully Successfully",brandOnboardMapper.toResponse ( save ));
+        BrandOnboard save = brandOnboardRepository.save(tempVehicle);
+        return new GenericResponse("success", "200", "Brand updated Successfully", brandOnboardMapper.toResponse(save));
     }
 
-    public String generateRequestRefrenceId() {
+    public String generateRequestReferenceId(BrandOnboard entity) {
         // Get current year and month
-        LocalDateTime now = LocalDateTime.now ( );
-        String yearMonth = now.format ( DateTimeFormatter.ofPattern ( "yyMM" ) );
+        LocalDateTime now = LocalDateTime.now();
+        String yearMonth = now.format(DateTimeFormatter.ofPattern("yyMM"));
 
-        // Format: RQ-YYMM-XXXX
-        String codePrefix = "BR-" + yearMonth + "-";
+        // Get brand name and model name (keep original names for frontend parsing)
+        String brandName = entity.getBrandName() != null ? entity.getBrandName().trim() : "UNKNOWN";
+        String modelName = entity.getModelName() != null ? entity.getModelName().trim() : "UNKNOWN";
+        String engineType = entity.getEngineType() != null ? entity.getEngineType().trim() : "UNKNOWN";
 
-        // Find the latest code for this prefix
-        List<String> latestCodes = brandOnboardRepository.findLatestCodesByPrefix (
-                codePrefix );
+        String globalPrefix = String.format("BR-%s-", yearMonth);
+        List<String> allCodes = brandOnboardRepository.findAllCodesForGlobalSequence(globalPrefix);
 
-        int nextSequence = 1;
-        if ( ! latestCodes.isEmpty ( ) ) {
-            String latestCode = latestCodes.get ( 0 );
-            try {
-                // Extract the sequence number from the latest code
-                String sequencePart = latestCode.substring ( codePrefix.length ( ) );
-                nextSequence = Integer.parseInt ( sequencePart ) + 1;
+        int globalSequence = 1;
+        if (!allCodes.isEmpty()) {
+            // Find the highest sequence number across all brand-model combinations
+            int maxSequence = 0;
+            for (String code : allCodes) {
+                try {
+                    // Extract sequence from pattern: BRAND_MODEL_BR-YYMM-XXXX
+                    String[] parts = code.split("-");
+                    if (parts.length >= 2) {
+                        int sequence = Integer.parseInt(parts[parts.length - 1]);
+                        maxSequence = Math.max(maxSequence, sequence);
+                    }
+                } catch (NumberFormatException e) {
+                    // Ignore invalid formats
+                }
             }
-            catch ( NumberFormatException | IndexOutOfBoundsException e ) {
-                log.warn ( "Failed to parse sequence number, starting from 1", e );
-            }
+            globalSequence = maxSequence + 1;
         }
 
-        // Format the final code with the sequence padded to 4 digits
-        return String.format ( "%s%06d", codePrefix, nextSequence );
+        return String.format("%s_%s_%s_BR-%s-%04d", brandName.toUpperCase(), modelName.toUpperCase(), engineType.toUpperCase(), yearMonth, globalSequence);
+
     }
 }

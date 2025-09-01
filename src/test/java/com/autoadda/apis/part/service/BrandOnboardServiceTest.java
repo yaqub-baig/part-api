@@ -18,6 +18,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -55,8 +56,10 @@ class BrandOnboardServiceTest {
         brandOnboard = new BrandOnboard();
         brandOnboard.setId(1);
         brandOnboard.setBrandName("TestBrand");
+        brandOnboard.setModelName("TestModel");
+        brandOnboard.setEngineType("Petrol");
         brandOnboard.setRequestBy(123);
-        brandOnboard.setRequestReferenceId("BR-2401-000001");
+        brandOnboard.setRequestReferenceId("TESTBRAND_TESTMODEL_PETROL_BR-2401-0001");
 
         make = new Make();
         make.setId("1");
@@ -69,7 +72,7 @@ class BrandOnboardServiceTest {
         when(makeRepository.findByName(anyString())).thenReturn(null);
         when(brandOnboardMapper.toEntity(any(BrandOnboardRequest.class))).thenReturn(brandOnboard);
         when(brandOnboardRepository.save(any(BrandOnboard.class))).thenReturn(brandOnboard);
-        when(brandOnboardMapper.toResponse(any(BrandOnboard.class))).thenReturn(new BrandOnboardResponse (  ) );
+        when(brandOnboardMapper.toResponse(any(BrandOnboard.class))).thenReturn(new BrandOnboardResponse());
 
         // Act
         GenericResponse response = brandOnboardService.brandOnboard(brandOnboardRequest, autoAddaId);
@@ -77,7 +80,7 @@ class BrandOnboardServiceTest {
         // Assert
         assertNotNull(response);
         assertEquals("success", response.getStatus());
-        assertEquals("200", response.getCode ());
+        assertEquals("200", response.getCode());
         assertEquals("Your request is successfully taken our team will look into it and add brand if needed", response.getMessage());
 
         verify(makeRepository, times(1)).findByName(brandOnboardRequest.getBrandName());
@@ -108,7 +111,7 @@ class BrandOnboardServiceTest {
         Integer brandId = 1;
         when(brandOnboardRepository.findById(brandId)).thenReturn(Optional.of(brandOnboard));
         when(brandOnboardRepository.save(any(BrandOnboard.class))).thenReturn(brandOnboard);
-        when(brandOnboardMapper.toResponse(any(BrandOnboard.class))).thenReturn(new BrandOnboardResponse ());
+        when(brandOnboardMapper.toResponse(any(BrandOnboard.class))).thenReturn(new BrandOnboardResponse());
 
         // Act
         GenericResponse response = brandOnboardService.updateBrand(brandId, brandOnboardRequest);
@@ -117,7 +120,7 @@ class BrandOnboardServiceTest {
         assertNotNull(response);
         assertEquals("success", response.getStatus());
         assertEquals("200", response.getCode());
-        assertEquals("Brand updated Successfully Successfully", response.getMessage());
+        assertEquals("Brand updated Successfully", response.getMessage()); // Fixed the expected message
 
         verify(brandOnboardRepository, times(1)).findById(brandId);
         verify(brandOnboardRepository, times(1)).save(brandOnboard);
@@ -142,71 +145,99 @@ class BrandOnboardServiceTest {
     }
 
     @Test
-    void generateRequestRefrenceId_WhenNoExistingCodes_ShouldGenerateFirstSequence() {
+    void generateRequestReferenceId_WhenNoExistingCodes_ShouldGenerateFirstSequence() {
         // Arrange
-        when(brandOnboardRepository.findLatestCodesByPrefix(anyString())).thenReturn(Arrays.asList());
+        String globalPrefix = "BR-" + LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyMM")) + "-";
+        when(brandOnboardRepository.findAllCodesForGlobalSequence(globalPrefix)).thenReturn(Collections.emptyList());
+
+        BrandOnboard entity = new BrandOnboard();
+        entity.setBrandName("TestBrand");
+        entity.setModelName("TestModel");
+        entity.setEngineType("Petrol");
 
         // Act
-        String result = brandOnboardService.generateRequestRefrenceId();
+        String result = brandOnboardService.generateRequestReferenceId(entity);
 
         // Assert
         assertNotNull(result);
-        assertTrue(result.startsWith("BR-"));
-        assertTrue(result.endsWith("-000001"));
-        verify(brandOnboardRepository, times(1)).findLatestCodesByPrefix(anyString());
+        assertTrue(result.startsWith("TESTBRAND_TESTMODEL_PETROL_BR-"));
+        assertTrue(result.endsWith("0001"));
+        verify(brandOnboardRepository, times(1)).findAllCodesForGlobalSequence(anyString());
     }
 
     @Test
-    void generateRequestRefrenceId_WithExistingCodes_ShouldGenerateNextSequence() {
+    void generateRequestReferenceId_WithExistingCodes_ShouldGenerateNextSequence() {
         // Arrange
         String currentYearMonth = LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyMM"));
-        String existingCode = "BR-" + currentYearMonth + "-000005";
-        when(brandOnboardRepository.findLatestCodesByPrefix(anyString())).thenReturn(Arrays.asList(existingCode));
+        String globalPrefix = "BR-" + currentYearMonth + "-";
+        String existingCode = "TESTBRAND_TESTMODEL_PETROL_BR-" + currentYearMonth + "-0005";
+
+        when(brandOnboardRepository.findAllCodesForGlobalSequence(globalPrefix)).thenReturn(Arrays.asList(existingCode));
+
+        BrandOnboard entity = new BrandOnboard();
+        entity.setBrandName("TestBrand");
+        entity.setModelName("TestModel");
+        entity.setEngineType("Petrol");
 
         // Act
-        String result = brandOnboardService.generateRequestRefrenceId();
+        String result = brandOnboardService.generateRequestReferenceId(entity);
 
         // Assert
         assertNotNull(result);
-        assertTrue(result.startsWith("BR-" + currentYearMonth + "-"));
-        assertTrue(result.endsWith("000006"));
-        verify(brandOnboardRepository, times(1)).findLatestCodesByPrefix(anyString());
+        assertTrue(result.startsWith("TESTBRAND_TESTMODEL_PETROL_BR-" + currentYearMonth + "-"));
+        assertTrue(result.endsWith("0006"));
+        verify(brandOnboardRepository, times(1)).findAllCodesForGlobalSequence(anyString());
     }
 
     @Test
-    void generateRequestRefrenceId_WhenParsingFails_ShouldStartFromOne() {
+    void generateRequestReferenceId_WhenParsingFails_ShouldStartFromOne() {
         // Arrange
         String currentYearMonth = LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyMM"));
-        String invalidCode = "BR-" + currentYearMonth + "-INVALID";
-        when(brandOnboardRepository.findLatestCodesByPrefix(anyString())).thenReturn(Arrays.asList(invalidCode));
+        String globalPrefix = "BR-" + currentYearMonth + "-";
+        String invalidCode = "TESTBRAND_TESTMODEL_PETROL_BR-" + currentYearMonth + "-INVALID";
+
+        when(brandOnboardRepository.findAllCodesForGlobalSequence(globalPrefix)).thenReturn(Arrays.asList(invalidCode));
+
+        BrandOnboard entity = new BrandOnboard();
+        entity.setBrandName("TestBrand");
+        entity.setModelName("TestModel");
+        entity.setEngineType("Petrol");
 
         // Act
-        String result = brandOnboardService.generateRequestRefrenceId();
+        String result = brandOnboardService.generateRequestReferenceId(entity);
 
         // Assert
         assertNotNull(result);
-        assertTrue(result.startsWith("BR-" + currentYearMonth + "-"));
-        assertTrue(result.endsWith("000001"));
-        verify(brandOnboardRepository, times(1)).findLatestCodesByPrefix(anyString());
+        assertTrue(result.startsWith("TESTBRAND_TESTMODEL_PETROL_BR-" + currentYearMonth + "-"));
+        assertTrue(result.endsWith("0001"));
+        verify(brandOnboardRepository, times(1)).findAllCodesForGlobalSequence(anyString());
     }
 
     @Test
-    void generateRequestRefrenceId_WithMultipleExistingCodes_ShouldUseLatestOne() {
+    void generateRequestReferenceId_WithMultipleExistingCodes_ShouldUseLatestOne() {
         // Arrange
         String currentYearMonth = LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyMM"));
+        String globalPrefix = "BR-" + currentYearMonth + "-";
         List<String> existingCodes = Arrays.asList(
-                "BR-" + currentYearMonth + "-000001",
-                "BR-" + currentYearMonth + "-000003",
-                "BR-" + currentYearMonth + "-000002"
+                "TESTBRAND_TESTMODEL_PETROL_BR-" + currentYearMonth + "-0001",
+                "TESTBRAND_TESTMODEL_PETROL_BR-" + currentYearMonth + "-0003",
+                "TESTBRAND_TESTMODEL_PETROL_BR-" + currentYearMonth + "-0002"
         );
-        when(brandOnboardRepository.findLatestCodesByPrefix(anyString())).thenReturn(existingCodes);
+        when(brandOnboardRepository.findAllCodesForGlobalSequence(globalPrefix)).thenReturn(existingCodes);
+
+        BrandOnboard entity = new BrandOnboard();
+        entity.setBrandName("TestBrand");
+        entity.setModelName("TestModel");
+        entity.setEngineType("Petrol");
 
         // Act
-        String result = brandOnboardService.generateRequestRefrenceId();
+        String result = brandOnboardService.generateRequestReferenceId(entity);
 
         // Assert
         assertNotNull(result);
-        assertTrue(result.startsWith("BR-" + currentYearMonth + "-"));
-        verify(brandOnboardRepository, times(1)).findLatestCodesByPrefix(anyString());
+        assertTrue(result.startsWith("TESTBRAND_TESTMODEL_PETROL_BR-" + currentYearMonth + "-"));
+        // Should be the next sequence after the highest (0003 + 1 = 0004)
+        assertTrue(result.endsWith("0004"));
+        verify(brandOnboardRepository, times(1)).findAllCodesForGlobalSequence(anyString());
     }
 }
