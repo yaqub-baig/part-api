@@ -2,10 +2,12 @@ package com.autoadda.apis.part.service;
 
 import com.autoadda.apis.part.entity.BrandOnboard;
 import com.autoadda.apis.part.entity.Make;
+import com.autoadda.apis.part.entity.Model;
 import com.autoadda.apis.part.exception.ResourceNotFoundException;
 import com.autoadda.apis.part.mapper.BrandOnboardMapper;
 import com.autoadda.apis.part.repository.BrandOnboardRepository;
 import com.autoadda.apis.part.repository.MakeRepository;
+import com.autoadda.apis.part.repository.ModelRepository;
 import com.autoadda.apis.part.request.BrandOnboardRequest;
 import com.autoadda.apis.part.response.GenericResponse;
 import lombok.RequiredArgsConstructor;
@@ -23,11 +25,14 @@ public class BrandOnboardService {
     private final BrandOnboardRepository brandOnboardRepository;
     private final BrandOnboardMapper brandOnboardMapper;
     private final MakeRepository makeRepository;
-
+    private final ModelRepository modelRepository;
     public GenericResponse brandOnboard(BrandOnboardRequest request, String autoAddaId) {
         Make byName = makeRepository.findByName(request.getBrandName());
         if (byName != null) {
-            throw new ResourceNotFoundException("brand already exists");
+            Model model = modelRepository.findByName ( request.getModelName ( ) );
+            if (model != null) {
+                throw new ResourceNotFoundException("brand and model already exists");
+            }
         }
 
         BrandOnboard entity = brandOnboardMapper.toEntity(request);
