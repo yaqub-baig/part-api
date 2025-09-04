@@ -9,6 +9,7 @@ import com.autoadda.apis.part.repository.BrandOnboardRepository;
 import com.autoadda.apis.part.repository.MakeRepository;
 import com.autoadda.apis.part.repository.ModelRepository;
 import com.autoadda.apis.part.request.BrandOnboardRequest;
+import com.autoadda.apis.part.response.BrandOnboardResponse;
 import com.autoadda.apis.part.response.GenericResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -84,5 +85,9 @@ public class BrandOnboardService {
 
         return String.format("%s_%s_%s_BR-%s-%04d", brandName.toUpperCase(), modelName.toUpperCase(), engineType.toUpperCase(), yearMonth, globalSequence);
 
+    }
+
+    public BrandOnboardResponse getBrandById(String referenceId) {
+        return brandOnboardMapper.toResponse(brandOnboardRepository.findByRequestReferenceId(referenceId).orElseThrow ( ()-> new ResourceNotFoundException("Brand not found")) );
     }
 }
