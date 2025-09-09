@@ -32,7 +32,7 @@ public class Supplier {
     @Column(name = "trn_number")
     private String trnNumber;
     @Column(name = "website")
-    private String webSite;
+    private String website;
     @Column(name = "email_id")
     private String email;
     @Column(name = "phone_number")

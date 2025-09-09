@@ -2,6 +2,7 @@ package com.autoadda.apis.part.controller;
 
 
 import com.autoadda.apis.part.request.BrandOnboardRequest;
+import com.autoadda.apis.part.response.BrandOnboardResponse;
 import com.autoadda.apis.part.response.GenericResponse;
 import com.autoadda.apis.part.service.BrandOnboardService;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,10 @@ public class BrandOnboardController {
     public ResponseEntity<GenericResponse> updateBrand(@PathVariable Integer id, @RequestBody BrandOnboardRequest request){
         return ResponseEntity.ok (brandOnboardService.updateBrand ( id, request )
         );
+    }
+    @GetMapping("/isc/{referenceId}")
+    public ResponseEntity<BrandOnboardResponse> getBrandById(@PathVariable String referenceId){
+        return ResponseEntity.ok (brandOnboardService.getBrandById ( referenceId ));
     }
 
 }

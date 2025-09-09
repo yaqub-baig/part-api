@@ -68,7 +68,7 @@ public class SupplierService {
         supplier.setMobileNumber ( request.getMobileNumber ( ) );
         supplier.setBrands ( request.getBrands ( ) );
         supplier.setModels ( request.getModels ( ) );
-        supplier.setWebSite ( request.getWebsite ( ) );
+        supplier.setWebsite ( request.getWebsite ( ) );
         supplier.setOpeningHours ( request.getOpeningHours ( ) );
         supplier.setClosingHours ( request.getClosingHours ( ) );
         supplier.setWorkingDays ( request.getWorkingDays ( ) );
@@ -162,7 +162,7 @@ public class SupplierService {
             existing.setPhoneNumber ( request.getPhoneNumber ( ) );
         }
         if ( request.getWebsite ( ) != null ) {
-            existing.setWebSite ( request.getWebsite ( ) );
+            existing.setWebsite ( request.getWebsite ( ) );
         }
         if ( request.getName ( ) != null ) {
             existing.setName ( request.getName ( ) );

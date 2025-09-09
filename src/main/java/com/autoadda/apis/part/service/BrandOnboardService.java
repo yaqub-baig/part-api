@@ -2,11 +2,14 @@ package com.autoadda.apis.part.service;
 
 import com.autoadda.apis.part.entity.BrandOnboard;
 import com.autoadda.apis.part.entity.Make;
+import com.autoadda.apis.part.entity.Model;
 import com.autoadda.apis.part.exception.ResourceNotFoundException;
 import com.autoadda.apis.part.mapper.BrandOnboardMapper;
 import com.autoadda.apis.part.repository.BrandOnboardRepository;
 import com.autoadda.apis.part.repository.MakeRepository;
+import com.autoadda.apis.part.repository.ModelRepository;
 import com.autoadda.apis.part.request.BrandOnboardRequest;
+import com.autoadda.apis.part.response.BrandOnboardResponse;
 import com.autoadda.apis.part.response.GenericResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,11 +26,14 @@ public class BrandOnboardService {
     private final BrandOnboardRepository brandOnboardRepository;
     private final BrandOnboardMapper brandOnboardMapper;
     private final MakeRepository makeRepository;
-
+    private final ModelRepository modelRepository;
     public GenericResponse brandOnboard(BrandOnboardRequest request, String autoAddaId) {
         Make byName = makeRepository.findByName(request.getBrandName());
         if (byName != null) {
-            throw new ResourceNotFoundException("brand already exists");
+            Model model = modelRepository.findByName ( request.getModelName ( ) );
+            if (model != null) {
+                throw new ResourceNotFoundException("brand and model already exists");
+            }
         }
 
         BrandOnboard entity = brandOnboardMapper.toEntity(request);
@@ -79,5 +85,9 @@ public class BrandOnboardService {
 
         return String.format("%s_%s_%s_BR-%s-%04d", brandName.toUpperCase(), modelName.toUpperCase(), engineType.toUpperCase(), yearMonth, globalSequence);
 
+    }
+
+    public BrandOnboardResponse getBrandById(String referenceId) {
+        return brandOnboardMapper.toResponse(brandOnboardRepository.findByRequestReferenceId(referenceId).orElseThrow ( ()-> new ResourceNotFoundException("Brand not found")) );
     }
 }
