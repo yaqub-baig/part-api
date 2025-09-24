@@ -36,11 +36,18 @@
 		</dependency>
 		<!-- PostgreSQL Driver -->
 		<!-- https://mvnrepository.com/artifact/com.mysql/mysql-connector-j -->
+<!--		<dependency>-->
+<!--			<groupId>com.mysql</groupId>-->
+<!--			<artifactId>mysql-connector-j</artifactId>-->
+<!--			<version>9.3.0</version>-->
+<!--		</dependency>-->
+
 		<dependency>
-			<groupId>com.mysql</groupId>
-			<artifactId>mysql-connector-j</artifactId>
-			<version>9.3.0</version>
+			<groupId>org.postgresql</groupId>
+			<artifactId>postgresql</artifactId>
+			<scope>runtime</scope>
 		</dependency>
+
 		<dependency>
 			<groupId>org.mapstruct</groupId>
 			<artifactId>mapstruct</artifactId>
@@ -90,11 +97,11 @@
 		</dependency> -->
 		<!--
 		https://mvnrepository.com/artifact/org.apache.maven.surefire/surefire-api -->
-		<dependency>
-			<groupId>org.apache.maven.surefire</groupId>
-			<artifactId>surefire-api</artifactId>
-			<version>3.5.2</version>
-		</dependency>
+<!--		<dependency>-->
+<!--			<groupId>org.apache.maven.surefire</groupId>-->
+<!--			<artifactId>surefire-api</artifactId>-->
+<!--			<version>3.5.2</version>-->
+<!--		</dependency>-->
 		<!-- Actuator -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
