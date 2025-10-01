@@ -1,5 +1,6 @@
 package com.autoadda.apis.part.service;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -10,12 +11,10 @@ import com.autoadda.apis.part.repository.InventoryPartRepository;
 import com.autoadda.apis.part.repository.ShoppingCartRepository;
 
 @Service
+@RequiredArgsConstructor
 public class ShoppingCartService {
-	@Autowired
-	private ShoppingCartRepository cartRepo;
-	@Autowired
-	private InventoryPartRepository partRepo;
-
+	private final ShoppingCartRepository cartRepo;
+	private final InventoryPartRepository partRepo;
 	public ShoppingCart addToCart(Integer vehicleOwnerId, Integer partId, int quantity) {
 		ShoppingCart cart = cartRepo.findByVehicleOwnerId(vehicleOwnerId)
 				.orElseGet(() -> new ShoppingCart(vehicleOwnerId, quantity, null));

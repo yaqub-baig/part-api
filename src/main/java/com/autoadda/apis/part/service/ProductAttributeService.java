@@ -3,6 +3,7 @@ package com.autoadda.apis.part.service;
 import java.util.ArrayList;
 import java.util.List;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -19,13 +20,11 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class ProductAttributeService {
 
-    @Autowired
-    private ProductAttributeRepository productAttributeRepository;
-
-    @Autowired
-    private PartsDataValidator partsDataValidator;
+    private final ProductAttributeRepository productAttributeRepository;
+    private final PartsDataValidator partsDataValidator;
 
     /**
 	 * Prepares a ProductAttribute entity from the request.

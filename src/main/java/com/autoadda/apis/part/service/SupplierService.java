@@ -4,6 +4,7 @@ import com.autoadda.apis.part.entity.Location;
 import com.autoadda.apis.part.entity.MediaFile;
 import com.autoadda.apis.part.entity.Supplier;
 import com.autoadda.apis.part.exception.AlreadyExistException;
+import com.autoadda.apis.part.exception.ForbiddenException;
 import com.autoadda.apis.part.exception.ResourceNotFoundException;
 import com.autoadda.apis.part.repository.MediaFileRepository;
 import com.autoadda.apis.part.repository.SupplierRepository;

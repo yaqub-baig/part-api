@@ -3,7 +3,7 @@ package com.autoadda.apis.part.exception;
 /**
  * throw exception when category not exist
  */
-public class NotFoundException extends Exception {
+public class NotFoundException extends RuntimeException {
 
 	private String message;
 

@@ -6,10 +6,10 @@ import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfi
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.cloud.client.loadbalancer.LoadBalancerAutoConfiguration;
 
-@SpringBootApplication(exclude = {SecurityAutoConfiguration.class, LoadBalancerAutoConfiguration.class })
+@SpringBootApplication(exclude = {SecurityAutoConfiguration.class, LoadBalancerAutoConfiguration.class})
 @EnableDiscoveryClient
 public class PartServiceApplication {
-	public static void main(String[] args) {
-		SpringApplication.run( PartServiceApplication.class, args);
-	}
+    public static void main(String[] args) {
+        SpringApplication.run ( PartServiceApplication.class, args );
+    }
 }

@@ -28,15 +28,7 @@ public class CategoryAttributeController {
             @ApiResponse(responseCode = "404", description = "retrieve all category attributes api not found", content = @Content)})
     @GetMapping
     public GenericResponse getCategoryAttributes() {
-        GenericResponse response = null;
-        try {
-            response = categoryAttributeService.getCategoryAttributes ( );
-            return response;
-        }
-        catch ( Exception e ) {
-            log.error ( "ERROR while retrieving category attributes -> " + e.getMessage ( ) );
-        }
-        return GenericResponse.builder ( ).status ( "failed" ).code ( "500" ).message ( "Unable to retrieve" ).build ( );
+        return categoryAttributeService.getCategoryAttributes ( );
     }
 
     @Operation(summary = "Retrieving Category Attributes by Id")
@@ -46,15 +38,7 @@ public class CategoryAttributeController {
             @ApiResponse(responseCode = "404", description = "retrieve all category attributes api not found", content = @Content)})
     @GetMapping("/{id}")
     public GenericResponse getCategoryAttributeById(@PathVariable String id) {
-        GenericResponse response = null;
-        try {
-            response = categoryAttributeService.getCategoryAttributesById ( id );
-            return response;
-        }
-        catch ( Exception e ) {
-            log.error ( "ERROR while retrieving category attributes-> " + e.getMessage ( ) );
-        }
-        return GenericResponse.builder ( ).status ( "failed" ).code ( "500" ).message ( "Unable to retrieve" ).build ( );
+        return categoryAttributeService.getCategoryAttributesById ( id );
     }
 
     @Operation(summary = "Retrieving Categories by Category Id and Attribute Id")
@@ -65,16 +49,7 @@ public class CategoryAttributeController {
     @GetMapping("/categoryid/{categoryId}/attributeid/{attributeId}")
     public GenericResponse getCategoryAttributeByCategoryIdAndAttributeId(@PathVariable String categoryId,
                                                                           @PathVariable String attributeId) {
-        GenericResponse response = null;
-        try {
-            response = categoryAttributeService.getCategoryAttributesByCategoryIdAndAttributeId ( categoryId,
-                    attributeId );
-            return response;
-        }
-        catch ( Exception e ) {
-            log.error ( "ERROR while retrieving category attribute-> " + e.getMessage ( ) );
-        }
-        return GenericResponse.builder ( ).status ( "failed" ).code ( "500" ).message ( "Unable to retrieve" ).build ( );
+        return categoryAttributeService.getCategoryAttributesByCategoryIdAndAttributeId ( categoryId, attributeId );
     }
 
     @Operation(summary = "Retrieving Category Attributes by Category Id")
@@ -84,15 +59,8 @@ public class CategoryAttributeController {
             @ApiResponse(responseCode = "404", description = "retrieve category attributes api not found", content = @Content)})
     @GetMapping("/categoryid/{categoryId}")
     public GenericResponse getCategoryAttributeByCategoryId(@PathVariable String categoryId) {
-        GenericResponse response = null;
-        try {
-            response = categoryAttributeService.getCategoryAttributesByCategoryId ( categoryId );
-            return response;
-        }
-        catch ( Exception e ) {
-            log.error ( "ERROR while retrieving category attribute-> " + e.getMessage ( ) );
-        }
-        return GenericResponse.builder ( ).status ( "failed" ).code ( "500" ).message ( "Unable to retrieve" ).build ( );
+        return categoryAttributeService.getCategoryAttributesByCategoryId ( categoryId );
+
     }
 
     @Operation(summary = "Creating a Category with basic details")
@@ -102,16 +70,7 @@ public class CategoryAttributeController {
             @ApiResponse(responseCode = "404", description = "register PartCategory api not found", content = @Content)})
     @PostMapping("")
     public GenericResponse createCategoryAttribute(@RequestBody CategoryAttributeListPayload payload) {
-        GenericResponse response = null;
-        try {
-
-            response = categoryAttributeService.createCategoryAttribute ( payload.getCategoryAttributeRequestList ( ) );
-            return response;
-        }
-        catch ( Exception e ) {
-            log.error ( "ERROR while register category attribute-> " + e.getMessage ( ) );
-            return GenericResponse.builder ( ).status ( "failed" ).code ( "500" ).message ( e.getMessage ( ) ).build ( );
-        }
+        return categoryAttributeService.createCategoryAttribute ( payload.getCategoryAttributeRequestList ( ) );
     }
 
     @Operation(summary = "Deleting Category Attribute by Id")
@@ -121,14 +80,6 @@ public class CategoryAttributeController {
             @ApiResponse(responseCode = "404", description = "delete category attribute api not found", content = @Content)})
     @DeleteMapping("/{id}")
     public GenericResponse deleteCategoryAttributeById(@PathVariable String id) {
-        GenericResponse response = null;
-        try {
-            response = categoryAttributeService.deleteCategoryAttributeById ( id );
-            return response;
-        }
-        catch ( Exception e ) {
-            log.error ( "ERROR while deleting category attribute -> " + e.getMessage ( ) );
-        }
-        return GenericResponse.builder ( ).status ( "failed" ).code ( "500" ).message ( "Unable to delete" ).build ( );
+        return categoryAttributeService.deleteCategoryAttributeById ( id );
     }
 }

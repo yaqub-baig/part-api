@@ -3,6 +3,7 @@ package com.autoadda.apis.part.service;
 import java.util.ArrayList;
 import java.util.List;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -20,13 +21,10 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class VehicleTypeService {
-
-	@Autowired
-	private PartsDataValidator partsDataValidator;
-
-	@Autowired
-	private VehicleTypeRepository vehicleTypeRepository;
+	private final PartsDataValidator partsDataValidator;
+	private final VehicleTypeRepository vehicleTypeRepository;
 
 	/**
 	 * This method prepares a VehicleType entity from the VehicleTypeRequest.
