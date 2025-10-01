@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -20,13 +21,14 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class EngineService {
 
-	@Autowired
-	private EngineRepository engineRepository;
 
-	@Autowired
-	private PartsDataValidator partsDataValidator;
+	private final EngineRepository engineRepository;
+
+
+	private final PartsDataValidator partsDataValidator;
 
 	/**
 	 * Prepares an Engine entity from the provided EngineRequest.

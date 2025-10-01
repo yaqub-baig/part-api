@@ -3,7 +3,6 @@ package com.autoadda.apis.part.exception;
 import java.nio.file.AccessDeniedException;
 import java.util.stream.Collectors;
 
-import com.autoadda.apis.part.service.ForbiddenException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

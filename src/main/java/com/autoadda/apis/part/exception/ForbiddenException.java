@@ -1,4 +1,4 @@
-package com.autoadda.apis.part.service;
+package com.autoadda.apis.part.exception;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ResponseStatus;

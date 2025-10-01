@@ -1,16 +1,16 @@
 package com.autoadda.apis.part.repository;
 
-import java.util.List;
-
+import com.autoadda.apis.part.entity.Category;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import com.autoadda.apis.part.entity.Category;
+import java.util.List;
+import java.util.Optional;
 
 public interface CategoryRepository extends JpaRepository<Category, String> {
 
-	Category findByName(String name);
+    Optional<Category> findByName(String name);
 
-	List<Category> findByParentCategoryId(String parentCategoryId);
+    List<Category> findByParentCategoryId(String parentCategoryId);
 
-	List<Category> findByParentCategoryIdIsNull();
+    List<Category> findByParentCategoryIdIsNull();
 }
