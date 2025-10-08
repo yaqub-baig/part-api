@@ -50,21 +50,29 @@ public class MediaFileServiceImpl implements MediaFileService {
             log.info ( "2. Generating unique name" );
             String fileName = UUID.randomUUID ( ) + "_" + file.getOriginalFilename ( );
 
-            // 3. Save file
-            log.info ( "3. Saving file" );
+            // 3. Create directories if they don't exist
+            log.info ( "3. Creating directories if needed" );
+            Path uploadPath = Paths.get ( uploadDir, subFolder );
+            if ( !Files.exists ( uploadPath ) ) {
+                Files.createDirectories ( uploadPath );
+                log.info ( "Created directory: {}", uploadPath );
+            }
+
+            // 4. Save file
+            log.info ( "4. Saving file" );
             Path target = Paths.get ( uploadDir, subFolder, fileName );
             Files.copy ( file.getInputStream ( ), target, StandardCopyOption.REPLACE_EXISTING );
 
-            // 4. Save DB record (MediaFile entity)
-            log.info ( "4. Saving DB record" );
+            // 5. Save DB record (MediaFile entity)
+            log.info ( "5. Saving DB record" );
             MediaFile mediaFile = mediaFileMapper.toEntity ( fileName, file.getOriginalFilename ( ), subFolder, contentType, file.getSize ( ) );
             MediaFile save = mediaFileRepository.save ( mediaFile );
 
             String url = baseUrl + "/uploads/" + subFolder + "/" + fileName;
-            log.info ( "5. Adding to response" );
+            log.info ( "6. Adding to response" );
             log.info ( "File uploaded: {}, URL: {}", file.getOriginalFilename ( ), url );
 //            MediaFileResponse mediaFileResponse = mediaFileMapper.toResponse(save,url);
-            // 5. Add to response
+            // 6. Add to response
             mediaFileResponses.add ( save );
         }
         return mediaFileResponses;

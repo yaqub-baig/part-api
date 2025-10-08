@@ -2,10 +2,15 @@ package com.autoadda.apis.part.controller;
 
 import com.autoadda.apis.part.entity.InventoryPart;
 import com.autoadda.apis.part.entity.InventoryTransaction;
+import com.autoadda.apis.part.request.InventoryPartRequest;
+import com.autoadda.apis.part.request.InventoryPartSearchRequest;
+import com.autoadda.apis.part.response.InventoryPartExcelUploadResponse;
+import com.autoadda.apis.part.response.InventoryPartSearchResponse;
 import com.autoadda.apis.part.service.InventoryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -18,8 +23,8 @@ public class InventoryController {
 
     // Create a new inventory part
     @PostMapping("/parts")
-    public ResponseEntity<InventoryPart> createPart(@RequestBody InventoryPart part) {
-        return ResponseEntity.ok ( inventoryService.addPart ( part ) );
+    public ResponseEntity<InventoryPart> createPart(@RequestBody InventoryPartRequest request) {
+        return ResponseEntity.ok ( inventoryService.addPart ( request ) );
     }
 
     // Get all parts
@@ -32,6 +37,18 @@ public class InventoryController {
     @GetMapping("/parts/{id}")
     public ResponseEntity<InventoryPart> getPartById(@PathVariable Integer id) {
         return inventoryService.getPartById ( id ).map ( ResponseEntity::ok ).orElse ( ResponseEntity.notFound ( ).build ( ) );
+    }
+
+    // Get parts by supplier ID
+    @GetMapping("/parts/supplier/{supplierId}")
+    public ResponseEntity<List<InventoryPart>> getPartsBySupplierId(@PathVariable String supplierId) {
+        return ResponseEntity.ok ( inventoryService.getPartsBySupplierId ( supplierId ) );
+    }
+
+    // Search inventory parts with filters and supplier information
+    @PostMapping("/parts/search")
+    public ResponseEntity<List<InventoryPartSearchResponse>> searchParts(@RequestBody InventoryPartSearchRequest request) {
+        return ResponseEntity.ok ( inventoryService.searchInventoryParts ( request ) );
     }
 
     // Add stock to a part
@@ -54,5 +71,33 @@ public class InventoryController {
     @GetMapping("/parts/{id}/transactions")
     public ResponseEntity<List<InventoryTransaction>> getTransactions(@PathVariable Integer id) {
         return ResponseEntity.ok ( inventoryService.getTransactionsForPart ( id ) );
+    }
+
+    // Bulk upload inventory parts from Excel
+    @PostMapping(value = "/parts/bulk-upload" ,consumes = {"multipart/form-data"})
+    public ResponseEntity<InventoryPartExcelUploadResponse> bulkUploadInventory(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam("supplierId") String supplierId) {
+
+        if (file.isEmpty()) {
+            return ResponseEntity.badRequest().body(
+                InventoryPartExcelUploadResponse.builder()
+                    .message("Please upload a valid Excel file")
+                    .build()
+            );
+        }
+
+        // Validate file type
+        String fileName = file.getOriginalFilename();
+        if (fileName == null || !fileName.endsWith(".xlsx")) {
+            return ResponseEntity.badRequest().body(
+                InventoryPartExcelUploadResponse.builder()
+                    .message("Please upload an Excel file (.xlsx format)")
+                    .build()
+            );
+        }
+
+        InventoryPartExcelUploadResponse response = inventoryService.bulkImportFromExcel(file, supplierId);
+        return ResponseEntity.ok(response);
     }
 }

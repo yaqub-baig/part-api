@@ -2,6 +2,7 @@ package com.autoadda.apis.part.entity;
 
 import lombok.*;
 
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
@@ -19,6 +20,12 @@ public class InventoryPart {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
+    @Column(name = "product_id")
+    private String productId; // Link to Product entity
+
+    @Column(name = "supplier_id")
+    private String supplierId; // Link to Supplier entity
+
     private String partName;
 
     private String partNumber;
@@ -30,8 +37,6 @@ public class InventoryPart {
     private Integer quantityInStock;
 
     private Double unitPrice;
-
-    private Integer quantity;
 
     private String location; // shelf/bin location
 

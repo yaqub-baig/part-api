@@ -1,15 +1,16 @@
 package com.autoadda.apis.part.entity;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Table;
-import javax.persistence.Id;
+import javax.persistence.*;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "product")
@@ -32,12 +33,6 @@ public class Product {
 	@Column(name = "description")
 	private String description;
 
-	@Column(name = "price")
-	private Double price;
-
-	@Column(name = "stock")
-	private Integer stock;
-
 	@Column(name = "sku")
 	private String sku;
 
@@ -49,9 +44,6 @@ public class Product {
 
 	@Column(name = "other_names")
 	private String otherNames;
-
-	@Column(name = "part_condition")
-	private String partCondition;
 
 	@Column(name = "year")
 	private Integer year;
@@ -68,9 +60,10 @@ public class Product {
 	@Column(name = "manufacturer_id")
 	private String manufacturerId;
 
-	@Column(name = "supplier_id")
-	private String supplierId;
+	@OneToMany(orphanRemoval = true)
+	@JoinColumn
+	private List<MediaFile> images = new ArrayList<> ( );
 
-	@Column(name = "image_id")
-	private String imageId;
+
+
 }

@@ -1,9 +1,12 @@
 package com.autoadda.apis.part.service;
 
+import com.autoadda.apis.part.entity.MediaFile;
 import com.autoadda.apis.part.entity.Product;
 import com.autoadda.apis.part.entity.ProductAttribute;
 import com.autoadda.apis.part.exception.AlreadyExistException;
 import com.autoadda.apis.part.exception.NotFoundException;
+import com.autoadda.apis.part.exception.ResourceNotFoundException;
+import com.autoadda.apis.part.repository.MediaFileRepository;
 import com.autoadda.apis.part.repository.ProductAttributeRepository;
 import com.autoadda.apis.part.repository.ProductRepository;
 import com.autoadda.apis.part.request.ProductRequest;
@@ -18,150 +21,156 @@ import org.springframework.stereotype.Service;
 import javax.transaction.Transactional;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class ProductService {
 
-
     private final ProductRepository productRepository;
-
-
     private final PartsDataValidator partsDataValidator;
-
-
     private final ProductAttributeRepository productAttributeRepository;
-
-
     private final ProductAttributeService productAttributeServcie;
+    private final MediaFileRepository mediaFileRepository;
 
     /**
      * Prepares a Product entity from the given ProductRequest.
-     *
-     * @param request The ProductRequest containing product details.
-     * @return A Product entity with the provided details.
      */
     private Product prepareProduct(ProductRequest request) {
-        return Product.builder ( ).id ( GUIDGenerator.generateGUID ( ) ).name ( request.getName ( ) )
-                .description ( request.getDescription ( ) ).manufacturerId ( request.getManufacturerId ( ) )
-                .categoryId ( request.getCategoryId ( ) ).model ( request.getModel ( ) ).otherNames ( request.getOtherNames ( ) )
-                .imageId ( request.getImageId ( ) ).stock ( request.getStock ( ) ).sku ( request.getSku ( ) )
-                .partNumber ( request.getPartNumber ( ) ).tag ( request.getTag ( ) ).year ( request.getYear ( ) )
-                .supplierId ( request.getSupplierId ( ) ).partCondition ( request.getPartCondition ( ) ).make ( request.getMake ( ) )
-                .price ( request.getPrice ( ) ).stock ( request.getStock ( ) ).build ( );
+        List<MediaFile> allById;
+
+        Product build = Product.builder ( )
+                .id ( GUIDGenerator.generateGUID ( ) )
+                .name ( request.getName ( ) )
+                .description ( request.getDescription ( ) )
+                .manufacturerId ( request.getManufacturerId ( ) )
+                .categoryId ( request.getCategoryId ( ) )
+                .model ( request.getModel ( ) )
+                .otherNames ( request.getOtherNames ( ) )
+                .sku ( request.getSku ( ) )
+                .partNumber ( request.getPartNumber ( ) )
+                .tag ( request.getTag ( ) )
+                .year ( request.getYear ( ) )
+                .make ( request.getMake ( ) )
+                .build ( );
+        if ( ! request.getImageIds ( ).isEmpty ( ) ) {
+            allById = mediaFileRepository.findAllById ( request.getImageIds ( ) );
+            build.setImages ( allById );
+        }
+        return build;
     }
 
     private String prepareAttributeUrl(String productId) {
-        String url = "http://localhost:8097/api/v1/productattributes/productid/";
+        String url = "http://localhost:8060/api/v1/productattributes/productid/";
         return url + productId;
     }
 
     /**
+     * Helper method to build ProductResponse from Product entity
+     */
+    private ProductResponse buildProductResponse(Product product, boolean includeAttributes) {
+        ProductResponse.ProductResponseBuilder builder = ProductResponse.builder ( )
+                .id ( product.getId ( ) )
+                .name ( product.getName ( ) )
+                .description ( product.getDescription ( ) )
+                .manufacturerId ( product.getManufacturerId ( ) )
+                .categoryId ( product.getCategoryId ( ) )
+                .make ( product.getMake ( ) )
+                .partNumber ( product.getPartNumber ( ) )
+                .sku ( product.getSku ( ) )
+                .year ( product.getYear ( ) )
+                .tag ( product.getTag ( ) )
+                .model ( product.getModel ( ) )
+                .otherNames ( product.getOtherNames ( ) )
+                .attributeUrl ( prepareAttributeUrl ( product.getId ( ) ) )
+                .images ( product.getImages ( ) );
+
+        if ( includeAttributes ) {
+            builder.attributes (
+                    productAttributeServcie.getProductAttributeByProductId ( product.getId ( ) ).getBody ( ) != null
+                            ? (List<ProductAttribute>) productAttributeServcie.getProductAttributeByProductId ( product.getId ( ) ).getBody ( )
+                            : new ArrayList<> ( )
+            );
+        }
+
+        return builder.build ( );
+    }
+
+    /**
      * Retrieves all products from the repository and prepares a response.
-     *
-     * @return A GenericResponse containing a list of ProductResponse objects.
      */
     @SuppressWarnings("unchecked")
     @Transactional
     public GenericResponse getAllProducts() {
-        List<ProductResponse> responseBody = new ArrayList<> ( );
-        List<Product> products = productRepository.findAll ( );
-        for (Product product : products) {
-            responseBody.add ( ProductResponse.builder ( ).id ( product.getId ( ) ).name ( product.getName ( ) )
-                    .description ( product.getDescription ( ) ).manufacturerId ( product.getManufacturerId ( ) )
-                    .imageId ( product.getImageId ( ) ).categoryId ( product.getCategoryId ( ) ).make ( product.getMake ( ) )
-                    .categoryId ( product.getCategoryId ( ) ).partNumber ( product.getPartNumber ( ) ).sku ( product.getSku ( ) )
-                    .supplierId ( product.getSupplierId ( ) ).partCondition ( product.getPartCondition ( ) )
-                    .year ( product.getYear ( ) ).tag ( product.getTag ( ) ).model ( product.getModel ( ) )
-                    .otherNames ( product.getOtherNames ( ) ).price ( product.getPrice ( ) ).stock ( product.getStock ( ) )
-                    .attributes (
-                            productAttributeServcie.getProductAttributeByProductId ( product.getId ( ) ).getBody ( ) != null
-                                    ? (List<ProductAttribute>) productAttributeServcie
-                                    .getProductAttributeByProductId ( product.getId ( ) ).getBody ( )
-                                    : new ArrayList<> ( ) )
-                    .attributeUrl ( prepareAttributeUrl ( product.getId ( ) ) ).build ( ) );
+        List<ProductResponse> responseBody = productRepository.findAll ( ).stream ( )
+                .map ( product -> buildProductResponse ( product, true ) )
+                .toList ( );
 
-        }
-        return GenericResponse.builder ( ).body ( responseBody ).code ( "200" ).message ( "success" ).status ( "success" ).build ( );
-
+        return GenericResponse.builder ( )
+                .body ( responseBody )
+                .code ( "200" )
+                .message ( "success" )
+                .status ( "success" )
+                .build ( );
     }
 
     /**
      * Retrieves a product by its ID and prepares a response.
-     *
-     * @param id The ID of the product to retrieve.
-     * @return A GenericResponse containing the Product entity.
-     * @throws NotFoundException If the product with the given ID does not exist.
      */
     @Transactional
     public GenericResponse getProductsById(String id) throws NotFoundException {
-
-        Product product = productRepository.findById ( id ).get ( );
-
-        return GenericResponse.builder ( ).body ( product ).code ( "200" ).message ( "successfully Retrived " + id + " Product" )
-                .status ( "success" ).build ( );
+        Product product = productRepository.findById ( id )
+                .orElseThrow ( () -> new ResourceNotFoundException ( "Product not found with id " + id ) );
+        ProductResponse build = buildProductResponse ( product, true );
+        return GenericResponse.builder ( )
+                .body ( build )
+                .code ( "200" )
+                .message ( "successfully Retrived " + id + " Product" )
+                .status ( "success" )
+                .build ( );
     }
 
     /**
      * Retrieves a product by its name and prepares a response.
-     *
-     * @param name The name of the product to retrieve.
-     * @return A GenericResponse containing the Product entity.
-     * @throws NotFoundException If the product with the given name does not exist.
      */
     @Transactional
     public GenericResponse getProductsByName(String name) throws NotFoundException {
         log.info ( "perform Product input validation" );
         partsDataValidator.validateProductName ( name );
         Product product = productRepository.findByName ( name );
-
-        return GenericResponse.builder ( ).body ( product ).code ( "200" ).message ( "successfully Retrived " + name + " Product" )
-                .status ( "success" ).build ( );
+        ProductResponse build = buildProductResponse ( product, true );
+        return GenericResponse.builder ( )
+                .body ( build )
+                .code ( "200" )
+                .message ( "successfully Retrived " + name + " Product" )
+                .status ( "success" )
+                .build ( );
     }
 
     /**
      * Retrieves products by category ID and prepares a response.
-     *
-     * @param id The category ID to filter products.
-     * @return A GenericResponse containing a list of ProductResponse objects.
-     * @throws NotFoundException If no products are found for the given category ID.
      */
     @Transactional
     public GenericResponse getProductsByCategoryId(String id) throws NotFoundException {
-        List<ProductResponse> responseBody = new ArrayList<> ( );
+        List<ProductResponse> responseBody = productRepository.findByCategoryId ( id ).stream ( )
+                .map ( product -> buildProductResponse ( product, false ) )
+                .toList ( );
 
-        List<Product> products = productRepository.findByCategoryId ( id );
-        for (Product product : products) {
-            responseBody.add ( ProductResponse.builder ( ).id ( product.getId ( ) ).name ( product.getName ( ) )
-                    .description ( product.getDescription ( ) ).manufacturerId ( product.getManufacturerId ( ) )
-                    .imageId ( product.getImageId ( ) ).categoryId ( product.getCategoryId ( ) ).make ( product.getMake ( ) )
-                    .categoryId ( product.getCategoryId ( ) ).partNumber ( product.getPartNumber ( ) ).sku ( product.getSku ( ) )
-                    .supplierId ( product.getSupplierId ( ) ).partCondition ( product.getPartCondition ( ) )
-                    .year ( product.getYear ( ) ).tag ( product.getTag ( ) ).model ( product.getModel ( ) )
-                    .otherNames ( product.getOtherNames ( ) ).price ( product.getPrice ( ) ).stock ( product.getStock ( ) )
-                    .attributeUrl ( prepareAttributeUrl ( product.getId ( ) ) ).build ( ) );
-        }
-        return GenericResponse.builder ( ).body ( responseBody ).code ( "200" )
-                .message ( "successfully Retrived " + id + " Product" ).status ( "success" ).build ( );
-
+        return GenericResponse.builder ( )
+                .body ( responseBody )
+                .code ( "200" )
+                .message ( "successfully Retrived " + id + " Product" )
+                .status ( "success" )
+                .build ( );
     }
 
     /**
      * Creates a list of products based on the provided ProductRequest list.
-     *
-     * @param productRequestList The list of ProductRequest objects containing
-     *                           product details.
-     * @return A GenericResponse containing the created products.
-     * @throws AlreadyExistException If a product with the same name already exists.
      */
     @Transactional
     public GenericResponse createProduct(List<ProductRequest> productRequestList) throws AlreadyExistException {
-
         List<Product> productList = new ArrayList<> ( );
         for (ProductRequest productRequest : productRequestList) {
-
             log.info ( "perform Product input validation" );
             partsDataValidator.isProductAlreadyExists ( productRequest.getName ( ) );
 
@@ -171,288 +180,263 @@ public class ProductService {
             // Save associated attributes
             if ( productRequest.getAttributes ( ) != null ) {
                 List<ProductAttribute> productAttributes = productRequest.getAttributes ( ).stream ( )
-                        .map ( attrReq -> ProductAttribute.builder ( ).id ( GUIDGenerator.generateGUID ( ) )
-                                .productId ( product.getId ( ) ).attributeId ( attrReq.getAttributeId ( ) )
-                                .attributeValue ( attrReq.getAttributeValue ( ) ).build ( ) )
-                        .collect ( Collectors.toList ( ) );
+                        .map ( attrReq -> ProductAttribute.builder ( )
+                                .id ( GUIDGenerator.generateGUID ( ) )
+                                .productId ( product.getId ( ) )
+                                .attributeId ( attrReq.getAttributeId ( ) )
+                                .attributeValue ( attrReq.getAttributeValue ( ) )
+                                .build ( ) )
+                        .toList ( );
 
                 productAttributeRepository.saveAll ( productAttributes );
                 log.info ( "Product attributes saved for product: {}", product.getId ( ) );
             }
             productList.add ( product );
         }
-        return GenericResponse.builder ( ).body ( productList ).code ( "201" ).message ( "successfully Created  Product" )
-                .status ( "success" ).build ( );
-
+        return GenericResponse.builder ( )
+                .body ( productList )
+                .code ( "201" )
+                .message ( "successfully Created  Product" )
+                .status ( "success" )
+                .build ( );
     }
 
     /**
      * Updates an existing product based on the provided ProductRequest.
-     *
-     * @param request The ProductRequest containing updated product details.
-     * @return A GenericResponse indicating the success of the update operation.
-     * @throws NotFoundException If the product with the given ID does not exist.
      */
     @Transactional
     public GenericResponse updateProduct(ProductRequest request) throws NotFoundException {
         log.info ( "perform Product input validation" );
         partsDataValidator.validateProductId ( request.getId ( ) );
-        Product product = productRepository.findById ( request.getId ( ) ).get ( );
+        List<MediaFile> images = takeOutMediaFileFromRequestImageIds ( request.getImageIds ( ) );
+        Product product = productRepository.findById ( request.getId ( ) ).orElseThrow ( () -> new ResourceNotFoundException ( "product repository " ) );
         if ( product != null ) {
-            product.setId ( request.getId ( ) );
-            product.setName ( request.getName ( ) );
-            product.setDescription ( request.getDescription ( ) );
-            product.setPrice ( request.getPrice ( ) );
-            product.setStock ( request.getStock ( ) );
-            product.setSku ( request.getSku ( ) );
-            product.setPartNumber ( request.getPartNumber ( ) );
-            product.setPartCondition ( request.getPartCondition ( ) );
-            product.setCategoryId ( request.getCategoryId ( ) );
-            product.setYear ( request.getYear ( ) );
-            product.setMake ( request.getMake ( ) );
-            product.setModel ( request.getModel ( ) );
-            product.setOtherNames ( request.getOtherNames ( ) );
-            product.setTag ( request.getTag ( ) );
-            product.setImageId ( request.getImageId ( ) );
-            product.setSupplierId ( request.getSupplierId ( ) );
-            product.setManufacturerId ( request.getManufacturerId ( ) );
-            product.setPrice ( request.getPrice ( ) );
+            // Only update fields that are provided (not null)
+            if ( request.getName ( ) != null ) {
+                product.setName ( request.getName ( ) );
+            }
+            if ( request.getDescription ( ) != null ) {
+                product.setDescription ( request.getDescription ( ) );
+            }
+            if ( request.getSku ( ) != null ) {
+                product.setSku ( request.getSku ( ) );
+            }
+            if ( request.getPartNumber ( ) != null ) {
+                product.setPartNumber ( request.getPartNumber ( ) );
+            }
+            if ( request.getCategoryId ( ) != null ) {
+                product.setCategoryId ( request.getCategoryId ( ) );
+            }
+            if ( request.getYear ( ) != null ) {
+                product.setYear ( request.getYear ( ) );
+            }
+            if ( request.getMake ( ) != null ) {
+                product.setMake ( request.getMake ( ) );
+            }
+            if ( request.getModel ( ) != null ) {
+                product.setModel ( request.getModel ( ) );
+            }
+            if ( request.getOtherNames ( ) != null ) {
+                product.setOtherNames ( request.getOtherNames ( ) );
+            }
+            if ( request.getTag ( ) != null ) {
+                product.setTag ( request.getTag ( ) );
+            }
+            if ( request.getManufacturerId ( ) != null ) {
+                product.setManufacturerId ( request.getManufacturerId ( ) );
+            }
+            // Update images only if imageIds are provided
+            if ( request.getImageIds ( ) != null && !request.getImageIds ( ).isEmpty ( ) ) {
+                product.getImages ( ).clear ( );
+                product.getImages ( ).addAll ( images );
+            }
             productRepository.save ( product );
         }
-        return GenericResponse.builder ( ).body ( "Product is been Updated" ).code ( "200" )
-                .message ( "successfully Updated " + request.getId ( ) + " Product" ).status ( "success" ).build ( );
+        return GenericResponse.builder ( )
+                .body ( "Product is been Updated" )
+                .code ( "200" )
+                .message ( "successfully Updated " + request.getId ( ) + " Product" )
+                .status ( "success" )
+                .build ( );
+    }
 
+    private List<MediaFile> takeOutMediaFileFromRequestImageIds(List<Long> imageIds) {
+        List<MediaFile> mediaFiles = new ArrayList<> ( );
+        for (Long imageId : imageIds) {
+            mediaFiles.add ( mediaFileRepository.findById ( imageId )
+                    .orElseThrow ( () -> new ResourceNotFoundException ( "media File not found" ) ) );
+        }
+        return mediaFiles;
     }
 
     /**
      * Deletes a product by its ID.
-     *
-     * @param id The ID of the product to delete.
-     * @return A GenericResponse indicating the success of the deletion operation.
-     * @throws NotFoundException If the product with the given ID does not exist.
      */
     @Transactional
     public GenericResponse deleteProductById(String id) throws NotFoundException {
-
         log.info ( "perform Product input validation" );
         partsDataValidator.validateProductId ( id );
-        Product product = productRepository.findById ( id ).get ( );
+        Product product = productRepository.findById ( id ).orElseThrow (()->new ResourceNotFoundException ( "resource not found exception" ));
         if ( product != null ) {
             productRepository.delete ( product );
         }
-        return GenericResponse.builder ( ).body ( "Product is been Deleted" ).code ( "200" ).message ( "successfully Deleted" )
-                .status ( "success" ).build ( );
-
+        return GenericResponse.builder ( )
+                .body ( "Product is been Deleted" )
+                .code ( "200" )
+                .message ( "successfully Deleted" )
+                .status ( "success" )
+                .build ( );
     }
 
     /**
      * Searches for products by name and prepares a response.
-     *
-     * @param name The name to search for in product names.
-     * @return A GenericResponse containing a list of ProductResponse objects.
      */
     @Transactional
     public GenericResponse searchProductsByName(String name) {
-        List<ProductResponse> responseBody = new ArrayList<> ( );
-        List<Product> products = productRepository.findByNameContaining ( name );
+        List<ProductResponse> responseBody = productRepository.findByNameContaining ( name ).stream ( )
+                .map ( product -> buildProductResponse ( product, false ) )
+                .toList ( );
 
-        for (Product product : products) {
-            responseBody.add ( ProductResponse.builder ( ).id ( product.getId ( ) ).name ( product.getName ( ) )
-                    .description ( product.getDescription ( ) ).manufacturerId ( product.getManufacturerId ( ) )
-                    .imageId ( product.getImageId ( ) ).categoryId ( product.getCategoryId ( ) ).make ( product.getMake ( ) )
-                    .categoryId ( product.getCategoryId ( ) ).partNumber ( product.getPartNumber ( ) ).sku ( product.getSku ( ) )
-                    .supplierId ( product.getSupplierId ( ) ).partCondition ( product.getPartCondition ( ) )
-                    .year ( product.getYear ( ) ).tag ( product.getTag ( ) ).model ( product.getModel ( ) )
-                    .otherNames ( product.getOtherNames ( ) ).price ( product.getPrice ( ) ).stock ( product.getStock ( ) )
-                    .attributeUrl ( prepareAttributeUrl ( product.getId ( ) ) ).build ( ) );
-        }
-        return GenericResponse.builder ( ).body ( responseBody ).code ( "200" ).message ( "successfully Retrieved" )
-                .status ( "success" ).build ( );
+        return GenericResponse.builder ( )
+                .body ( responseBody )
+                .code ( "200" )
+                .message ( "successfully Retrieved" )
+                .status ( "success" )
+                .build ( );
     }
 
     /**
      * Searches for products by other names and prepares a response.
-     *
-     * @param otherName The other name to search for in product other names.
-     * @return A GenericResponse containing a list of ProductResponse objects.
-     * @throws NotFoundException If no products are found with the given other name.
      */
     @Transactional
     public GenericResponse searchProductsByOtherNames(String otherName) throws NotFoundException {
-        List<ProductResponse> responseBody = new ArrayList<> ( );
-        List<Product> products = productRepository.findByOtherNamesContaining ( otherName );
+        List<ProductResponse> responseBody = productRepository.findByOtherNamesContaining ( otherName ).stream ( )
+                .map ( product -> buildProductResponse ( product, false ) )
+                .toList ( );
 
-        for (Product product : products) {
-            responseBody.add ( ProductResponse.builder ( ).id ( product.getId ( ) ).name ( product.getName ( ) )
-                    .description ( product.getDescription ( ) ).manufacturerId ( product.getManufacturerId ( ) )
-                    .imageId ( product.getImageId ( ) ).categoryId ( product.getCategoryId ( ) ).make ( product.getMake ( ) )
-                    .categoryId ( product.getCategoryId ( ) ).partNumber ( product.getPartNumber ( ) ).sku ( product.getSku ( ) )
-                    .supplierId ( product.getSupplierId ( ) ).partCondition ( product.getPartCondition ( ) )
-                    .year ( product.getYear ( ) ).tag ( product.getTag ( ) ).model ( product.getModel ( ) )
-                    .otherNames ( product.getOtherNames ( ) ).price ( product.getPrice ( ) ).stock ( product.getStock ( ) )
-                    .attributeUrl ( prepareAttributeUrl ( product.getId ( ) ) ).build ( ) );
-        }
-        return GenericResponse.builder ( ).body ( responseBody ).code ( "200" ).message ( "successfully Retrieved" )
-                .status ( "success" ).build ( );
+        return GenericResponse.builder ( )
+                .body ( responseBody )
+                .code ( "200" )
+                .message ( "successfully Retrieved" )
+                .status ( "success" )
+                .build ( );
     }
 
     /**
      * Searches for products by tag and prepares a response.
-     *
-     * @param tag The tag to search for in product tags.
-     * @return A GenericResponse containing a list of ProductResponse objects.
      */
     @Transactional
     public GenericResponse searchProductsByTag(String tag) {
-        List<ProductResponse> responseBody = new ArrayList<> ( );
-        List<Product> products = productRepository.findByTagContaining ( tag );
+        List<ProductResponse> responseBody = productRepository.findByTagContaining ( tag ).stream ( )
+                .map ( product -> buildProductResponse ( product, false ) )
+                .toList ( );
 
-        for (Product product : products) {
-            responseBody.add ( ProductResponse.builder ( ).id ( product.getId ( ) ).name ( product.getName ( ) )
-                    .description ( product.getDescription ( ) ).manufacturerId ( product.getManufacturerId ( ) )
-                    .imageId ( product.getImageId ( ) ).categoryId ( product.getCategoryId ( ) ).make ( product.getMake ( ) )
-                    .categoryId ( product.getCategoryId ( ) ).partNumber ( product.getPartNumber ( ) ).sku ( product.getSku ( ) )
-                    .supplierId ( product.getSupplierId ( ) ).partCondition ( product.getPartCondition ( ) )
-                    .year ( product.getYear ( ) ).tag ( product.getTag ( ) ).model ( product.getModel ( ) )
-                    .otherNames ( product.getOtherNames ( ) ).price ( product.getPrice ( ) ).stock ( product.getStock ( ) )
-                    .attributeUrl ( prepareAttributeUrl ( product.getId ( ) ) ).build ( ) );
-        }
-        return GenericResponse.builder ( ).body ( responseBody ).code ( "200" ).message ( "successfully Retrieved" )
-                .status ( "success" ).build ( );
+        return GenericResponse.builder ( )
+                .body ( responseBody )
+                .code ( "200" )
+                .message ( "successfully Retrieved" )
+                .status ( "success" )
+                .build ( );
     }
 
     /**
      * Searches for products by SKU and prepares a response.
-     *
-     * @param sku The SKU to search for in product SKUs.
-     * @return A GenericResponse containing a list of ProductResponse objects.
      */
     @Transactional
     public GenericResponse searchProductsBySku(String sku) {
+        List<ProductResponse> responseBody = productRepository.findBySkuContaining ( sku ).stream ( )
+                .map ( product -> buildProductResponse ( product, false ) )
+                .toList ( );
 
-        List<ProductResponse> responseBody = new ArrayList<> ( );
-        List<Product> products = productRepository.findBySkuContaining ( sku );
-
-        for (Product product : products) {
-            responseBody.add ( ProductResponse.builder ( ).id ( product.getId ( ) ).name ( product.getName ( ) )
-                    .description ( product.getDescription ( ) ).manufacturerId ( product.getManufacturerId ( ) )
-                    .imageId ( product.getImageId ( ) ).categoryId ( product.getCategoryId ( ) ).make ( product.getMake ( ) )
-                    .categoryId ( product.getCategoryId ( ) ).partNumber ( product.getPartNumber ( ) ).sku ( product.getSku ( ) )
-                    .supplierId ( product.getSupplierId ( ) ).partCondition ( product.getPartCondition ( ) )
-                    .year ( product.getYear ( ) ).tag ( product.getTag ( ) ).model ( product.getModel ( ) )
-                    .otherNames ( product.getOtherNames ( ) ).price ( product.getPrice ( ) ).stock ( product.getStock ( ) )
-                    .attributeUrl ( prepareAttributeUrl ( product.getId ( ) ) ).build ( ) );
-        }
-        return GenericResponse.builder ( ).body ( responseBody ).code ( "200" ).message ( "successfully Retrieved" )
-                .status ( "success" ).build ( );
+        return GenericResponse.builder ( )
+                .body ( responseBody )
+                .code ( "200" )
+                .message ( "successfully Retrieved" )
+                .status ( "success" )
+                .build ( );
     }
 
     /**
      * Searches for products by category ID and prepares a response.
-     *
-     * @param categoryId The category ID to filter products.
-     * @return A GenericResponse containing a list of ProductResponse objects.
      */
     @Transactional
     public GenericResponse searchProductsByCategory(String categoryId) {
+        List<ProductResponse> responseBody = productRepository.findByCategoryId ( categoryId ).stream ( )
+                .map ( product -> buildProductResponse ( product, false ) )
+                .toList ( );
 
-        List<ProductResponse> responseBody = new ArrayList<> ( );
-        List<Product> products = productRepository.findByCategoryId ( categoryId );
-
-        for (Product product : products) {
-            responseBody.add ( ProductResponse.builder ( ).id ( product.getId ( ) ).name ( product.getName ( ) )
-                    .description ( product.getDescription ( ) ).manufacturerId ( product.getManufacturerId ( ) )
-                    .imageId ( product.getImageId ( ) ).categoryId ( product.getCategoryId ( ) ).make ( product.getMake ( ) )
-                    .categoryId ( product.getCategoryId ( ) ).partNumber ( product.getPartNumber ( ) ).sku ( product.getSku ( ) )
-                    .supplierId ( product.getSupplierId ( ) ).partCondition ( product.getPartCondition ( ) )
-                    .year ( product.getYear ( ) ).tag ( product.getTag ( ) ).model ( product.getModel ( ) )
-                    .otherNames ( product.getOtherNames ( ) ).price ( product.getPrice ( ) ).stock ( product.getStock ( ) )
-                    .attributeUrl ( prepareAttributeUrl ( product.getId ( ) ) ).build ( ) );
-        }
-        return GenericResponse.builder ( ).body ( responseBody ).code ( "200" ).message ( "successfully Retrieved" )
-                .status ( "success" ).build ( );
+        return GenericResponse.builder ( )
+                .body ( responseBody )
+                .code ( "200" )
+                .message ( "successfully Retrieved" )
+                .status ( "success" )
+                .build ( );
     }
 
     /**
-     * Searches for products by supplier ID and prepares a response.
-     *
-     * @param supplierId The supplier ID to filter products.
-     * @return A GenericResponse containing a list of ProductResponse objects.
+     * Searches for products by supplier ID - NO LONGER SUPPORTED
+     * Products are predefined and not supplier-specific
+     * Use InventoryPartRepository.findBySupplierId() instead
      */
+    @Deprecated
     @Transactional
     public GenericResponse searchProductsBySupplier(String supplierId) {
-
-        List<ProductResponse> responseBody = new ArrayList<> ( );
-        List<Product> products = productRepository.findBySupplierId ( supplierId );
-
-        for (Product product : products) {
-            responseBody.add ( ProductResponse.builder ( ).id ( product.getId ( ) ).name ( product.getName ( ) )
-                    .description ( product.getDescription ( ) ).manufacturerId ( product.getManufacturerId ( ) )
-                    .imageId ( product.getImageId ( ) ).categoryId ( product.getCategoryId ( ) ).make ( product.getMake ( ) )
-                    .categoryId ( product.getCategoryId ( ) ).partNumber ( product.getPartNumber ( ) ).sku ( product.getSku ( ) )
-                    .supplierId ( product.getSupplierId ( ) ).partCondition ( product.getPartCondition ( ) )
-                    .year ( product.getYear ( ) ).tag ( product.getTag ( ) ).model ( product.getModel ( ) )
-                    .otherNames ( product.getOtherNames ( ) ).price ( product.getPrice ( ) ).stock ( product.getStock ( ) )
-                    .attributeUrl ( prepareAttributeUrl ( product.getId ( ) ) ).build ( ) );
-        }
-        return GenericResponse.builder ( ).body ( responseBody ).code ( "200" ).message ( "successfully Retrieved" )
-                .status ( "success" ).build ( );
+        return GenericResponse.builder ( )
+                .body ( new ArrayList<> ( ) )
+                .code ( "400" )
+                .message ( "This endpoint is deprecated. Products are not supplier-specific. Use inventory API instead." )
+                .status ( "error" )
+                .build ( );
     }
 
     /**
      * Searches for products by part number and prepares a response.
-     *
-     * @param partNumber The part number to search for in products.
-     * @return A GenericResponse containing a list of ProductResponse objects.
      */
     @Transactional
     public GenericResponse searchProductsByPartNumber(String partNumber) {
+        List<ProductResponse> responseBody = productRepository.findByPartNumber ( partNumber ).stream ( )
+                .map ( product -> buildProductResponse ( product, false ) )
+                .toList ( );
 
-        List<ProductResponse> responseBody = new ArrayList<> ( );
-        List<Product> products = productRepository.findByPartNumber ( partNumber );
-
-        for (Product product : products) {
-            responseBody.add ( ProductResponse.builder ( ).id ( product.getId ( ) ).name ( product.getName ( ) )
-                    .description ( product.getDescription ( ) ).manufacturerId ( product.getManufacturerId ( ) )
-                    .imageId ( product.getImageId ( ) ).categoryId ( product.getCategoryId ( ) ).make ( product.getMake ( ) )
-                    .categoryId ( product.getCategoryId ( ) ).partNumber ( product.getPartNumber ( ) ).sku ( product.getSku ( ) )
-                    .supplierId ( product.getSupplierId ( ) ).partCondition ( product.getPartCondition ( ) )
-                    .year ( product.getYear ( ) ).tag ( product.getTag ( ) ).model ( product.getModel ( ) )
-                    .otherNames ( product.getOtherNames ( ) ).price ( product.getPrice ( ) ).stock ( product.getStock ( ) )
-                    .attributeUrl ( prepareAttributeUrl ( product.getId ( ) ) ).build ( ) );
-        }
-        return GenericResponse.builder ( ).body ( responseBody ).code ( "200" ).message ( "successfully Retrieved" )
-                .status ( "success" ).build ( );
-
+        return GenericResponse.builder ( )
+                .body ( responseBody )
+                .code ( "200" )
+                .message ( "successfully Retrieved" )
+                .status ( "success" )
+                .build ( );
     }
 
     /**
      * Searches for products by year, make, and model and prepares a response.
-     *
-     * @param year  The year of the product.
-     * @param make  The make of the product.
-     * @param model The model of the product.
-     * @return A GenericResponse containing a list of ProductResponse objects.
      */
     @Transactional
     public GenericResponse searchProductsByYearMakeModel(Integer year, String make, String model) {
+        List<ProductResponse> responseBody = productRepository.findByYearAndMakeAndModel ( year, make, model ).stream ( )
+                .map ( product -> buildProductResponse ( product, false ) )
+                .toList ( );
 
-        List<ProductResponse> responseBody = new ArrayList<> ( );
-        List<Product> products = productRepository.findByYearAndMakeAndModel ( year, make, model );
-
-        for (Product product : products) {
-            responseBody.add ( ProductResponse.builder ( ).id ( product.getId ( ) ).name ( product.getName ( ) )
-                    .description ( product.getDescription ( ) ).manufacturerId ( product.getManufacturerId ( ) )
-                    .imageId ( product.getImageId ( ) ).categoryId ( product.getCategoryId ( ) ).make ( product.getMake ( ) )
-                    .categoryId ( product.getCategoryId ( ) ).partNumber ( product.getPartNumber ( ) ).sku ( product.getSku ( ) )
-                    .supplierId ( product.getSupplierId ( ) ).partCondition ( product.getPartCondition ( ) )
-                    .year ( product.getYear ( ) ).tag ( product.getTag ( ) ).model ( product.getModel ( ) )
-                    .otherNames ( product.getOtherNames ( ) ).price ( product.getPrice ( ) ).stock ( product.getStock ( ) )
-                    .attributeUrl ( prepareAttributeUrl ( product.getId ( ) ) ).build ( ) );
-        }
-        return GenericResponse.builder ( ).body ( responseBody ).code ( "200" ).message ( "successfully Retrieved" )
-                .status ( "success" ).build ( );
-
+        return GenericResponse.builder ( )
+                .body ( responseBody )
+                .code ( "200" )
+                .message ( "successfully Retrieved" )
+                .status ( "success" )
+                .build ( );
     }
 
+    /**
+     * Searches for products by manufacturer ID and prepares a response.
+     */
+    @Transactional
+    public GenericResponse searchProductsByManufacturer(String manufacturerId) {
+        List<ProductResponse> responseBody = productRepository.findByManufacturerId ( manufacturerId ).stream ( )
+                .map ( product -> buildProductResponse ( product, false ) )
+                .toList ( );
+
+        return GenericResponse.builder ( )
+                .body ( responseBody )
+                .code ( "200" )
+                .message ( "successfully Retrieved" )
+                .status ( "success" )
+                .build ( );
+    }
 }

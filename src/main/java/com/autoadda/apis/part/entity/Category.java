@@ -4,12 +4,15 @@ import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Table;
 import javax.persistence.Id;
+import javax.persistence.PrePersist;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+
+import java.util.UUID;
 
 @Entity
 @Table(name = "category")
@@ -37,5 +40,12 @@ public class Category {
 
 //	@OneToMany(mappedBy = "parentCategory", cascade = CascadeType.ALL)
 //	private Set<PartCategory> subCategories;
+
+	@PrePersist
+	public void generateId() {
+		if (this.id == null || this.id.isEmpty()) {
+			this.id = UUID.randomUUID().toString();
+		}
+	}
 
 }

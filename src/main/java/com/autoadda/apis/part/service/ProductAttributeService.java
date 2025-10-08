@@ -47,7 +47,7 @@ public class ProductAttributeService {
      * @return the URL string for the attribute
      */
     private String prepareAttributeUrl(String attributeId) {
-        String url = "http://localhost:8097/api/v1/attributes/";
+        String url = "http://localhost:8060/api/v1/attributes/";
         return url + attributeId;
     }
 

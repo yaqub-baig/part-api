@@ -2,6 +2,7 @@ package com.autoadda.apis.part.response;
 
 import java.util.List;
 
+import com.autoadda.apis.part.entity.MediaFile;
 import com.autoadda.apis.part.entity.ProductAttribute;
 
 import lombok.AllArgsConstructor;
@@ -28,15 +29,11 @@ public class ProductResponse {
 	private Integer year;
 	private String make;
 	private String model;
-	private Double price;
-	private Integer stock;
-	private String partCondition;
 	private String tag;
 	private String otherNames;
 	private String categoryId;
-	private String imageId;
-	private String supplierId;
 	private String manufacturerId;
 	private String attributeUrl;
 	private List<ProductAttribute> attributes;
+	private List<MediaFile> images;
 }

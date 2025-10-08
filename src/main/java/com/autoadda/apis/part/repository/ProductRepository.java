@@ -22,8 +22,6 @@ public interface ProductRepository extends JpaRepository<Product, String> {
 
 	List<Product> findByYearAndMakeAndModel(Integer year, String make, String model);
 
-	List<Product> findBySupplierId(String supplierId);
-	
 	List<Product> findByManufacturerId(String manufacturerId);
 
 	List<Product> findByPartNumber(String partNumber);

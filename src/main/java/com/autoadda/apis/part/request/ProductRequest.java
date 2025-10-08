@@ -1,5 +1,6 @@
 package com.autoadda.apis.part.request;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import lombok.AllArgsConstructor;
@@ -26,15 +27,11 @@ public class ProductRequest {
 	private Integer year;
 	private String make;
 	private String model;
-	private Double price;
-	private Integer stock;
-	private String partCondition;
 	private String tag;
 	private String otherNames;
 	private String categoryId;
-	private String imageId;
-	private String supplierId;
 	private String manufacturerId;
 	private List<ProductAttributeRequest> attributes;
+	private List<Long> imageIds= new ArrayList<> ();
 	
 }

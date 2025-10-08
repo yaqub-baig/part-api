@@ -90,4 +90,12 @@ public class BrandOnboardService {
     public BrandOnboardResponse getBrandById(String referenceId) {
         return brandOnboardMapper.toResponse(brandOnboardRepository.findByRequestReferenceId(referenceId).orElseThrow ( ()-> new ResourceNotFoundException("Brand not found")) );
     }
+
+    public GenericResponse getAllBrands() {
+        List<BrandOnboard> brands = brandOnboardRepository.findAll();
+        List<BrandOnboardResponse> responses = brands.stream()
+                .map(brandOnboardMapper::toResponse)
+                .toList();
+        return new GenericResponse("success", "200", "Brands retrieved successfully", responses);
+    }
 }

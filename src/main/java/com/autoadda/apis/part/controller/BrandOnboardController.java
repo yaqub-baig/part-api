@@ -33,5 +33,10 @@ public class BrandOnboardController {
         return ResponseEntity.ok ( brandOnboardService.getBrandById ( referenceId ) );
     }
 
+    @GetMapping("/all")
+    public ResponseEntity<GenericResponse> getAllBrands() {
+        return ResponseEntity.ok ( brandOnboardService.getAllBrands() );
+    }
+
 }
 

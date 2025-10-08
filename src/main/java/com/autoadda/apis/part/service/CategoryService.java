@@ -31,7 +31,7 @@ public class CategoryService {
     }
 
     private Category prepareCategory(CategoryRequest request) {
-        return Category.builder ( ).id ( request.getId ( ) ).name ( request.getName ( ) ).code ( request.getCode ( ) )
+        return Category.builder ( ).name ( request.getName ( ) ).code ( request.getCode ( ) )
                 .parentCategoryId ( request.getParentCategoryId ( ) ).build ( );
     }
 
@@ -88,7 +88,7 @@ public class CategoryService {
     /**
      * Retrieves a category by its ID and maps it to a response object.
      *
-     * @param id The ID of the category to retrieve.
+     * @param name The ID of the category to retrieve.
      * @return GenericResponse containing the CategoryResponse object.
      * @throws NotFoundException if the category with the given ID does not exist.
      */
@@ -131,7 +131,7 @@ public class CategoryService {
     /**
      * Updates an existing category based on the provided request object.
      *
-     * @param updateRequest CategoryRequest object containing the updated details.
+     * @param id CategoryRequest object containing the updated details.
      * @return GenericResponse containing the updated category.
      * @throws NotFoundException if the category with the specified ID does not
      *                           exist.
