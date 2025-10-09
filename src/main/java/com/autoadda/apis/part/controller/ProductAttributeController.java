@@ -29,7 +29,7 @@ public class ProductAttributeController {
             @ApiResponse(responseCode = "404", description = "retrieve all productattribues api not found", content = @Content)})
     @GetMapping
     public GenericResponse getAllProductAttributes() {
-            return productAttributeService.getProductAttributes ( );
+        return productAttributeService.getProductAttributes ( );
     }
 
     @Operation(summary = "Retrieving ProductAttributes by Id")

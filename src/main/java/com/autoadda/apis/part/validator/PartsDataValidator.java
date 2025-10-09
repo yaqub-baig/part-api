@@ -33,11 +33,18 @@ public class PartsDataValidator {
             throw new AlreadyExistException ( "Category already exist.." );
     }
 
+    public void isPartNumberAlreadyExist(String partNumber) {
+        Product byPartNumber = productRepository.findByPartNumber ( partNumber );
+        if ( null != byPartNumber ) {
+            throw new AlreadyExistException ( "partNumber already exist.." );
+        }
+    }
+
     public void validateCategoryId(String id) throws NotFoundException {
         log.info ( "Category Id: " + id );
         Optional<Category> optCategory = categoryRepository.findById ( id );
 
-        if ( ! optCategory.isPresent () ) {
+        if ( ! optCategory.isPresent ( ) ) {
             throw new NotFoundException ( "Catagory not found" );
         }
     }

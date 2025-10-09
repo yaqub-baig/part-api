@@ -1,11 +1,6 @@
 package com.autoadda.apis.part.request;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 @Builder
 @NoArgsConstructor
@@ -15,11 +10,11 @@ import lombok.Setter;
 @Data
 public class ProductAttributeRequest {
 
-	private String id;
+    private String id;
 
-	private String attributeValue;
+    private String attributeValue;
 
-	private String productId;
+    private String productId;
 
-	private String attributeId;
+    private String attributeId;
 }

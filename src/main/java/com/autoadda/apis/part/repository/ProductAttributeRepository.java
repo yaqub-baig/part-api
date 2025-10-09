@@ -1,16 +1,15 @@
 package com.autoadda.apis.part.repository;
 
-import java.util.List;
-
+import com.autoadda.apis.part.entity.ProductAttribute;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import com.autoadda.apis.part.entity.ProductAttribute;
+import java.util.List;
 
 public interface ProductAttributeRepository extends JpaRepository<ProductAttribute, String> {
 
-	List<ProductAttribute> findByProductId(String productId);
+    List<ProductAttribute> findByProductId(String productId);
 
-	ProductAttribute findByAttributeValue(String value);
+    ProductAttribute findByAttributeValue(String value);
 
-	void deleteByProductId(String productId);
+    void deleteByProductId(String productId);
 }

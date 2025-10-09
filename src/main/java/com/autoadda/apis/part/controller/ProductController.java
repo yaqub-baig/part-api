@@ -32,6 +32,7 @@ public class ProductController {
     public GenericResponse getAllTopLevelProducts() {
         return productService.getAllProducts ( );
     }
+
     @Operation(summary = "Retrieving Products by Id")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "successfull retrieving products", content = {
@@ -69,7 +70,7 @@ public class ProductController {
             @ApiResponse(responseCode = "404", description = "delete product api not found", content = @Content)})
     @DeleteMapping("/{id}")
     public GenericResponse deleteProductById(@PathVariable String id) {
-            return productService.deleteProductById ( id );
+        return productService.deleteProductById ( id );
     }
 
     @Operation(summary = "Searching Products by Name")
@@ -79,7 +80,7 @@ public class ProductController {
             @ApiResponse(responseCode = "404", description = "retrieve products api not found", content = @Content)})
     @GetMapping("/name/{name}")
     public GenericResponse searchProductsByName(@PathVariable String name) {
-            return productService.searchProductsByName ( name );
+        return productService.searchProductsByName ( name );
     }
 
     @Operation(summary = "Searching Products by Other Names")
@@ -150,7 +151,7 @@ public class ProductController {
     @GetMapping("/year/{year}/make/{make}/model/{model}")
     public GenericResponse searchProductsByPartNumber(@PathVariable Integer year, @PathVariable String make,
                                                       @PathVariable String model) {
-            return productService.searchProductsByYearMakeModel ( year, make, model );
+        return productService.searchProductsByYearMakeModel ( year, make, model );
     }
 
 }

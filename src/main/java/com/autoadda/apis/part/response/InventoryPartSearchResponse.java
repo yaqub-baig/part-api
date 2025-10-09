@@ -1,10 +1,7 @@
 package com.autoadda.apis.part.response;
 
-import com.autoadda.apis.part.entity.MediaFile;
 import com.autoadda.apis.part.util.ProductCondition;
 import lombok.*;
-
-import java.util.List;
 
 /**
  * Lightweight response for search and listing operations

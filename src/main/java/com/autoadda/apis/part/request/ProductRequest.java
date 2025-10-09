@@ -1,14 +1,9 @@
 package com.autoadda.apis.part.request;
 
+import lombok.*;
+
 import java.util.ArrayList;
 import java.util.List;
-
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 @Builder
 @NoArgsConstructor
@@ -19,19 +14,19 @@ import lombok.Setter;
 
 public class ProductRequest {
 
-	private String id;
-	private String description;
-	private String name;
-	private String sku;
-	private String partNumber;
-	private Integer year;
-	private String make;
-	private String model;
-	private String tag;
-	private String otherNames;
-	private String categoryId;
-	private String manufacturerId;
-	private List<ProductAttributeRequest> attributes;
-	private List<Long> imageIds= new ArrayList<> ();
-	
+    private String id;
+    private String description;
+    private String name;
+    private String sku;
+    private String partNumber;
+    private Integer year;
+    private String make;
+    private String model;
+    private String tag;
+    private String otherNames;
+    private String categoryId;
+    private String manufacturerId;
+    private List<ProductAttributeRequest> attributes;
+    private List<Long> imageIds = new ArrayList<> ( );
+
 }

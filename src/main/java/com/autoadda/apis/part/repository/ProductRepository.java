@@ -1,28 +1,27 @@
 package com.autoadda.apis.part.repository;
 
-import java.util.List;
-
+import com.autoadda.apis.part.entity.Product;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import com.autoadda.apis.part.entity.Product;
+import java.util.List;
 
 public interface ProductRepository extends JpaRepository<Product, String> {
 
-	Product findByName(String name);
+    Product findByName(String name);
 
-	List<Product> findByNameContaining(String name);
+    List<Product> findByNameContaining(String name);
 
-	List<Product> findByOtherNamesContaining(String name);
+    List<Product> findByOtherNamesContaining(String name);
 
-	List<Product> findByCategoryId(String categoryId);
+    List<Product> findByCategoryId(String categoryId);
 
-	List<Product> findByTagContaining(String tag);
+    List<Product> findByTagContaining(String tag);
 
 //	List<Product> findBySkuContaining(String sku);
 
-	List<Product> findByYearAndMakeAndModel(Integer year, String make, String model);
+    List<Product> findByYearAndMakeAndModel(Integer year, String make, String model);
 
-	List<Product> findByManufacturerId(String manufacturerId);
+    List<Product> findByManufacturerId(String manufacturerId);
 
-	Product findByPartNumber(String partNumber);
+    Product findByPartNumber(String partNumber);
 }

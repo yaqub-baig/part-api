@@ -21,6 +21,7 @@ public class BrandOnboard {
     private String requestReferenceId;
     private Boolean isChecked;
     private LocalDateTime createdAt;
+
     @PrePersist
     public void prePersist() {
         isChecked = false;

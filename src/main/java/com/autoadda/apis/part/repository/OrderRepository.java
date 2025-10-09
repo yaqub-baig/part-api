@@ -1,11 +1,10 @@
 package com.autoadda.apis.part.repository;
 
-import java.util.List;
-
+import com.autoadda.apis.part.entity.Order;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import com.autoadda.apis.part.entity.Order;
+import java.util.List;
 
 public interface OrderRepository extends JpaRepository<Order, Integer> {
-	List<Order> findByVehicleOwnerId(Integer vehicleOwnerId);
+    List<Order> findByVehicleOwnerId(Integer vehicleOwnerId);
 }

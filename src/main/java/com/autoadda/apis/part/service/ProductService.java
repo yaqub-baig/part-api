@@ -171,7 +171,6 @@ public class ProductService {
         for (ProductRequest productRequest : productRequestList) {
             log.info ( "perform Product input validation" );
             partsDataValidator.isProductAlreadyExists ( productRequest.getName ( ) );
-
             Product product = productRepository.save ( prepareProduct ( productRequest ) );
             log.info ( "Product created - " + productRequest.toString ( ) );
 
@@ -241,7 +240,7 @@ public class ProductService {
                 product.setManufacturerId ( request.getManufacturerId ( ) );
             }
             // Update images only if imageIds are provided
-            if ( request.getImageIds ( ) != null && !request.getImageIds ( ).isEmpty ( ) ) {
+            if ( request.getImageIds ( ) != null && ! request.getImageIds ( ).isEmpty ( ) ) {
                 product.getImages ( ).clear ( );
                 product.getImages ( ).addAll ( images );
             }
@@ -271,7 +270,7 @@ public class ProductService {
     public GenericResponse deleteProductById(String id) throws NotFoundException {
         log.info ( "perform Product input validation" );
         partsDataValidator.validateProductId ( id );
-        Product product = productRepository.findById ( id ).orElseThrow (()->new ResourceNotFoundException ( "resource not found exception" ));
+        Product product = productRepository.findById ( id ).orElseThrow ( () -> new ResourceNotFoundException ( "resource not found exception" ) );
         if ( product != null ) {
             productRepository.delete ( product );
         }
@@ -389,7 +388,7 @@ public class ProductService {
      */
     @Transactional
     public GenericResponse searchProductsByPartNumber(String partNumber) {
-        ProductResponse responseBody = buildProductResponse ( productRepository.findByPartNumber ( partNumber ),false);
+        ProductResponse responseBody = buildProductResponse ( productRepository.findByPartNumber ( partNumber ), false );
 
         return GenericResponse.builder ( )
                 .body ( responseBody )

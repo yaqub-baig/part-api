@@ -25,13 +25,13 @@ public class InventoryPartExcelUploadResponse {
         this.totalRows = totalRows;
         this.successfulRows = successfulRows;
         this.failedRows = failedRows;
-        this.failedRowDetails = new ArrayList<>();
+        this.failedRowDetails = new ArrayList<> ( );
     }
 
     public void addFailedRow(InventoryPartExcelRow row) {
-        if (this.failedRowDetails == null) {
-            this.failedRowDetails = new ArrayList<>();
+        if ( this.failedRowDetails == null ) {
+            this.failedRowDetails = new ArrayList<> ( );
         }
-        this.failedRowDetails.add(row);
+        this.failedRowDetails.add ( row );
     }
 }

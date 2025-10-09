@@ -1,11 +1,6 @@
 package com.autoadda.apis.part.request;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 @Builder
 @NoArgsConstructor
@@ -16,6 +11,6 @@ import lombok.Setter;
 
 public class ManufacturerRequest {
 
-	private String id;
-	private String name;
+    private String id;
+    private String name;
 }

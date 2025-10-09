@@ -1,17 +1,8 @@
 package com.autoadda.apis.part.entity;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Table;
-import javax.persistence.Id;
-import javax.persistence.PrePersist;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
+import javax.persistence.*;
 import java.util.UUID;
 
 @Entity
@@ -24,28 +15,28 @@ import java.util.UUID;
 @Data
 
 public class Category {
-	@Id
-	@Column(name = "id")
-	private String id;
+    @Id
+    @Column(name = "id")
+    private String id;
 
-	@Column(name = "name")
-	private String name;
+    @Column(name = "name")
+    private String name;
 
-	@Column(name = "code")
-	private String code;
+    @Column(name = "code")
+    private String code;
 
-//	@ManyToOne
-	@Column(name = "parent_category_id")
-	private String parentCategoryId;
+    //	@ManyToOne
+    @Column(name = "parent_category_id")
+    private String parentCategoryId;
 
 //	@OneToMany(mappedBy = "parentCategory", cascade = CascadeType.ALL)
 //	private Set<PartCategory> subCategories;
 
-	@PrePersist
-	public void generateId() {
-		if (this.id == null || this.id.isEmpty()) {
-			this.id = UUID.randomUUID().toString();
-		}
-	}
+    @PrePersist
+    public void generateId() {
+        if ( this.id == null || this.id.isEmpty ( ) ) {
+            this.id = UUID.randomUUID ( ).toString ( );
+        }
+    }
 
 }

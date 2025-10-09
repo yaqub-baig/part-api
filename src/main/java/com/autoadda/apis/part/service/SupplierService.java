@@ -201,7 +201,7 @@ public class SupplierService {
                         .orElseThrow ( () -> new ResourceNotFoundException ( "File not found" ) );
                 newTradeLicenseAttachments.add ( mediaFile );
             } );
-            existing.getTradeLicenseAttachment().addAll ( newTradeLicenseAttachments );
+            existing.getTradeLicenseAttachment ( ).addAll ( newTradeLicenseAttachments );
         }
 
 
@@ -221,7 +221,7 @@ public class SupplierService {
                         .orElseThrow ( () -> new ResourceNotFoundException ( "File not found" ) );
                 newShopImages.add ( mediaFile );
             } );
-            existing.getShopImages().addAll ( newShopImages );
+            existing.getShopImages ( ).addAll ( newShopImages );
         }
 
         if ( request.getVatCertificateIds ( ) != null ) {
@@ -240,7 +240,7 @@ public class SupplierService {
                         .orElseThrow ( () -> new ResourceNotFoundException ( "File not found" ) );
                 newVatCertificates.add ( mediaFile );
             } );
-            existing.getVatCertificate().addAll ( newVatCertificates );
+            existing.getVatCertificate ( ).addAll ( newVatCertificates );
         }
         ResponseEntity<Supplier> supplierResponseEntity = new ResponseEntity<> ( supplierRepository.save ( existing ), HttpStatus.OK );
 

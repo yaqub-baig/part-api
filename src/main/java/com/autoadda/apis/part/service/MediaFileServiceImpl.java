@@ -21,6 +21,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -38,7 +39,7 @@ public class MediaFileServiceImpl implements MediaFileService {
 
         List<MediaFile> mediaFileResponses = new ArrayList<> ( );
         if ( files.isEmpty ( ) ) {
-             throw new RuntimeException ( "No files uploaded" );
+            throw new RuntimeException ( "No files uploaded" );
         }
         for (MultipartFile file : files) {
             // 1. Detect type
@@ -53,7 +54,7 @@ public class MediaFileServiceImpl implements MediaFileService {
             // 3. Create directories if they don't exist
             log.info ( "3. Creating directories if needed" );
             Path uploadPath = Paths.get ( uploadDir, subFolder );
-            if ( !Files.exists ( uploadPath ) ) {
+            if ( ! Files.exists ( uploadPath ) ) {
                 Files.createDirectories ( uploadPath );
                 log.info ( "Created directory: {}", uploadPath );
             }
@@ -81,15 +82,15 @@ public class MediaFileServiceImpl implements MediaFileService {
     @Override
     public GenericResponse delete(Long mediaFileId) {
         MediaFile mediaFile = mediaFileRepository.findById ( mediaFileId ).orElseThrow ( () -> new ResourceNotFoundException ( "File not found" ) );
-        mediaFileRepository.delete ( mediaFile);
+        mediaFileRepository.delete ( mediaFile );
         return GenericResponse.builder ( ).code ( "200" ).status ( "success" ).message ( "File deleted successfully" ).build ( );
     }
 
     @Override
     public GenericResponse getMediaFileById(Long mediaFileId) {
         MediaFile mediaFile = mediaFileRepository.findById ( mediaFileId ).orElseThrow ( () -> new ResourceNotFoundException ( "File not found" ) );
-        String url = baseUrl + "/uploads/" + mediaFile.getFilePath();
-        MediaFileResponse mediaFileResponse = mediaFileMapper.toResponse(mediaFile,url);
+        String url = baseUrl + "/uploads/" + mediaFile.getFilePath ( );
+        MediaFileResponse mediaFileResponse = mediaFileMapper.toResponse ( mediaFile, url );
         return GenericResponse.builder ( ).body ( mediaFileResponse ).code ( "200" ).status ( "success" ).build ( );
     }
 
@@ -108,7 +109,7 @@ public class MediaFileServiceImpl implements MediaFileService {
         // Fallback: check file extension if contentType is null or unknown
         String lowerName = originalFileName.toLowerCase ( );
         if ( lowerName.endsWith ( ".jpg" ) || lowerName.endsWith ( ".jpeg" ) || lowerName.endsWith ( ".png" ) || lowerName.endsWith ( ".gif" ) ||
-                lowerName.endsWith(".webp") ) {
+                lowerName.endsWith ( ".webp" ) ) {
             return "photos";
         } else if ( lowerName.endsWith ( ".pdf" ) ) {
             return "pdfs";

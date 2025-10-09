@@ -1,12 +1,10 @@
 package com.autoadda.apis.part.controller;
 
-import com.autoadda.apis.part.entity.InventoryPart;
 import com.autoadda.apis.part.entity.InventoryTransaction;
 import com.autoadda.apis.part.request.InventoryPartRequest;
 import com.autoadda.apis.part.request.InventoryPartSearchRequest;
 import com.autoadda.apis.part.response.InventoryPartExcelUploadResponse;
 import com.autoadda.apis.part.response.InventoryPartResponse;
-import com.autoadda.apis.part.response.InventoryPartSearchResponse;
 import com.autoadda.apis.part.service.InventoryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -37,7 +35,7 @@ public class InventoryController {
     // Get part by ID
     @GetMapping("/parts/{id}")
     public ResponseEntity<InventoryPartResponse> getPartById(@PathVariable Integer id) {
-        return ResponseEntity.ok ( inventoryService.getPartById ( id ));
+        return ResponseEntity.ok ( inventoryService.getPartById ( id ) );
     }
 
     // Get parts by supplier ID
@@ -75,30 +73,30 @@ public class InventoryController {
     }
 
     // Bulk upload inventory parts from Excel
-    @PostMapping(value = "/parts/bulk-upload" ,consumes = {"multipart/form-data"})
+    @PostMapping(value = "/parts/bulk-upload", consumes = {"multipart/form-data"})
     public ResponseEntity<InventoryPartExcelUploadResponse> bulkUploadInventory(
             @RequestParam("file") MultipartFile file,
             @RequestParam("supplierId") String supplierId) {
 
-        if (file.isEmpty()) {
-            return ResponseEntity.badRequest().body(
-                InventoryPartExcelUploadResponse.builder()
-                    .message("Please upload a valid Excel file")
-                    .build()
+        if ( file.isEmpty ( ) ) {
+            return ResponseEntity.badRequest ( ).body (
+                    InventoryPartExcelUploadResponse.builder ( )
+                            .message ( "Please upload a valid Excel file" )
+                            .build ( )
             );
         }
 
         // Validate file type
-        String fileName = file.getOriginalFilename();
-        if (fileName == null || !fileName.endsWith(".xlsx")) {
-            return ResponseEntity.badRequest().body(
-                InventoryPartExcelUploadResponse.builder()
-                    .message("Please upload an Excel file (.xlsx format)")
-                    .build()
+        String fileName = file.getOriginalFilename ( );
+        if ( fileName == null || ! fileName.endsWith ( ".xlsx" ) ) {
+            return ResponseEntity.badRequest ( ).body (
+                    InventoryPartExcelUploadResponse.builder ( )
+                            .message ( "Please upload an Excel file (.xlsx format)" )
+                            .build ( )
             );
         }
 
-        InventoryPartExcelUploadResponse response = inventoryService.bulkImportFromExcel(file, supplierId);
-        return ResponseEntity.ok(response);
+        InventoryPartExcelUploadResponse response = inventoryService.bulkImportFromExcel ( file, supplierId );
+        return ResponseEntity.ok ( response );
     }
 }

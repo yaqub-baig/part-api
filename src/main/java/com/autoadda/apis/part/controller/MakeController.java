@@ -40,6 +40,7 @@ public class MakeController {
     public GenericResponse getAllMakes() {
         return makeService.getAllMakes ( );
     }
+
     @Operation(summary = "Retrieving Makes by Id")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "successfull retrieving all makes", content = {

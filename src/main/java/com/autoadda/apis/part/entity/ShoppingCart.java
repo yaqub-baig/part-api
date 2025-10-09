@@ -1,19 +1,10 @@
 package com.autoadda.apis.part.entity;
 
+import lombok.*;
+
+import javax.persistence.*;
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.persistence.CascadeType;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.OneToMany;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 @Entity
 @Getter
@@ -29,5 +20,5 @@ public class ShoppingCart {
     private Integer vehicleOwnerId;
 
     @OneToMany(mappedBy = "cart", cascade = CascadeType.ALL)
-    private List<ShoppingCartItem> items = new ArrayList<>();
+    private List<ShoppingCartItem> items = new ArrayList<> ( );
 }

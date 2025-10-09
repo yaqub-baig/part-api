@@ -1,15 +1,14 @@
 package com.autoadda.apis.part.repository;
 
-import java.util.List;
-
+import com.autoadda.apis.part.entity.CategoryAttribute;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import com.autoadda.apis.part.entity.CategoryAttribute;
+import java.util.List;
 
 public interface CategoryAttributeRepository extends JpaRepository<CategoryAttribute, String> {
 
-	CategoryAttribute findByCategoryIdAndAttributeId(String categoryId, String attributeId);
+    CategoryAttribute findByCategoryIdAndAttributeId(String categoryId, String attributeId);
 
-	List<CategoryAttribute> findByCategoryId(String categoryId);
+    List<CategoryAttribute> findByCategoryId(String categoryId);
 
 }

@@ -27,7 +27,7 @@ public class Supplier {
     private String supplierArabicName;
     @Column(name = "supplier_name")
     private String name;
-    @Column(name = "trade_licence_number",unique = true)
+    @Column(name = "trade_licence_number", unique = true)
     private String tradeLicenceNumber;
     @Column(name = "trn_number")
     private String trnNumber;

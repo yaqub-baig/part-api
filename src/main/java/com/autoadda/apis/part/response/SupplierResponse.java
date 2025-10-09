@@ -1,11 +1,6 @@
 package com.autoadda.apis.part.response;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 @Builder
 @NoArgsConstructor
@@ -15,21 +10,21 @@ import lombok.Setter;
 @Data
 public class SupplierResponse {
 
-	private String id;
+    private String id;
 
-	private String name;
+    private String name;
 
-	private String remarks;
+    private String remarks;
 
-	private String email;
+    private String email;
 
-	private String phoneNumber;
+    private String phoneNumber;
 
-	private String website;
+    private String website;
 
-	private String timings;
+    private String timings;
 
-	private String googleMapLink;
+    private String googleMapLink;
 
-	private String locationId;
+    private String locationId;
 }

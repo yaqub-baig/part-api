@@ -103,7 +103,7 @@ public class CategoryAttributeService {
      *                           does not exist.
      */
     @Transactional(readOnly = true)
-    public GenericResponse getCategoryAttributesById(String id)  {
+    public GenericResponse getCategoryAttributesById(String id) {
         List<CategoryAttributeResponse> responseBody = new ArrayList<> ( );
         try {
 
@@ -140,8 +140,7 @@ public class CategoryAttributeService {
      *                           does not exist.
      */
     @Transactional(readOnly = true)
-    public GenericResponse getCategoryAttributesByCategoryIdAndAttributeId(String categoryId, String attributeId)
-             {
+    public GenericResponse getCategoryAttributesByCategoryIdAndAttributeId(String categoryId, String attributeId) {
         List<CategoryAttributeResponse> responseBody = new ArrayList<> ( );
         try {
 
@@ -179,7 +178,7 @@ public class CategoryAttributeService {
      *                           category ID.
      */
     @Transactional(readOnly = true)
-    public GenericResponse getCategoryAttributesByCategoryId(String categoryId)  {
+    public GenericResponse getCategoryAttributesByCategoryId(String categoryId) {
         List<CategoryAttributeResponse> responseBody = new ArrayList<> ( );
         try {
 

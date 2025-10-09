@@ -1,11 +1,6 @@
 package com.autoadda.apis.part.request;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 @Builder
 @NoArgsConstructor
@@ -16,21 +11,21 @@ import lombok.Setter;
 
 public class LocationRequest {
 
-	private String id;
+    private String id;
 
-	private String streetAddress1;
+    private String streetAddress1;
 
-	private String streetAddress2;
+    private String streetAddress2;
 
-	private String city;
+    private String city;
 
-	private String county;
+    private String county;
 
-	private String postalCode;
+    private String postalCode;
 
-	private String state;
+    private String state;
 
-	private String country;
+    private String country;
 
-	private String type;
+    private String type;
 }
