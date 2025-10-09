@@ -19,6 +19,7 @@ public class InventoryPartExcelUploadResponse {
     private Integer failedRows;
     private List<InventoryPartExcelRow> failedRowDetails;
     private String message;
+    private String statusCode;
 
     public InventoryPartExcelUploadResponse(Integer totalRows, Integer successfulRows, Integer failedRows) {
         this.totalRows = totalRows;

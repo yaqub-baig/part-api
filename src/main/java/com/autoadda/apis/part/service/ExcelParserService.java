@@ -1,6 +1,7 @@
 package com.autoadda.apis.part.service;
 
 import com.autoadda.apis.part.request.InventoryPartExcelRow;
+import com.autoadda.apis.part.util.ProductCondition;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
@@ -15,7 +16,7 @@ import java.util.List;
 @Service
 public class ExcelParserService {
 
-    private static final List<String> VALID_CONDITIONS = Arrays.asList("Used", "New", "AfterMarket");
+    private static final List<String> VALID_CONDITIONS = Arrays.asList("USED", "GENUINE", "AFTER_MARKET");
 
     public List<InventoryPartExcelRow> parseExcelFile(MultipartFile file) throws IOException {
         List<InventoryPartExcelRow> rows = new ArrayList<>();
@@ -67,6 +68,10 @@ public class ExcelParserService {
 
             // Column 4: Condition
             String condition = getCellValueAsString(row.getCell(4));
+            // Normalize condition to uppercase and replace spaces/dashes with underscores
+            if (condition != null) {
+                condition = normalizeCondition(condition);
+            }
             excelRow.setCondition(condition);
 
             // Validate the row
@@ -102,7 +107,7 @@ public class ExcelParserService {
         if (row.getCondition() == null || row.getCondition().trim().isEmpty()) {
             errors.append("Condition is required. ");
         } else if (!VALID_CONDITIONS.contains(row.getCondition())) {
-            errors.append("Condition must be one of: Used, New, AfterMarket. ");
+            errors.append("Condition must be one of: GENUINE, USED, AFTER_MARKET. ");
         }
 
         if (errors.length() > 0) {
@@ -166,5 +171,24 @@ public class ExcelParserService {
             default:
                 return null;
         }
+    }
+
+    /**
+     * Normalizes condition string to match ProductCondition enum values
+     * Converts: "Genuine" -> "GENUINE", "Used" -> "USED", "AfterMarket" -> "AFTER_MARKET", etc.
+     */
+    private String normalizeCondition(String condition) {
+        if (condition == null) {
+            return null;
+        }
+
+        String trimmed = condition.trim().toUpperCase();
+
+        // Handle common variations
+        if (trimmed.equals("AFTERMARKET") || trimmed.equals("AFTER-MARKET")) {
+            return "AFTER_MARKET";
+        }
+
+        return trimmed;
     }
 }

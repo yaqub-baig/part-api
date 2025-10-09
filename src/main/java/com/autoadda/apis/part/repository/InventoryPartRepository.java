@@ -3,6 +3,7 @@ package com.autoadda.apis.part.repository;
 import java.util.List;
 import java.util.Optional;
 
+import com.autoadda.apis.part.util.ProductCondition;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -24,7 +25,7 @@ public interface InventoryPartRepository extends JpaRepository<InventoryPart, In
 	List<InventoryPart> findByManufacturer(String manufacturer);
 
 	// Find by Product and Supplier (for multi-supplier scenarios)
-	Optional<InventoryPart> findByProductIdAndSupplierId(String productId, String supplierId);
+	List<InventoryPart> findByProductIdAndSupplierIdAndProductCondition(String productId, String supplierId, ProductCondition productCondition);
 
 	// Find by location (warehouse/shelf)
 	List<InventoryPart> findByLocation(String location);

@@ -1,5 +1,6 @@
 package com.autoadda.apis.part.request;
 
+import com.autoadda.apis.part.util.ProductCondition;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -17,13 +18,11 @@ public class InventoryPartRequest {
 
 	private String productId;
 	private String supplierId;
-	private String partName;
 	private String partNumber;
-	private String category;
-	private String manufacturer;
 	private Integer quantityInStock;
 	private Double unitPrice;
-	private Integer quantity;
 	private String location;
+	private ProductCondition condition;
+	private String sku;
 	private Boolean isActive;
 }

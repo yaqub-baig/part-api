@@ -5,6 +5,7 @@ import com.autoadda.apis.part.entity.InventoryTransaction;
 import com.autoadda.apis.part.request.InventoryPartRequest;
 import com.autoadda.apis.part.request.InventoryPartSearchRequest;
 import com.autoadda.apis.part.response.InventoryPartExcelUploadResponse;
+import com.autoadda.apis.part.response.InventoryPartResponse;
 import com.autoadda.apis.part.response.InventoryPartSearchResponse;
 import com.autoadda.apis.part.service.InventoryService;
 import lombok.RequiredArgsConstructor;
@@ -23,31 +24,31 @@ public class InventoryController {
 
     // Create a new inventory part
     @PostMapping("/parts")
-    public ResponseEntity<InventoryPart> createPart(@RequestBody InventoryPartRequest request) {
+    public ResponseEntity<InventoryPartResponse> createPart(@RequestBody InventoryPartRequest request) {
         return ResponseEntity.ok ( inventoryService.addPart ( request ) );
     }
 
     // Get all parts
     @GetMapping("/parts")
-    public ResponseEntity<List<InventoryPart>> getAllParts() {
+    public ResponseEntity<List<InventoryPartResponse>> getAllParts() {
         return ResponseEntity.ok ( inventoryService.getAllParts ( ) );
     }
 
     // Get part by ID
     @GetMapping("/parts/{id}")
-    public ResponseEntity<InventoryPart> getPartById(@PathVariable Integer id) {
-        return inventoryService.getPartById ( id ).map ( ResponseEntity::ok ).orElse ( ResponseEntity.notFound ( ).build ( ) );
+    public ResponseEntity<InventoryPartResponse> getPartById(@PathVariable Integer id) {
+        return ResponseEntity.ok ( inventoryService.getPartById ( id ));
     }
 
     // Get parts by supplier ID
     @GetMapping("/parts/supplier/{supplierId}")
-    public ResponseEntity<List<InventoryPart>> getPartsBySupplierId(@PathVariable String supplierId) {
+    public ResponseEntity<List<InventoryPartResponse>> getPartsBySupplierId(@PathVariable String supplierId) {
         return ResponseEntity.ok ( inventoryService.getPartsBySupplierId ( supplierId ) );
     }
 
     // Search inventory parts with filters and supplier information
     @PostMapping("/parts/search")
-    public ResponseEntity<List<InventoryPartSearchResponse>> searchParts(@RequestBody InventoryPartSearchRequest request) {
+    public ResponseEntity<List<InventoryPartResponse>> searchParts(@RequestBody InventoryPartSearchRequest request) {
         return ResponseEntity.ok ( inventoryService.searchInventoryParts ( request ) );
     }
 

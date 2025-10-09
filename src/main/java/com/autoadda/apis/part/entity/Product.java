@@ -20,7 +20,6 @@ import java.util.List;
 @NoArgsConstructor
 @Builder
 @Data
-
 public class Product {
 
 	@Id
@@ -33,10 +32,7 @@ public class Product {
 	@Column(name = "description")
 	private String description;
 
-	@Column(name = "sku")
-	private String sku;
-
-	@Column(name = "part_number")
+	@Column(name = "part_number" ,unique = true)
 	private String partNumber;
 
 	@Column(name = "tag")
@@ -61,7 +57,7 @@ public class Product {
 	private String manufacturerId;
 
 	@OneToMany(orphanRemoval = true)
-	@JoinColumn
+	@JoinColumn(name = "product_id")
 	private List<MediaFile> images = new ArrayList<> ( );
 
 

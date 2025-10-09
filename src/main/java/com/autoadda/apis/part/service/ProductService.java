@@ -47,7 +47,6 @@ public class ProductService {
                 .categoryId ( request.getCategoryId ( ) )
                 .model ( request.getModel ( ) )
                 .otherNames ( request.getOtherNames ( ) )
-                .sku ( request.getSku ( ) )
                 .partNumber ( request.getPartNumber ( ) )
                 .tag ( request.getTag ( ) )
                 .year ( request.getYear ( ) )
@@ -77,7 +76,6 @@ public class ProductService {
                 .categoryId ( product.getCategoryId ( ) )
                 .make ( product.getMake ( ) )
                 .partNumber ( product.getPartNumber ( ) )
-                .sku ( product.getSku ( ) )
                 .year ( product.getYear ( ) )
                 .tag ( product.getTag ( ) )
                 .model ( product.getModel ( ) )
@@ -218,9 +216,6 @@ public class ProductService {
             if ( request.getDescription ( ) != null ) {
                 product.setDescription ( request.getDescription ( ) );
             }
-            if ( request.getSku ( ) != null ) {
-                product.setSku ( request.getSku ( ) );
-            }
             if ( request.getPartNumber ( ) != null ) {
                 product.setPartNumber ( request.getPartNumber ( ) );
             }
@@ -342,19 +337,19 @@ public class ProductService {
     /**
      * Searches for products by SKU and prepares a response.
      */
-    @Transactional
-    public GenericResponse searchProductsBySku(String sku) {
-        List<ProductResponse> responseBody = productRepository.findBySkuContaining ( sku ).stream ( )
-                .map ( product -> buildProductResponse ( product, false ) )
-                .toList ( );
-
-        return GenericResponse.builder ( )
-                .body ( responseBody )
-                .code ( "200" )
-                .message ( "successfully Retrieved" )
-                .status ( "success" )
-                .build ( );
-    }
+//    @Transactional
+//    public GenericResponse searchProductsBySku(String sku) {
+//        List<ProductResponse> responseBody = productRepository.findBySkuContaining ( sku ).stream ( )
+//                .map ( product -> buildProductResponse ( product, false ) )
+//                .toList ( );
+//
+//        return GenericResponse.builder ( )
+//                .body ( responseBody )
+//                .code ( "200" )
+//                .message ( "successfully Retrieved" )
+//                .status ( "success" )
+//                .build ( );
+//    }
 
     /**
      * Searches for products by category ID and prepares a response.
@@ -394,9 +389,7 @@ public class ProductService {
      */
     @Transactional
     public GenericResponse searchProductsByPartNumber(String partNumber) {
-        List<ProductResponse> responseBody = productRepository.findByPartNumber ( partNumber ).stream ( )
-                .map ( product -> buildProductResponse ( product, false ) )
-                .toList ( );
+        ProductResponse responseBody = buildProductResponse ( productRepository.findByPartNumber ( partNumber ),false);
 
         return GenericResponse.builder ( )
                 .body ( responseBody )

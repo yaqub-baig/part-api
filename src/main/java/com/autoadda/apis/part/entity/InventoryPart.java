@@ -1,12 +1,9 @@
 package com.autoadda.apis.part.entity;
 
+import com.autoadda.apis.part.util.ProductCondition;
 import lombok.*;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
+import javax.persistence.*;
 
 @Entity
 @Getter
@@ -26,7 +23,11 @@ public class InventoryPart {
     @Column(name = "supplier_id")
     private String supplierId; // Link to Supplier entity
 
+    private String sku;
+
     private String partName;
+    @Enumerated(EnumType.STRING)
+    private ProductCondition productCondition;
 
     private String partNumber;
 

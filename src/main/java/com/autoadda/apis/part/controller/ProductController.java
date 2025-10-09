@@ -102,15 +102,15 @@ public class ProductController {
         return productService.searchProductsByTag ( tag );
     }
 
-    @Operation(summary = "Searching Products by SKU")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "successfull searching products", content = {
-                    @Content(mediaType = "application/json", schema = @Schema(implementation = GenericResponse.class))}),
-            @ApiResponse(responseCode = "404", description = "Search products api not found", content = @Content)})
-    @GetMapping("/sku/{sku}")
-    public GenericResponse searchProductsBySku(@PathVariable String sku) {
-        return productService.searchProductsBySku ( sku );
-    }
+//    @Operation(summary = "Searching Products by SKU")
+//    @ApiResponses(value = {
+//            @ApiResponse(responseCode = "200", description = "successfull searching products", content = {
+//                    @Content(mediaType = "application/json", schema = @Schema(implementation = GenericResponse.class))}),
+//            @ApiResponse(responseCode = "404", description = "Search products api not found", content = @Content)})
+//    @GetMapping("/sku/{sku}")
+//    public GenericResponse searchProductsBySku(@PathVariable String sku) {
+//        return productService.searchProductsBySku ( sku );
+//    }
 
     @Operation(summary = "Searching Products by Category")
     @ApiResponses(value = {

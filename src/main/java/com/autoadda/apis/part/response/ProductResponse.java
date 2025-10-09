@@ -24,7 +24,7 @@ public class ProductResponse {
 	private String id;
 	private String description;
 	private String name;
-	private String sku;
+
 	private String partNumber;
 	private Integer year;
 	private String make;

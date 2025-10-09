@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import com.autoadda.apis.part.exception.ResourceNotFoundException;
+import com.autoadda.apis.part.util.ProductCondition;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -14,6 +16,7 @@ import com.autoadda.apis.part.entity.InventoryPart;
 import com.autoadda.apis.part.entity.InventoryTransaction;
 import com.autoadda.apis.part.entity.Product;
 import com.autoadda.apis.part.entity.Supplier;
+import com.autoadda.apis.part.mapper.InventoryPartMapper;
 import com.autoadda.apis.part.repository.InventoryPartRepository;
 import com.autoadda.apis.part.repository.InventoryTransactionRepository;
 import com.autoadda.apis.part.repository.ProductRepository;
@@ -22,6 +25,7 @@ import com.autoadda.apis.part.request.InventoryPartExcelRow;
 import com.autoadda.apis.part.request.InventoryPartRequest;
 import com.autoadda.apis.part.request.InventoryPartSearchRequest;
 import com.autoadda.apis.part.response.InventoryPartExcelUploadResponse;
+import com.autoadda.apis.part.response.InventoryPartResponse;
 import com.autoadda.apis.part.response.InventoryPartSearchResponse;
 import com.autoadda.apis.part.util.TransactionType;
 
@@ -36,45 +40,105 @@ public class InventoryService {
 	private final ProductRepository productRepo;
 	private final SupplierRepository supplierRepo;
 	private final ExcelParserService excelParserService;
+	private final InventoryPartMapper inventoryPartMapper;
 
-	private InventoryPart prepareInventoryPart(InventoryPartRequest request) {
-		return InventoryPart.builder()
-								.productId(request.getProductId())
-								.supplierId(request.getSupplierId())
-								.partName(request.getPartName())
-								.partNumber(request.getPartNumber())
-								.category(request.getCategory())
-								.manufacturer(request.getManufacturer())
-								.quantityInStock(request.getQuantityInStock() != null ? request.getQuantityInStock() : 0)
-								.unitPrice(request.getUnitPrice())
-								.location(request.getLocation())
-								.isActive(request.getIsActive() != null ? request.getIsActive() : true)
-							.build();
+	public InventoryPartResponse addPart(InventoryPartRequest request) {
+		Product product = productRepo.findByPartNumber (request.getPartNumber ());
+		InventoryPart part = inventoryPartMapper.toEntity(request, product);
+		InventoryPart savedPart = partRepo.save(part);
+
+		// Fetch supplier for complete response
+		Supplier supplier = null;
+		if (request.getSupplierId() != null) {
+			try {
+				supplier = supplierRepo.findById(Integer.parseInt(request.getSupplierId())).orElse(null);
+			} catch (NumberFormatException e) {
+				// Handle invalid supplier ID format
+			}
+		}
+
+		return inventoryPartMapper.toResponse(savedPart, product, supplier);
 	}
 
-	public InventoryPart addPart(InventoryPartRequest request) {
-		InventoryPart part = prepareInventoryPart(request);
-		return partRepo.save(part);
+	public List<InventoryPartResponse> getAllParts() {
+		List<InventoryPart> parts = partRepo.findAll();
+		return parts.stream().map(part -> {
+			Supplier supplier = null;
+			Product product=null;
+			if (part.getSupplierId() != null) {
+				try {
+					supplier = supplierRepo.findById(Integer.parseInt(part.getSupplierId())).orElse(null);
+					product = productRepo.findById(part.getProductId()).orElse(null);
+				} catch (NumberFormatException e) {
+					// Handle invalid supplier ID format
+				}
+			}
+			return inventoryPartMapper.toResponse (part,product, supplier);
+		}).toList();
 	}
 
-	public List<InventoryPart> getAllParts() {
-		return partRepo.findAll();
+	public InventoryPartResponse getPartById(Integer id) {
+		InventoryPart part = partRepo.findById(id).orElseThrow(() -> new ResourceNotFoundException("Inventory part not found"));
+
+		Product product = productRepo.findById(part.getProductId()).orElse(null);
+		Supplier supplier = null;
+		if (part.getSupplierId() != null) {
+			try {
+				supplier = supplierRepo.findById(Integer.parseInt(part.getSupplierId())).orElse(null);
+			} catch (NumberFormatException e) {
+				// Handle invalid supplier ID format
+			}
+		}
+
+		return inventoryPartMapper.toResponse(part, product, supplier);
 	}
 
-	public Optional<InventoryPart> getPartById(Integer id) {
-		return partRepo.findById(id);
+	public InventoryPartResponse getPartByProductId(String productId) {
+		InventoryPart part = partRepo.findByProductId(productId).orElseThrow(() -> new ResourceNotFoundException("Inventory part not found"));
+
+		Product product = productRepo.findById(part.getProductId()).orElse(null);
+		Supplier supplier = null;
+		if (part.getSupplierId() != null) {
+			try {
+				supplier = supplierRepo.findById(Integer.parseInt(part.getSupplierId())).orElse(null);
+			} catch (NumberFormatException e) {
+				// Handle invalid supplier ID format
+			}
+		}
+
+		return inventoryPartMapper.toResponse(part, product, supplier);
 	}
 
-	public Optional<InventoryPart> getPartByProductId(String productId) {
-		return partRepo.findByProductId(productId);
+	public List<InventoryPartResponse> getPartsBySupplierId(String supplierId) {
+		List<InventoryPart> parts = partRepo.findBySupplierId(supplierId);
+		return parts.stream().map(part -> {
+			Supplier supplier = null;
+			Product product=null;
+			try {
+				supplier = supplierRepo.findById(Integer.parseInt(supplierId)).orElse(null);
+				product= productRepo.findById ( part.getProductId () ).orElse(null);
+			} catch (NumberFormatException e) {
+				// Handle invalid supplier ID format
+			}
+			return inventoryPartMapper.toResponse(part, product,supplier);
+		}).toList();
 	}
 
-	public List<InventoryPart> getPartsBySupplierId(String supplierId) {
-		return partRepo.findBySupplierId(supplierId);
-	}
-
-	public List<InventoryPart> getLowStockParts(Integer threshold) {
-		return partRepo.findByQuantityInStockLessThan(threshold);
+	public List<InventoryPartResponse> getLowStockParts(Integer threshold) {
+		List<InventoryPart> parts = partRepo.findByQuantityInStockLessThan(threshold);
+		return parts.stream().map(part -> {
+			Supplier supplier = null;
+			Product product=null;
+			if (part.getSupplierId() != null) {
+				try {
+					supplier = supplierRepo.findById(Integer.parseInt(part.getSupplierId())).orElse(null);
+					product= productRepo.findById ( part.getProductId ( ) ).orElse ( null );
+				} catch (NumberFormatException e) {
+					// Handle invalid supplier ID format
+				}
+			}
+			return inventoryPartMapper.toResponse(part,product, supplier);
+		}).toList();
 	}
 
 	@Transactional
@@ -161,14 +225,10 @@ public class InventoryService {
 
 				try {
 					// Find product by part number or SKU
-					List<Product> products = productRepo.findByPartNumber(row.getPartNumber());
+					Product products = productRepo.findByPartNumber(row.getPartNumber());
 
-					if (products == null || products.isEmpty()) {
-						// Try finding by SKU
-						products = productRepo.findBySkuContaining(row.getSku());
-					}
-
-					if (products == null || products.isEmpty()) {
+//
+					if (products == null ) {
 						row.setIsValid(false);
 						row.setErrorMessage("Product not found with Part Number: " + row.getPartNumber() + " or SKU: " + row.getSku());
 						failedCount++;
@@ -176,22 +236,20 @@ public class InventoryService {
 						continue;
 					}
 
-					Product product = products.get(0); // Take first match
+					Product product = products; // Take first match
 
 					// Check if inventory part already exists for this supplier and product
-					Optional<InventoryPart> existingPart = partRepo.findByProductIdAndSupplierId(product.getId(), supplierId);
+					List<InventoryPart> existingPart = partRepo.findByProductIdAndSupplierIdAndProductCondition(product.getId(), supplierId,ProductCondition.valueOf (row.getCondition ()));
 
-					if (existingPart.isPresent()) {
+					if (!existingPart.isEmpty ()) {
 						// Update existing inventory
-						InventoryPart part = existingPart.get();
+						InventoryPart part = existingPart.get(0);
 						part.setQuantityInStock(part.getQuantityInStock() + row.getQuantity());
 						part.setUnitPrice(row.getPricePerPiece());
+						part.setSku(row.getSku ());
 						part.setIsActive(true);
 						partRepo.save(part);
-
 						// Update product stock
-
-
 						successCount++;
 					} else {
 						// Create new inventory part
@@ -200,6 +258,7 @@ public class InventoryService {
 								.supplierId(supplierId)
 								.partName(product.getName())
 								.partNumber(row.getPartNumber())
+								.productCondition ( ProductCondition.valueOf (  row.getCondition () ))
 								.category(product.getCategoryId())
 								.manufacturer(product.getManufacturerId())
 								.quantityInStock(row.getQuantity())
@@ -223,7 +282,7 @@ public class InventoryService {
 					failedRows.add(row);
 				}
 			}
-
+			response.setStatusCode ( failedCount < 1 ? "200" : "400" );
 			response.setSuccessfulRows(successCount);
 			response.setFailedRows(failedCount);
 			response.setFailedRowDetails(failedRows);
@@ -238,9 +297,9 @@ public class InventoryService {
 
 	/**
 	 * Search inventory parts with multiple filter criteria
-	 * Returns parts with supplier information grouped by part
+	 * Returns lightweight search responses with supplier information
 	 */
-	public List<InventoryPartSearchResponse> searchInventoryParts(InventoryPartSearchRequest request) {
+	public List<InventoryPartResponse> searchInventoryParts(InventoryPartSearchRequest request) {
 		// Set default values for boolean filters
 		Boolean inStockOnly = request.getInStockOnly() != null ? request.getInStockOnly() : false;
 		Boolean activeOnly = request.getActiveOnly() != null ? request.getActiveOnly() : true;
@@ -259,42 +318,19 @@ public class InventoryService {
 				activeOnly
 		);
 
-		// Map to response with supplier information
+		// Map to lightweight search response with supplier information using mapper
 		return inventoryParts.stream().map(part -> {
-			// Fetch supplier information
 			Supplier supplier = null;
+			Product product=null;
 			if (part.getSupplierId() != null) {
 				try {
 					supplier = supplierRepo.findById(Integer.parseInt(part.getSupplierId())).orElse(null);
+					product= productRepo.findById ( part.getProductId () ).orElse ( null );
 				} catch (NumberFormatException e) {
 					// Handle invalid supplier ID format
 				}
 			}
-
-			// Build response
-			InventoryPartSearchResponse.InventoryPartSearchResponseBuilder builder = InventoryPartSearchResponse.builder()
-					.inventoryId(part.getId())
-					.productId(part.getProductId())
-					.partName(part.getPartName())
-					.partNumber(part.getPartNumber())
-					.category(part.getCategory())
-					.manufacturer(part.getManufacturer())
-					.quantityInStock(part.getQuantityInStock())
-					.unitPrice(part.getUnitPrice())
-					.location(part.getLocation())
-					.isActive(part.getIsActive())
-					.supplierId(part.getSupplierId());
-
-			// Add supplier details if available
-			if (supplier != null) {
-				builder.supplierName(supplier.getName())
-						.supplierEmail(supplier.getEmail())
-						.supplierPhone(supplier.getPhoneNumber())
-						.supplierWebsite(supplier.getWebsite())
-						.supplierLocation(supplier.getLocation() != null ? supplier.getLocation().toString() : null);
-			}
-
-			return builder.build();
-		}).collect(Collectors.toList());
+			return inventoryPartMapper.toResponse(part,product, supplier);
+		}).toList();
 	}
 }
