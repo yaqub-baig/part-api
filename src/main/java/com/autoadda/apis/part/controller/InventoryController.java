@@ -72,6 +72,27 @@ public class InventoryController {
         return ResponseEntity.ok ( inventoryService.getTransactionsForPart ( id ) );
     }
 
+    // Update an existing inventory part
+    @PutMapping("/parts/{id}")
+    public ResponseEntity<InventoryPartResponse> updatePart(@PathVariable Integer id,
+                                                             @RequestBody InventoryPartRequest request) {
+        return ResponseEntity.ok ( inventoryService.updatePart ( id, request ) );
+    }
+
+    // Soft delete an inventory part (mark as inactive)
+    @DeleteMapping("/parts/{id}")
+    public ResponseEntity<String> deletePart(@PathVariable Integer id) {
+        inventoryService.softDeletePart ( id );
+        return ResponseEntity.ok ( "Inventory part deleted successfully." );
+    }
+
+    // Restore a soft-deleted inventory part (mark as active)
+    @PostMapping("/parts/{id}/restore")
+    public ResponseEntity<String> restorePart(@PathVariable Integer id) {
+        inventoryService.restorePart ( id );
+        return ResponseEntity.ok ( "Inventory part restored successfully." );
+    }
+
     // Bulk upload inventory parts from Excel
     @PostMapping(value = "/parts/bulk-upload", consumes = {"multipart/form-data"})
     public ResponseEntity<InventoryPartExcelUploadResponse> bulkUploadInventory(
@@ -99,4 +120,5 @@ public class InventoryController {
         InventoryPartExcelUploadResponse response = inventoryService.bulkImportFromExcel ( file, supplierId );
         return ResponseEntity.ok ( response );
     }
+
 }

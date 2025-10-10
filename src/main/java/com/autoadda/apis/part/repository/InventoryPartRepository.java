@@ -14,8 +14,14 @@ public interface InventoryPartRepository extends JpaRepository<InventoryPart, In
     // Find by Product
     Optional<InventoryPart> findByProductId(String productId);
 
+    // Find active parts by Product
+    Optional<InventoryPart> findByProductIdAndIsActive(String productId, Boolean isActive);
+
     // Find by Supplier
     List<InventoryPart> findBySupplierId(String supplierId);
+
+    // Find active parts by Supplier
+    List<InventoryPart> findBySupplierIdAndIsActive(String supplierId, Boolean isActive);
 
     // Find by Category
     List<InventoryPart> findByCategory(String category);
@@ -34,6 +40,9 @@ public interface InventoryPartRepository extends JpaRepository<InventoryPart, In
 
     // Find low stock items (custom query would be better, but this helps)
     List<InventoryPart> findByQuantityInStockLessThan(Integer threshold);
+
+    // Find low stock items that are active
+    List<InventoryPart> findByQuantityInStockLessThanAndIsActive(Integer threshold, Boolean isActive);
 
     // Advanced search query with multiple optional filters
     @Query("SELECT ip FROM InventoryPart ip WHERE " +

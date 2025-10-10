@@ -57,8 +57,50 @@ public class InventoryService {
         return inventoryPartMapper.toResponse ( savedPart, product, supplier );
     }
 
+    @Transactional
+    public InventoryPartResponse updatePart(Integer id, InventoryPartRequest request) {
+        // Find existing inventory part
+        InventoryPart existingPart = partRepo.findById ( id )
+                .orElseThrow ( () -> new ResourceNotFoundException ( "Inventory part not found with id: " + id ) );
+
+        // Get product information
+        Product product = productRepo.findByPartNumber ( request.getPartNumber ( ) );
+        if ( product == null ) {
+            throw new ResourceNotFoundException ( "Product not found with part number: " + request.getPartNumber ( ) );
+        }
+
+        // Update fields from request
+        existingPart.setProductId ( product.getId ( ) );
+        existingPart.setSupplierId ( request.getSupplierId ( ) );
+        existingPart.setSku ( request.getSku ( ) );
+        existingPart.setPartName ( product.getName ( ) );
+        existingPart.setPartNumber ( request.getPartNumber ( ) );
+        existingPart.setProductCondition ( request.getCondition ( ) );
+        existingPart.setCategory ( product.getCategoryId ( ) );
+        existingPart.setManufacturer ( product.getManufacturerId ( ) );
+        existingPart.setUnitPrice ( request.getUnitPrice ( ) );
+        existingPart.setLocation ( request.getLocation ( ) );
+        existingPart.setIsActive ( request.getIsActive ( ) );
+
+        // Save updated part
+        InventoryPart updatedPart = partRepo.save ( existingPart );
+
+        // Fetch supplier for complete response
+        Supplier supplier = null;
+        if ( request.getSupplierId ( ) != null ) {
+            try {
+                supplier = supplierRepo.findById ( Integer.parseInt ( request.getSupplierId ( ) ) ).orElse ( null );
+            }
+            catch ( NumberFormatException e ) {
+                // Handle invalid supplier ID format
+            }
+        }
+
+        return inventoryPartMapper.toResponse ( updatedPart, product, supplier );
+    }
+
     public List<InventoryPartResponse> getAllParts() {
-        List<InventoryPart> parts = partRepo.findAll ( );
+        List<InventoryPart> parts = partRepo.findByIsActive ( true );
         return parts.stream ( ).map ( part -> {
             Supplier supplier = null;
             Product product = null;
@@ -73,6 +115,24 @@ public class InventoryService {
             }
             return inventoryPartMapper.toResponse ( part, product, supplier );
         } ).toList ( );
+    }
+
+    @Transactional
+    public void softDeletePart(Integer id) {
+        InventoryPart part = partRepo.findById ( id )
+                .orElseThrow ( () -> new ResourceNotFoundException ( "Inventory part not found with id: " + id ) );
+
+        part.setIsActive ( false );
+        partRepo.save ( part );
+    }
+
+    @Transactional
+    public void restorePart(Integer id) {
+        InventoryPart part = partRepo.findById ( id )
+                .orElseThrow ( () -> new ResourceNotFoundException ( "Inventory part not found with id: " + id ) );
+
+        part.setIsActive ( true );
+        partRepo.save ( part );
     }
 
     public InventoryPartResponse getPartById(Integer id) {
@@ -93,7 +153,8 @@ public class InventoryService {
     }
 
     public InventoryPartResponse getPartByProductId(String productId) {
-        InventoryPart part = partRepo.findByProductId ( productId ).orElseThrow ( () -> new ResourceNotFoundException ( "Inventory part not found" ) );
+        InventoryPart part = partRepo.findByProductIdAndIsActive ( productId, true )
+                .orElseThrow ( () -> new ResourceNotFoundException ( "Inventory part not found" ) );
 
         Product product = productRepo.findById ( part.getProductId ( ) ).orElse ( null );
         Supplier supplier = null;
@@ -110,7 +171,7 @@ public class InventoryService {
     }
 
     public List<InventoryPartResponse> getPartsBySupplierId(String supplierId) {
-        List<InventoryPart> parts = partRepo.findBySupplierId ( supplierId );
+        List<InventoryPart> parts = partRepo.findBySupplierIdAndIsActive ( supplierId, true );
         return parts.stream ( ).map ( part -> {
             Supplier supplier = null;
             Product product = null;
@@ -126,7 +187,7 @@ public class InventoryService {
     }
 
     public List<InventoryPartResponse> getLowStockParts(Integer threshold) {
-        List<InventoryPart> parts = partRepo.findByQuantityInStockLessThan ( threshold );
+        List<InventoryPart> parts = partRepo.findByQuantityInStockLessThanAndIsActive ( threshold, true );
         return parts.stream ( ).map ( part -> {
             Supplier supplier = null;
             Product product = null;

@@ -81,7 +81,6 @@ public class InventoryPartMapper {
                 .supplierId ( part.getSupplierId ( ) )
                 .sku ( part.getSku ( ) )
                 .partName ( part.getPartName ( ) )
-                .partNumber ( part.getPartNumber ( ) )
                 .productCondition ( part.getProductCondition ( ) )
                 .category ( part.getCategory ( ) )
                 .manufacturer ( part.getManufacturer ( ) )
@@ -93,6 +92,7 @@ public class InventoryPartMapper {
         // Add product details if available
         if ( product != null ) {
             builder.productName ( product.getName ( ) )
+                    .partNumber ( product.getPartNumber ( ) )
                     .productDescription ( product.getDescription ( ) )
                     .productTag ( product.getTag ( ) )
                     .productOtherNames ( product.getOtherNames ( ) )
