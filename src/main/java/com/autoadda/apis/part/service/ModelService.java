@@ -99,7 +99,8 @@ public class ModelService {
         for (ModelRequest modelRequest : modelRequestList) {
             log.info ( "Validating model input" );
             partsDataValidator.isModelAlreadyExists ( modelRequest.getName ( ) );
-
+            partsDataValidator.validateVehicleTypeId ( modelRequest.getVehicleTypeId ( ) );
+            partsDataValidator.validateMakeId ( modelRequest.getMakeId ( ) );
             Model model = modelRepository.save ( prepareModel ( modelRequest ) );
             log.info ( "Model created - {}", modelRequest );
             modelList.add ( model );
