@@ -3,6 +3,8 @@ package com.autoadda.apis.part.entity;
 import lombok.*;
 
 import javax.persistence.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -28,6 +30,10 @@ public class Category {
     //	@ManyToOne
     @Column(name = "parent_category_id")
     private String parentCategoryId;
+
+    @OneToMany(orphanRemoval = true)
+    @JoinColumn(name = "category_id")
+    private List<MediaFile> images = new ArrayList<> ( );
 
 //	@OneToMany(mappedBy = "parentCategory", cascade = CascadeType.ALL)
 //	private Set<PartCategory> subCategories;

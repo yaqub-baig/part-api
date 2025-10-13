@@ -106,7 +106,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(CustomerNotFoundException.class)
     public ResponseEntity<GenericResponse> handleCustomerNotFound(CustomerNotFoundException ex) {
         log.warn ( "Customer not found", ex );
-        return buildResponse ( ex, HttpStatus.NOT_FOUND, ErrorMessage.ERROR_NOT_FOUND );
+        return buildResponse ( ex, HttpStatus.NOT_FOUND, ex.getMessage () );
     }
 
     @ExceptionHandler(GarageNotFoundException.class)
@@ -124,7 +124,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ConflictException.class)
     public ResponseEntity<GenericResponse> handleConflict(ConflictException ex) {
         log.warn ( "Conflict error", ex );
-        return buildResponse ( ex, HttpStatus.CONFLICT, ErrorMessage.ERROR_DATA_INTEGRITY );
+        return buildResponse ( ex, HttpStatus.CONFLICT, ex.getMessage () );
     }
 
     @ExceptionHandler(Exception.class)

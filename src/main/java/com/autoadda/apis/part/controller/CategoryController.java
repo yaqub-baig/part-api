@@ -1,6 +1,7 @@
 package com.autoadda.apis.part.controller;
 
 import com.autoadda.apis.part.request.CategoryListPayload;
+import com.autoadda.apis.part.request.CategoryRequest;
 import com.autoadda.apis.part.response.GenericResponse;
 import com.autoadda.apis.part.service.CategoryService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -59,6 +60,16 @@ public class CategoryController {
     @PostMapping
     public GenericResponse createPartCategory(@RequestBody CategoryListPayload payload) {
         return categoryService.createCategory ( payload.getCategoryRequestList ( ) );
+    }
+
+    @Operation(summary = "Updating Category by Id")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "successfull updating category", content = {
+                    @Content(mediaType = "application/json", schema = @Schema(implementation = GenericResponse.class))}),
+            @ApiResponse(responseCode = "404", description = "update category api not found", content = @Content)})
+    @PutMapping
+    public GenericResponse updateCategoryById(@RequestBody CategoryRequest category) {
+        return categoryService.updateCategory ( category );
     }
 
     @Operation(summary = "Deleting Categories by Id")

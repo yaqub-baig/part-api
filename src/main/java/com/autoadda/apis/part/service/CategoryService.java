@@ -1,8 +1,11 @@
 package com.autoadda.apis.part.service;
 
 import com.autoadda.apis.part.entity.Category;
+import com.autoadda.apis.part.entity.MediaFile;
 import com.autoadda.apis.part.exception.NotFoundException;
+import com.autoadda.apis.part.exception.ResourceNotFoundException;
 import com.autoadda.apis.part.repository.CategoryRepository;
+import com.autoadda.apis.part.repository.MediaFileRepository;
 import com.autoadda.apis.part.request.CategoryRequest;
 import com.autoadda.apis.part.response.CategoryResponse;
 import com.autoadda.apis.part.response.GenericResponse;
@@ -23,6 +26,7 @@ public class CategoryService {
 
     private final CategoryRepository categoryRepository;
 
+    private final MediaFileRepository mediaFileRepository;
 
     private final PartsDataValidator partsDataValidator;
 
@@ -31,8 +35,24 @@ public class CategoryService {
     }
 
     private Category prepareCategory(CategoryRequest request) {
-        return Category.builder ( ).name ( request.getName ( ) ).code ( request.getCode ( ) )
+        Category category = Category.builder ( ).name ( request.getName ( ) ).code ( request.getCode ( ) )
                 .parentCategoryId ( request.getParentCategoryId ( ) ).build ( );
+
+        if ( request.getImageIds ( ) != null && ! request.getImageIds ( ).isEmpty ( ) ) {
+            List<MediaFile> allById = mediaFileRepository.findAllById ( request.getImageIds ( ) );
+            category.setImages ( allById );
+        }
+
+        return category;
+    }
+
+    private List<MediaFile> takeOutMediaFileFromRequestImageIds(List<Long> imageIds) {
+        List<MediaFile> mediaFiles = new ArrayList<> ( );
+        for (Long imageId : imageIds) {
+            mediaFiles.add ( mediaFileRepository.findById ( imageId )
+                    .orElseThrow ( () -> new ResourceNotFoundException ( "media File not found" ) ) );
+        }
+        return mediaFiles;
     }
 
     /**
@@ -53,6 +73,7 @@ public class CategoryService {
                                 .attributeUrl ( prepareAttributeUrl ( category.getId ( ) ) )
                                 .code ( category.getCode ( ) )
                                 .parentCategoryId ( category.getParentCategoryId ( ) )
+                                .images ( category.getImages ( ) )
                                 .build ( ) )
                 .toList ( );
 
@@ -79,6 +100,7 @@ public class CategoryService {
                         .attributeUrl ( prepareAttributeUrl ( category.getId ( ) ) )
                         .code ( category.getCode ( ) )
                         .parentCategoryId ( category.getParentCategoryId ( ) )
+                        .images ( category.getImages ( ) )
                         .build ( ) )
                 .toList ( );
 
@@ -131,10 +153,49 @@ public class CategoryService {
     /**
      * Updates an existing category based on the provided request object.
      *
-     * @param id CategoryRequest object containing the updated details.
+     * @param request CategoryRequest object containing the updated details.
      * @return GenericResponse containing the updated category.
-     * @throws NotFoundException if the category with the specified ID does not
-     *                           exist.
+     * @throws NotFoundException if the category with the specified ID does not exist.
+     */
+    @Transactional
+    public GenericResponse updateCategory(CategoryRequest request) throws NotFoundException {
+        log.info ( "Perform Category input validation" );
+        partsDataValidator.validateCategoryId ( request.getId ( ) );
+
+        Category category = categoryRepository.findById ( request.getId ( ) )
+                .orElseThrow ( () -> new NotFoundException ( "Category not found for ID: " + request.getId ( ) ) );
+
+        // Only update fields that are provided (not null)
+        if ( request.getName ( ) != null ) {
+            category.setName ( request.getName ( ) );
+        }
+        if ( request.getCode ( ) != null ) {
+            category.setCode ( request.getCode ( ) );
+        }
+        if ( request.getParentCategoryId ( ) != null ) {
+            category.setParentCategoryId ( request.getParentCategoryId ( ) );
+        }
+
+        // Update images only if imageIds are provided
+        if ( request.getImageIds ( ) != null && ! request.getImageIds ( ).isEmpty ( ) ) {
+            List<MediaFile> images = takeOutMediaFileFromRequestImageIds ( request.getImageIds ( ) );
+            category.getImages ( ).clear ( );
+            category.getImages ( ).addAll ( images );
+        }
+
+        categoryRepository.save ( category );
+
+        return GenericResponse.builder ( ).body ( "Category has been Updated" ).code ( "200" )
+                .message ( "Successfully updated category: " + request.getId ( ) )
+                .status ( "success" ).build ( );
+    }
+
+    /**
+     * Deletes a category by its ID.
+     *
+     * @param id The ID of the category to delete.
+     * @return GenericResponse containing the deletion status.
+     * @throws NotFoundException if the category with the specified ID does not exist.
      */
     @Transactional
     public GenericResponse deleteCategoryById(String id) throws NotFoundException {
