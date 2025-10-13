@@ -133,6 +133,12 @@ public class GlobalExceptionHandler {
         return buildResponse ( ex, HttpStatus.INTERNAL_SERVER_ERROR, ErrorMessage.ERROR_INTERNAL_SERVER );
     }
 
+    @ExceptionHandler(NotFoundException.class)
+    public ResponseEntity<GenericResponse> handleNotFoundException(NotFoundException ex) {
+        log.error ( "Unhandled exception", ex );
+        return buildResponse ( ex, HttpStatus.NOT_FOUND, ex.getMessage ( ) );
+    }
+
     private ResponseEntity<GenericResponse> buildResponse(Exception ex, HttpStatus status, String message) {
         return ResponseEntity.status ( status ).body ( GenericResponse.builder ( ).status ( "failed" )
                 .code ( String.valueOf ( status.value ( ) ) ).message ( message ).build ( ) );
