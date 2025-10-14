@@ -20,7 +20,7 @@ public class CategoryResponse {
     private String name;
     private String code;
     private String parentCategoryId;
-    private Set<Category> subCategories = new HashSet<> ( );
+    private List<CategoryResponse> subCategories = new ArrayList<> ( );
     private String attributeUrl;
     private List<MediaFile> images = new ArrayList<> ( );
 }

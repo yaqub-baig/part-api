@@ -73,6 +73,16 @@ public class CategoryService {
                                 .attributeUrl ( prepareAttributeUrl ( category.getId ( ) ) )
                                 .code ( category.getCode ( ) )
                                 .parentCategoryId ( category.getParentCategoryId ( ) )
+                                .subCategories ( categoryRepository.findByParentCategoryId ( category.getId ( ) ).stream ( ).map (
+                                        cat -> CategoryResponse
+                                                .builder ( )
+                                                .name ( cat.getName ( ) )
+                                                .id ( cat.getId ( ) )
+                                                .parentCategoryId ( cat.getParentCategoryId ( ) )
+                                                .attributeUrl ( prepareAttributeUrl ( cat.getId ( ) ) )
+                                                .images ( cat.getImages ( ) )
+                                                .code ( cat.getCode ( ) )
+                                                .build ( ) ).toList ( ) )
                                 .images ( category.getImages ( ) )
                                 .build ( ) )
                 .toList ( );
