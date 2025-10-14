@@ -140,7 +140,6 @@ public class CategoryService {
         for (CategoryRequest categoryRequest : categoryRequestList) {
             log.info ( "Perform Category input validation" );
             partsDataValidator.isCategoryAlreadyExists ( categoryRequest.getName ( ) );
-
             Category category = categoryRepository.save ( prepareCategory ( categoryRequest ) );
             log.info ( "Category created - {}", categoryRequest.toString ( ) );
             categoryList.add ( category );
