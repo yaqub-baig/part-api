@@ -35,7 +35,7 @@ public class CategoryService {
     }
 
     private Category prepareCategory(CategoryRequest request) {
-        Category category = Category.builder ( ).name ( request.getName ( ) ).code ( request.getCode ( ) )
+        Category category = Category.builder ( ).id ( request.getId ( ) ).name ( request.getName ( ) ).code ( request.getCode ( ) )
                 .parentCategoryId ( request.getParentCategoryId ( ) ).build ( );
 
         if ( request.getImageIds ( ) != null && ! request.getImageIds ( ).isEmpty ( ) ) {

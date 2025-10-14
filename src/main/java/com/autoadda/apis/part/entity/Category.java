@@ -37,12 +37,12 @@ public class Category {
 
 //	@OneToMany(mappedBy = "parentCategory", cascade = CascadeType.ALL)
 //	private Set<PartCategory> subCategories;
-
-    @PrePersist
-    public void generateId() {
-        if ( this.id == null || this.id.isEmpty ( ) ) {
-            this.id = UUID.randomUUID ( ).toString ( );
-        }
-    }
+//
+//    @PrePersist
+//    public void generateId() {
+//        if ( this.id == null || this.id.isEmpty ( ) ) {
+//            this.id = UUID.randomUUID ( ).toString ( );
+//        }
+//    }
 
 }
