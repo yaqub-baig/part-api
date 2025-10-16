@@ -36,11 +36,13 @@ public class CategoryService {
 
     private Category prepareCategory(CategoryRequest request) {
         Category category = Category.builder ( ).id ( request.getId ( ) ).name ( request.getName ( ) ).code ( request.getCode ( ) )
-                .parentCategoryId ( request.getParentCategoryId ( ) ).build ( );
+                .parentCategoryId ( request.getParentCategoryId ( ) )
+                .images ( new ArrayList<> ( ) )
+                .build ( );
 
         if ( request.getImageIds ( ) != null && ! request.getImageIds ( ).isEmpty ( ) ) {
             List<MediaFile> allById = mediaFileRepository.findAllById ( request.getImageIds ( ) );
-            category.setImages ( allById );
+            category.getImages ( ).addAll ( allById );
         }
 
         return category;
