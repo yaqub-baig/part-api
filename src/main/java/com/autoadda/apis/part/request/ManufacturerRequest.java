@@ -13,4 +13,5 @@ public class ManufacturerRequest {
 
     private String id;
     private String name;
+    private Long logoId;
 }
