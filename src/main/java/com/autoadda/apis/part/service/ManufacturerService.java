@@ -115,7 +115,7 @@ public class ManufacturerService {
     }
 
     /**
-     * * Updates an existing manufacturer based on the provided request.
+     * Updates an existing manufacturer based on the provided request.
      *
      * @param request the ManufacturerRequest containing updated details
      * @return a GenericResponse indicating the result of the update operation

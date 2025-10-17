@@ -30,9 +30,10 @@ services:
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql-docker:3306/auto_adda_parts
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: root123
+      SPRING_PROFILES_ACTIVE: dev
       FILE_UPLOAD-DIR: /app/documents  # 👈 Add document path environment variable
     ports:
-      - "8060:8061"
+      - "8060:8060"
     volumes:
       - documents-volume:/app/documents       # 👈 Mount volume for document storage
       - ./src:/app/src          # 👈 Mount source code
@@ -60,7 +61,7 @@ services:
 #    networks:
 #      - auto-adda-network
 volumes:
-  documents-volume:                            # 👈 Named volume for document storage
+  documents-volume:                             # 👈 Named volume for document storage
 
 networks:
   auto-adda-network:

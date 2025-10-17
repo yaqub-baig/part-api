@@ -121,4 +121,18 @@ public class InventoryController {
         return ResponseEntity.ok ( response );
     }
 
+    // Get supplier count for a specific product
+    @GetMapping("/supplier-count/{productId}")
+    public ResponseEntity<Long> getSupplierCount(@PathVariable String productId) {
+        Long count = inventoryService.getSupplierCountByProductId ( productId );
+        return ResponseEntity.ok ( count );
+    }
+
+    // Get supplier counts for multiple products
+    @PostMapping("/supplier-counts")
+    public ResponseEntity<java.util.Map<String, Long>> getSupplierCounts(@RequestBody List<String> productIds) {
+        java.util.Map<String, Long> counts = inventoryService.getSupplierCountsByProductIds ( productIds );
+        return ResponseEntity.ok ( counts );
+    }
+
 }

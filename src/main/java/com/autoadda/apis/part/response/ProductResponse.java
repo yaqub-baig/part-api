@@ -30,4 +30,7 @@ public class ProductResponse {
     private String attributeUrl;
     private List<ProductAttribute> attributes;
     private List<MediaFile> images;
+
+    // Supplier availability information
+    private Long availableSupplierCount; // Number of suppliers with this product in stock
 }

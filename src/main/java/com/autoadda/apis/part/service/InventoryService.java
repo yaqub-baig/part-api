@@ -24,7 +24,9 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -369,18 +371,27 @@ public class InventoryService {
         Boolean inStockOnly = request.getInStockOnly ( ) != null ? request.getInStockOnly ( ) : false;
         Boolean activeOnly = request.getActiveOnly ( ) != null ? request.getActiveOnly ( ) : true;
 
-        // Execute search query
+        // Set default sorting (default to id ascending if not specified)
+        String sortBy = request.getSortBy ( );
+        String sortDirection = request.getSortDirection ( ) != null ? request.getSortDirection ( ).toUpperCase ( ) : "ASC";
+
+        // Execute search query with new filters
         List<InventoryPart> inventoryParts = partRepo.searchInventoryParts (
                 request.getPartNumber ( ),
                 request.getPartName ( ),
                 request.getCategory ( ),
                 request.getManufacturer ( ),
                 request.getProductId ( ),
+                request.getLocation ( ),
+                request.getProductCondition ( ),
+                request.getSupplierId ( ),
                 request.getMinPrice ( ),
                 request.getMaxPrice ( ),
                 request.getMinQuantity ( ),
                 inStockOnly,
-                activeOnly
+                activeOnly,
+                sortBy,
+                sortDirection
         );
 
         // Map to lightweight search response with supplier information using mapper
@@ -398,5 +409,26 @@ public class InventoryService {
             }
             return inventoryPartMapper.toResponse ( part, product, supplier );
         } ).toList ( );
+    }
+
+    /**
+     * Get supplier count for a specific product
+     * Returns the number of suppliers that have this product in stock
+     */
+    public Long getSupplierCountByProductId(String productId) {
+        return partRepo.countByProductIdAndIsActiveAndQuantityInStockGreaterThan ( productId, true, 0 );
+    }
+
+    /**
+     * Get supplier counts for multiple products
+     * Returns a map of productId -> supplier count
+     */
+    public Map<String, Long> getSupplierCountsByProductIds(List<String> productIds) {
+        Map<String, Long> supplierCounts = new HashMap<> ( );
+        for (String productId : productIds) {
+            Long count = partRepo.countByProductIdAndIsActiveAndQuantityInStockGreaterThan ( productId, true, 0 );
+            supplierCounts.put ( productId, count );
+        }
+        return supplierCounts;
     }
 }
