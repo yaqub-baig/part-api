@@ -431,4 +431,22 @@ public class InventoryService {
         }
         return supplierCounts;
     }
+
+    public List<Supplier> getSuppliersByProductId(String productId) {
+        List<InventoryPart> parts = partRepo.searchInventoryParts(null, null, null, null, productId, null, null, null, null, null, null, false, true, null, null);
+        List<String> supplierIds = parts.stream()
+                .map(InventoryPart::getSupplierId)
+                .distinct()
+                .toList();
+
+        List<Supplier> suppliers = new ArrayList<>();
+        for (String supplierId : supplierIds) {
+            try {
+                supplierRepo.findById(Integer.parseInt(supplierId)).ifPresent(suppliers::add);
+            } catch (NumberFormatException e) {
+                // Log the error or handle it as needed
+            }
+        }
+        return suppliers;
+    }
 }

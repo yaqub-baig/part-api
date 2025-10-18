@@ -135,4 +135,10 @@ public class InventoryController {
         return ResponseEntity.ok ( counts );
     }
 
+    // Get suppliers by product ID
+    @GetMapping("/parts/product/{productId}/suppliers")
+    public ResponseEntity<List<com.autoadda.apis.part.entity.Supplier>> getSuppliersByProductId(@PathVariable String productId) {
+        return ResponseEntity.ok(inventoryService.getSuppliersByProductId(productId));
+    }
+
 }

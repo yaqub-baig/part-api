@@ -1,5 +1,6 @@
 package com.autoadda.apis.part.service;
 
+import com.autoadda.apis.part.controller.CategoryController;
 import com.autoadda.apis.part.entity.MediaFile;
 import com.autoadda.apis.part.entity.Product;
 import com.autoadda.apis.part.entity.ProductAttribute;
@@ -32,6 +33,7 @@ public class ProductService {
     private final ProductAttributeRepository productAttributeRepository;
     private final ProductAttributeService productAttributeServcie;
     private final MediaFileRepository mediaFileRepository;
+    private final CategoryService categoryService;
 
     /**
      * Prepares a Product entity from the given ProductRequest.
@@ -74,6 +76,7 @@ public class ProductService {
                 .description ( product.getDescription ( ) )
                 .manufacturerId ( product.getManufacturerId ( ) )
                 .categoryId ( product.getCategoryId ( ) )
+                .category(categoryService.getCategoryById(product.getCategoryId()))
                 .make ( product.getMake ( ) )
                 .partNumber ( product.getPartNumber ( ) )
                 .year ( product.getYear ( ) )
@@ -170,7 +173,9 @@ public class ProductService {
         List<Product> productList = new ArrayList<> ( );
         for (ProductRequest productRequest : productRequestList) {
             log.info ( "perform Product input validation" );
+            partsDataValidator.validateManufacturerId ( productRequest.getManufacturerId () );
             partsDataValidator.isProductAlreadyExists ( productRequest.getName ( ) );
+            partsDataValidator.validateCategoryId ( productRequest.getCategoryId () );
             Product product = productRepository.save ( prepareProduct ( productRequest ) );
             log.info ( "Product created - " + productRequest.toString ( ) );
 
@@ -205,6 +210,8 @@ public class ProductService {
     public GenericResponse updateProduct(ProductRequest request) throws NotFoundException {
         log.info ( "perform Product input validation" );
         partsDataValidator.validateProductId ( request.getId ( ) );
+        partsDataValidator.validateManufacturerId ( request.getManufacturerId () );
+        partsDataValidator.validateCategoryId ( request.getCategoryId ( ) );
         List<MediaFile> images = takeOutMediaFileFromRequestImageIds ( request.getImageIds ( ) );
         Product product = productRepository.findById ( request.getId ( ) ).orElseThrow ( () -> new ResourceNotFoundException ( "product repository " ) );
         if ( product != null ) {

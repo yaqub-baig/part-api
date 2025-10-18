@@ -221,4 +221,17 @@ public class CategoryService {
         return GenericResponse.builder ( ).body ( "Category has been deleted" ).code ( "200" ).message ( "Successfully deleted" )
                 .status ( "success" ).build ( );
     }
+
+    public CategoryResponse getCategoryById(String categoryId) {
+        Category category = categoryRepository.findById ( categoryId ).orElseThrow ( () -> new ResourceNotFoundException ( "category not found" ) );
+        return CategoryResponse.builder()
+                .id ( category.getId ( ) )
+                .name ( category.getName ( ) )
+                .attributeUrl ( prepareAttributeUrl ( category.getId ( ) ) )
+                .code ( category.getCode ( ) )
+                .parentCategoryId ( category.getParentCategoryId ( ) )
+                .images ( category.getImages ( ) )
+                .build ( );
+
+    }
 }

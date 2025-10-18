@@ -28,6 +28,7 @@ public class ProductResponse {
     private String categoryId;
     private String manufacturerId;
     private String attributeUrl;
+    private CategoryResponse category;
     private List<ProductAttribute> attributes;
     private List<MediaFile> images;
 

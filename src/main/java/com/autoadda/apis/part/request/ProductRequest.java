@@ -1,5 +1,6 @@
 package com.autoadda.apis.part.request;
 
+import com.autoadda.apis.part.response.CategoryResponse;
 import lombok.*;
 
 import java.util.ArrayList;
