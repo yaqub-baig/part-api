@@ -48,7 +48,11 @@ public class ManufacturerService {
     public GenericResponse getAllManufacturers() {
         List<Manufacturer> manufacturers = manufacturerRepository.findAll ( );
         List<ManufacturerResponse> responseBody = manufacturers.stream ( )
-                .map ( m -> ManufacturerResponse.builder ( ).id ( m.getId ( ) ).name ( m.getName ( ) ).build ( ) )
+                .map ( m -> ManufacturerResponse.builder ( )
+                        .id ( m.getId ( ) )
+                        .name ( m.getName ( ) )
+                        .logo ( m.getLogo ( ) != null ? m.getLogo ( ) : null )
+                        .build ( ) )
                 .toList ( );
 
         return GenericResponse.builder ( ).body ( responseBody ).code ( "200" ).message ( SUCCESS ).status ( SUCCESS ).build ( );
@@ -123,8 +127,12 @@ public class ManufacturerService {
         if ( manufacturer == null ) {
             throw new NotFoundException ( "Manufacturer not found with name: " + name );
         }
-
-        return GenericResponse.builder ( ).body ( manufacturer ).code ( "200" )
+        ManufacturerResponse build = ManufacturerResponse.builder()
+                .id(manufacturer.getId())
+                .logo(manufacturer.getLogo() != null ? manufacturer.getLogo() : null)
+                .name(manufacturer.getName())
+                .build();
+        return GenericResponse.builder ( ).body ( build ).code ( "200" )
                 .message ( "Successfully Retrieved " + name + MANUFACTURER ).status ( SUCCESS ).build ( );
     }
 
