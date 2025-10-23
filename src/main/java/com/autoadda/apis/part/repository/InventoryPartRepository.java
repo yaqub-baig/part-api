@@ -86,6 +86,9 @@ public interface InventoryPartRepository extends JpaRepository<InventoryPart, In
     // Count suppliers for a specific product (active and in stock)
     Long countByProductIdAndIsActiveAndQuantityInStockGreaterThan(String productId, Boolean isActive, Integer minStock);
 
+    // Get all active inventory parts for a product with stock available
+    List<InventoryPart> findByProductIdAndIsActiveAndQuantityInStockGreaterThan(String productId, Boolean isActive, Integer minStock);
+
     // Get distinct product IDs with available inventory
     @Query("SELECT DISTINCT ip.productId FROM InventoryPart ip WHERE ip.isActive = true AND ip.quantityInStock > 0")
     List<String> findDistinctProductIdsWithAvailableInventory();

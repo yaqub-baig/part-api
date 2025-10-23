@@ -34,4 +34,5 @@ public class ProductResponse {
 
     // Supplier availability information
     private Long availableSupplierCount; // Number of suppliers with this product in stock
+    private List<SupplierAvailabilityResponse> suppliers; // Optional: detailed supplier list with pricing and inventory
 }

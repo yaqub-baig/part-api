@@ -2,7 +2,9 @@ package com.autoadda.apis.part.controller;
 
 import com.autoadda.apis.part.request.ProductSearchRequest;
 import com.autoadda.apis.part.response.ProductResponse;
+import com.autoadda.apis.part.response.SupplierAvailabilityResponse;
 import com.autoadda.apis.part.service.ProductSearchService;
+import com.autoadda.apis.part.service.SupplierService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -22,12 +24,13 @@ import java.util.List;
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/v1/products/search")
+@RequestMapping("/products/search")
 @RequiredArgsConstructor
 @Tag(name = "Product Search with Supplier Availability", description = "Search products and see how many suppliers have them in stock")
 public class ProductSearchController {
 
     private final ProductSearchService productSearchService;
+    private final SupplierService supplierService;
 
     @Operation(summary = "Search products by name with supplier count",
             description = "Search for products by name and get the number of suppliers that have each product in stock")
@@ -38,9 +41,11 @@ public class ProductSearchController {
     @GetMapping("/by-name")
     public ResponseEntity<List<ProductResponse>> searchByName(
             @Parameter(description = "Product name to search for", required = true)
-            @RequestParam String name) {
-        log.info("Searching products by name: {}", name);
-        List<ProductResponse> products = productSearchService.searchProductsByName(name);
+            @RequestParam String name,
+            @Parameter(description = "Include detailed supplier list with pricing and inventory", required = false)
+            @RequestParam(defaultValue = "false") boolean includeSuppliers) {
+        log.info("Searching products by name: {} (includeSuppliers: {})", name, includeSuppliers);
+        List<ProductResponse> products = productSearchService.searchProductsByName(name, includeSuppliers);
         return ResponseEntity.ok(products);
     }
 
@@ -53,9 +58,11 @@ public class ProductSearchController {
     @GetMapping("/by-part-number")
     public ResponseEntity<ProductResponse> searchByPartNumber(
             @Parameter(description = "Part number to search for", required = true)
-            @RequestParam String partNumber) {
-        log.info("Searching product by part number: {}", partNumber);
-        ProductResponse product = productSearchService.searchProductByPartNumber(partNumber);
+            @RequestParam String partNumber,
+            @Parameter(description = "Include detailed supplier list with pricing and inventory", required = false)
+            @RequestParam(defaultValue = "false") boolean includeSuppliers) {
+        log.info("Searching product by part number: {} (includeSuppliers: {})", partNumber, includeSuppliers);
+        ProductResponse product = productSearchService.searchProductByPartNumber(partNumber, includeSuppliers);
         if (product == null) {
             return ResponseEntity.notFound().build();
         }
@@ -72,9 +79,11 @@ public class ProductSearchController {
     public ResponseEntity<List<ProductResponse>> searchByVehicle(
             @Parameter(description = "Vehicle year", required = true) @RequestParam Integer year,
             @Parameter(description = "Vehicle make", required = true) @RequestParam String make,
-            @Parameter(description = "Vehicle model", required = true) @RequestParam String model) {
-        log.info("Searching products by vehicle: {}/{}/{}", year, make, model);
-        List<ProductResponse> products = productSearchService.searchProductsByYearMakeModel(year, make, model);
+            @Parameter(description = "Vehicle model", required = true) @RequestParam String model,
+            @Parameter(description = "Include detailed supplier list with pricing and inventory", required = false)
+            @RequestParam(defaultValue = "false") boolean includeSuppliers) {
+        log.info("Searching products by vehicle: {}/{}/{} (includeSuppliers: {})", year, make, model, includeSuppliers);
+        List<ProductResponse> products = productSearchService.searchProductsByYearMakeModel(year, make, model, includeSuppliers);
         return ResponseEntity.ok(products);
     }
 
@@ -87,9 +96,11 @@ public class ProductSearchController {
     @GetMapping("/by-category")
     public ResponseEntity<List<ProductResponse>> searchByCategory(
             @Parameter(description = "Category ID", required = true)
-            @RequestParam String categoryId) {
-        log.info("Searching products by category: {}", categoryId);
-        List<ProductResponse> products = productSearchService.searchProductsByCategory(categoryId);
+            @RequestParam String categoryId,
+            @Parameter(description = "Include detailed supplier list with pricing and inventory", required = false)
+            @RequestParam(defaultValue = "false") boolean includeSuppliers) {
+        log.info("Searching products by category: {} (includeSuppliers: {})", categoryId, includeSuppliers);
+        List<ProductResponse> products = productSearchService.searchProductsByCategory(categoryId, includeSuppliers);
         return ResponseEntity.ok(products);
     }
 
@@ -102,9 +113,11 @@ public class ProductSearchController {
     @GetMapping("/by-manufacturer")
     public ResponseEntity<List<ProductResponse>> searchByManufacturer(
             @Parameter(description = "Manufacturer ID", required = true)
-            @RequestParam String manufacturerId) {
-        log.info("Searching products by manufacturer: {}", manufacturerId);
-        List<ProductResponse> products = productSearchService.searchProductsByManufacturer(manufacturerId);
+            @RequestParam String manufacturerId,
+            @Parameter(description = "Include detailed supplier list with pricing and inventory", required = false)
+            @RequestParam(defaultValue = "false") boolean includeSuppliers) {
+        log.info("Searching products by manufacturer: {} (includeSuppliers: {})", manufacturerId, includeSuppliers);
+        List<ProductResponse> products = productSearchService.searchProductsByManufacturer(manufacturerId, includeSuppliers);
         return ResponseEntity.ok(products);
     }
 
@@ -117,9 +130,11 @@ public class ProductSearchController {
     @GetMapping("/by-other-names")
     public ResponseEntity<List<ProductResponse>> searchByOtherNames(
             @Parameter(description = "Alternative name to search for", required = true)
-            @RequestParam String otherNames) {
-        log.info("Searching products by other names: {}", otherNames);
-        List<ProductResponse> products = productSearchService.searchProductsByOtherNames(otherNames);
+            @RequestParam String otherNames,
+            @Parameter(description = "Include detailed supplier list with pricing and inventory", required = false)
+            @RequestParam(defaultValue = "false") boolean includeSuppliers) {
+        log.info("Searching products by other names: {} (includeSuppliers: {})", otherNames, includeSuppliers);
+        List<ProductResponse> products = productSearchService.searchProductsByOtherNames(otherNames, includeSuppliers);
         return ResponseEntity.ok(products);
     }
 
@@ -132,9 +147,11 @@ public class ProductSearchController {
     @GetMapping("/by-tag")
     public ResponseEntity<List<ProductResponse>> searchByTag(
             @Parameter(description = "Tag to search for", required = true)
-            @RequestParam String tag) {
-        log.info("Searching products by tag: {}", tag);
-        List<ProductResponse> products = productSearchService.searchProductsByTag(tag);
+            @RequestParam String tag,
+            @Parameter(description = "Include detailed supplier list with pricing and inventory", required = false)
+            @RequestParam(defaultValue = "false") boolean includeSuppliers) {
+        log.info("Searching products by tag: {} (includeSuppliers: {})", tag, includeSuppliers);
+        List<ProductResponse> products = productSearchService.searchProductsByTag(tag, includeSuppliers);
         return ResponseEntity.ok(products);
     }
 
@@ -147,13 +164,33 @@ public class ProductSearchController {
     @GetMapping("/{id}")
     public ResponseEntity<ProductResponse> getProductById(
             @Parameter(description = "Product ID", required = true)
-            @PathVariable String id) {
-        log.info("Getting product by ID: {}", id);
-        ProductResponse product = productSearchService.getProductById(id);
+            @PathVariable String id,
+            @Parameter(description = "Include detailed supplier list with pricing and inventory", required = false)
+            @RequestParam(defaultValue = "false") boolean includeSuppliers) {
+        log.info("Getting product by ID: {} (includeSuppliers: {})", id, includeSuppliers);
+        ProductResponse product = productSearchService.getProductById(id, includeSuppliers);
         if (product == null) {
             return ResponseEntity.notFound().build();
         }
         return ResponseEntity.ok(product);
+    }
+
+    @Operation(summary = "Get all suppliers for a product",
+            description = "Get detailed supplier information including pricing and stock availability for a specific product")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Suppliers found successfully"),
+            @ApiResponse(responseCode = "404", description = "No suppliers found for this product")
+    })
+    @GetMapping("/{productId}/suppliers")
+    public ResponseEntity<List<SupplierAvailabilityResponse>> getSuppliersByProductId(
+            @Parameter(description = "Product ID", required = true)
+            @PathVariable String productId) {
+        log.info("Getting suppliers for product ID: {}", productId);
+        List<SupplierAvailabilityResponse> suppliers = supplierService.getSuppliersByProductId(productId);
+        if (suppliers.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(suppliers);
     }
 
     @Operation(summary = "Get all products with supplier counts",
@@ -162,9 +199,11 @@ public class ProductSearchController {
             @ApiResponse(responseCode = "200", description = "Products retrieved successfully")
     })
     @GetMapping
-    public ResponseEntity<List<ProductResponse>> getAllProducts() {
-        log.info("Getting all products with supplier counts");
-        List<ProductResponse> products = productSearchService.getAllProducts();
+    public ResponseEntity<List<ProductResponse>> getAllProducts(
+            @Parameter(description = "Include detailed supplier list with pricing and inventory", required = false)
+            @RequestParam(defaultValue = "false") boolean includeSuppliers) {
+        log.info("Getting all products with supplier counts (includeSuppliers: {})", includeSuppliers);
+        List<ProductResponse> products = productSearchService.getAllProducts(includeSuppliers);
         return ResponseEntity.ok(products);
     }
 
@@ -181,9 +220,11 @@ public class ProductSearchController {
                     description = "Search criteria with multiple optional filters",
                     required = true
             )
-            @RequestBody ProductSearchRequest searchRequest) {
-        log.info("Advanced product search with filters: {}", searchRequest);
-        List<ProductResponse> products = productSearchService.advancedSearch(searchRequest);
+            @RequestBody ProductSearchRequest searchRequest,
+            @Parameter(description = "Include detailed supplier list with pricing and inventory", required = false)
+            @RequestParam(defaultValue = "false") boolean includeSuppliers) {
+        log.info("Advanced product search with filters: {} (includeSuppliers: {})", searchRequest, includeSuppliers);
+        List<ProductResponse> products = productSearchService.advancedSearch(searchRequest, includeSuppliers);
         return ResponseEntity.ok(products);
     }
 }

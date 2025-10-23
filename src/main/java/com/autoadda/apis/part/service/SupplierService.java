@@ -1,14 +1,17 @@
 package com.autoadda.apis.part.service;
 
+import com.autoadda.apis.part.entity.InventoryPart;
 import com.autoadda.apis.part.entity.Location;
 import com.autoadda.apis.part.entity.MediaFile;
 import com.autoadda.apis.part.entity.Supplier;
 import com.autoadda.apis.part.exception.AlreadyExistException;
 import com.autoadda.apis.part.exception.ForbiddenException;
 import com.autoadda.apis.part.exception.ResourceNotFoundException;
+import com.autoadda.apis.part.repository.InventoryPartRepository;
 import com.autoadda.apis.part.repository.MediaFileRepository;
 import com.autoadda.apis.part.repository.SupplierRepository;
 import com.autoadda.apis.part.request.SupplierRequest;
+import com.autoadda.apis.part.response.SupplierAvailabilityResponse;
 import com.autoadda.apis.part.util.Status;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -30,6 +34,7 @@ public class SupplierService {
     private final SupplierRepository supplierRepository;
     private final MediaFileRepository mediaFileRepository;
     private final LocationService locationService;
+    private final InventoryPartRepository inventoryPartRepository;
 
     public ResponseEntity<Supplier> createSupplier(SupplierRequest request, String autoAddaId) {
         Supplier supplier = prepareSupplier ( request );
@@ -289,6 +294,59 @@ public class SupplierService {
 
         return (logoCount + shopImageCount + tradeLicenseCount + vatCertCount) > 0;
 
+    }
+
+    /**
+     * Get all suppliers for a specific product with inventory details
+     *
+     * @param productId the product ID
+     * @return list of suppliers with availability information
+     */
+    public List<SupplierAvailabilityResponse> getSuppliersByProductId(String productId) {
+        // Fetch all active inventory parts for this product with stock available
+        List<InventoryPart> inventoryParts = inventoryPartRepository
+                .findByProductIdAndIsActiveAndQuantityInStockGreaterThan(productId, true, 0);
+
+        // Map each inventory part to a SupplierAvailabilityResponse
+        return inventoryParts.stream()
+                .map(this::mapToSupplierAvailabilityResponse)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Map InventoryPart to SupplierAvailabilityResponse
+     */
+    private SupplierAvailabilityResponse mapToSupplierAvailabilityResponse(InventoryPart inventoryPart) {
+        // Get supplier details
+        Supplier supplier = supplierRepository.findById(Integer.parseInt(inventoryPart.getSupplierId()))
+                .orElse(null);
+
+        if (supplier == null) {
+            // Return basic info if supplier not found
+            return SupplierAvailabilityResponse.builder()
+                    .supplierId(inventoryPart.getSupplierId())
+                    .supplierName("Unknown")
+                    .quantityInStock(inventoryPart.getQuantityInStock())
+                    .unitPrice(inventoryPart.getUnitPrice())
+                    .sku(inventoryPart.getSku())
+                    .isActive(inventoryPart.getIsActive())
+                    .build();
+        }
+
+        // Build response with both supplier and inventory information
+        return SupplierAvailabilityResponse.builder()
+                .supplierId(String.valueOf(supplier.getId()))
+                .supplierName(supplier.getName())
+                .supplierBrandName(supplier.getSupplierBrandName())
+                .email(supplier.getEmail())
+                .phoneNumber(supplier.getPhoneNumber())
+                .website(supplier.getWebsite())
+                .locationId(supplier.getLocation() != null ? String.valueOf(supplier.getLocation().getId()) : null)
+                .quantityInStock(inventoryPart.getQuantityInStock())
+                .unitPrice(inventoryPart.getUnitPrice())
+                .sku(inventoryPart.getSku())
+                .isActive(inventoryPart.getIsActive())
+                .build();
     }
 
 }
