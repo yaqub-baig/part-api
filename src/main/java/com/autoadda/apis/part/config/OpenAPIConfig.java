@@ -35,7 +35,7 @@ public class OpenAPIConfig {
         
         // Add production server with actual domain
         Server liveServer = new Server();
-        liveServer.setUrl("https://parts.autoadda.mylstech.com");
+        liveServer.setUrl("https://parts.autoadda.mylstech.com/api/v1");
         liveServer.setDescription("Live Production Server");
 
         Contact contact = new Contact();
