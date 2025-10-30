@@ -12,7 +12,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
-
+@CrossOrigin("*")
 @Slf4j
 @RestController
 @RequestMapping("/productattributes")
@@ -21,7 +21,7 @@ public class ProductAttributeController {
 
     private final ProductAttributeService productAttributeService;
 
-    @CrossOrigin
+
     @Operation(summary = "Retrieving All ProductAttributes")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "successfull retrieving all productattribues", content = {

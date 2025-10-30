@@ -12,7 +12,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
-
+@CrossOrigin("*")
 @Slf4j
 @RestController
 @RequestMapping("/attributes")
@@ -32,8 +32,6 @@ public class AttributeController {
         return attributeService.createAttribute ( payload.getAttributeRequestList ( ) );
 
     }
-
-    @CrossOrigin
     @Operation(summary = "Retrieving All Attributes")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "successfull retrieving all attributes", content = {
