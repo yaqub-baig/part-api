@@ -12,7 +12,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
-
+@CrossOrigin("*")
 @Slf4j
 @RestController
 @RequestMapping("/models")
@@ -31,7 +31,7 @@ public class ModelController {
         return modelService.createModel ( payload.getModelRequestList ( ) );
     }
 
-    @CrossOrigin
+
     @Operation(summary = "Retrieving All Models")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "successfull retrieving all models", content = {

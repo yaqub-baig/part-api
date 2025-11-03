@@ -11,7 +11,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
-
+@CrossOrigin("*")
 @Slf4j
 @RestController
 @RequestMapping("categoryattributes")
@@ -20,7 +20,7 @@ public class CategoryAttributeController {
 
     private final CategoryAttributeService categoryAttributeService;
 
-    @CrossOrigin
+
     @Operation(summary = "Retrieving All Top Level Category Attributes")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "successfull retrieving all category attributes", content = {

@@ -20,27 +20,39 @@ public class OpenAPIConfig {
     @Value("${parts.service.base.prod.url}")
     private String prodUrl;
 
+    @Value("${server.servlet.contextPath:/}")
+    private String contextPath;
+
     @Bean
     public OpenAPI myOpenAPI() {
-        Server devServer = new Server ( );
-        devServer.setUrl ( devUrl );
-        devServer.setDescription ( "Server URL in Development environment" );
+        Server devServer = new Server();
+        devServer.setUrl(devUrl);
+        devServer.setDescription("Server URL in Development environment");
 
-        Server prodServer = new Server ( );
-        prodServer.setUrl ( prodUrl );
-        prodServer.setDescription ( "Server URL in Production environment" );
+        Server prodServer = new Server();
+        prodServer.setUrl(prodUrl);
+        prodServer.setDescription("Server URL in Production environment");
+        
+        // Add production server with actual domain
+        Server liveServer = new Server();
+        liveServer.setUrl("https://parts.autoadda.mylstech.com/api/v1");
+        liveServer.setDescription("Live Production Server");
 
-        Contact contact = new Contact ( );
-        contact.setEmail ( "yakub@yzsquare.com" );
-        contact.setName ( "Yakub Mohammad" );
-        contact.setUrl ( "https://www.carservices.com" );
+        Contact contact = new Contact();
+        contact.setEmail("yakub@yzsquare.com");
+        contact.setName("Yakub Mohammad");
+        contact.setUrl("https://www.carservices.com");
 
-        License mitLicense = new License ( ).name ( "License" ).url ( "https://carservices.com/licenses/" );
+        License mitLicense = new License().name("License").url("https://carservices.com/licenses/");
 
-        Info info = new Info ( ).title ( "Part API" ).version ( "1.0" ).contact ( contact )
-                .description ( "This API exposes endpoints to manage Parts." )
-                .termsOfService ( "https://www.carservices.com/terms" ).license ( mitLicense );
+        Info info = new Info()
+                .title("Part API")
+                .version("1.0")
+                .contact(contact)
+                .description("This API exposes endpoints to manage Parts.")
+                .termsOfService("https://www.carservices.com/terms")
+                .license(mitLicense);
 
-        return new OpenAPI ( ).info ( info ).servers ( List.of ( devServer, prodServer ) );
+        return new OpenAPI().info(info).servers(List.of(liveServer, devServer, prodServer));
     }
 }

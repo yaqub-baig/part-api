@@ -22,6 +22,7 @@ import java.util.List;
  * This controller provides product search endpoints that include supplier availability information
  * Use this for customer-facing product search where supplier counts matter
  */
+@CrossOrigin("*")
 @Slf4j
 @RestController
 @RequestMapping("/products/search")

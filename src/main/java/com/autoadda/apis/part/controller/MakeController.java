@@ -12,7 +12,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
-
+@CrossOrigin("*")
 @Slf4j
 @RestController
 @RequestMapping("/makes")
@@ -30,7 +30,7 @@ public class MakeController {
         return makeService.createMake ( payload.getMakeRequestList ( ) );
     }
 
-    @CrossOrigin
+
     @Operation(summary = "Retrieving All Makes")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "successfull retrieving all makes", content = {
