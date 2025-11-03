@@ -37,7 +37,7 @@ public class MakeService {
     public GenericResponse getAllMakes() {
         List<Make> makes = makeRepository.findAll ( );
         List<MakeResponse> responseBody = makes.stream ( )
-                .map ( make -> MakeResponse.builder ( ).id ( make.getId ( ) ).name ( make.getName ( ) ).build ( ) )
+                .map ( make -> MakeResponse.builder ( ).id ( make.getId ( ) ).name ( make.getName ( ) ).logo(make.getLogo()!=null?make.getLogo ():null).build ( ) )
                 .collect ( Collectors.toList ( ) );
 
         return GenericResponse.builder ( ).body ( responseBody ).code ( "200" ).message ( "success" ).status ( "success" ).build ( );
@@ -75,7 +75,7 @@ public class MakeService {
         Make make = makeRepository.findById ( id )
                 .orElseThrow ( () -> new NotFoundException ( "Make not found with ID: " + id ) );
 
-        MakeResponse response = MakeResponse.builder ( ).id ( make.getId ( ) ).name ( make.getName ( ) ).build ( );
+        MakeResponse response = MakeResponse.builder ( ).id ( make.getId ( ) ).logo ( make.getLogo ( ) != null ? make.getLogo ( ) : null ).name ( make.getName ( ) ).build ( );
 
         return GenericResponse.builder ( ).body ( List.of ( response ) ).code ( "200" )
                 .message ( "Successfully Retrieved " + id + " Make" ).status ( "success" ).build ( );
