@@ -2,10 +2,7 @@ package com.autoadda.apis.part.entity;
 
 import lombok.*;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.Table;
+import javax.persistence.*;
 
 @Entity
 @Table(name = "make")
@@ -23,5 +20,9 @@ public class Make {
 
     @Column(name = "name")
     private String name;
+
+    @ManyToOne
+    @JoinColumn(name = "logo")
+    private MediaFile logo;
 
 }
