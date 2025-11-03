@@ -101,7 +101,13 @@ public class MakeService {
         Make make = makeRepository.findById ( request.getId ( ) )
                 .orElseThrow ( () -> new NotFoundException ( "Make not found with ID: " + request.getId ( ) ) );
 
-        make.setName ( request.getName ( ) );
+        if ( request.getLogoId ( ) != null ) {
+            make.setLogo ( mediaFileRepositoy.findById ( request.getLogoId ( ) ).orElseThrow ( () -> new ResourceNotFoundException ( "logo image not found" ) ) );
+        }
+
+        if ( request.getName ( ) != null ) {
+            make.setName ( request.getName ( ) );
+        }
         makeRepository.save ( make );
 
         return GenericResponse.builder ( ).body ( "Make has been Updated" ).code ( "200" )
