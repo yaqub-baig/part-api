@@ -1,5 +1,6 @@
 package com.autoadda.apis.part.response;
 
+import com.autoadda.apis.part.util.ProductCondition;
 import lombok.*;
 
 @Builder
@@ -26,6 +27,8 @@ public class SupplierAvailabilityResponse {
 
     // Inventory details
     private Integer quantityInStock;
+
+    private ProductCondition productCondition;
 
     private Double unitPrice;
 
