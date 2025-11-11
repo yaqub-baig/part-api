@@ -6,14 +6,13 @@ import com.autoadda.apis.part.exception.ResourceNotFoundException;
 import com.autoadda.apis.part.repository.MakeRepository;
 import com.autoadda.apis.part.repository.MediaFileRepository;
 import com.autoadda.apis.part.request.MakeRequest;
-import com.autoadda.apis.part.request.ManufacturerRequest;
 import com.autoadda.apis.part.response.GenericResponse;
 import com.autoadda.apis.part.response.MakeResponse;
+import com.autoadda.apis.part.response.ManufacturerResponse;
 import com.autoadda.apis.part.util.GUIDGenerator;
 import com.autoadda.apis.part.validator.PartsDataValidator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -28,7 +27,7 @@ public class MakeService {
 
     private final MakeRepository makeRepository;
     private final PartsDataValidator partsDataValidator;
-    private final MediaFileRepository mediaFileRepositoy;
+    private final MediaFileRepository mediaFileRepository;
 
     private Make prepareMake(MakeRequest request) {
         return Make.builder ( ).id ( GUIDGenerator.generateGUID ( ) ).name ( request.getName ( ) ).build ( );
@@ -47,24 +46,25 @@ public class MakeService {
         List<Make> makeList = new ArrayList<> ( );
 
         for (MakeRequest request : makeRequestList) {
-            log.info ( "Validating Make input" );
-            partsDataValidator.isMakeAlreadyExists ( request.getName ( ) );
-
-            Make entity= prepareMake(request);
-                if(request.getLogoId()!=null){
-                    entity.setLogo(mediaFileRepositoy.findById(request.getLogoId()).orElseThrow(()->new ResourceNotFoundException("not found")));
-                }
-            }
-        for (MakeRequest request : makeRequestList) {
             log.info ( "Performing Make input validation" );
             partsDataValidator.isMakeAlreadyExists ( request.getName ( ) );
 
-            Make make = makeRepository.save ( prepareMake ( request ) );
+            Make entity = prepareMake(request);
+            if(request.getLogoId()!=null){
+                entity.setLogo(mediaFileRepository.findById(request.getLogoId()).orElseThrow(()->new ResourceNotFoundException("not found")));
+            }
+            Make make = makeRepository.save (entity);
             log.info ( "Make created - {}", request );
             makeList.add ( make );
-        }
+        }  List<MakeResponse> makeResponseList = makeList.stream ( ).map (manufacturer ->
+                MakeResponse.builder ( )
+                        .id ( manufacturer.getId ( ) )
+                        .logo ( manufacturer.getLogo ( ) != null ? manufacturer.getLogo ( ) : null )
+                        .name ( manufacturer.getName ( ) )
+                        .build ( )
+        ).toList ( );
 
-        return GenericResponse.builder ( ).body ( makeList ).code ( "201" ).message ( "Successfully Created Make" )
+        return GenericResponse.builder ( ).body ( makeResponseList ).code ( "201" ).message ( "Successfully Created Make" )
                 .status ( "success" ).build ( );
     }
 
@@ -102,7 +102,7 @@ public class MakeService {
                 .orElseThrow ( () -> new NotFoundException ( "Make not found with ID: " + request.getId ( ) ) );
 
         if ( request.getLogoId ( ) != null ) {
-            make.setLogo ( mediaFileRepositoy.findById ( request.getLogoId ( ) ).orElseThrow ( () -> new ResourceNotFoundException ( "logo image not found" ) ) );
+            make.setLogo ( mediaFileRepository.findById ( request.getLogoId ( ) ).orElseThrow ( () -> new ResourceNotFoundException ( "logo image not found" ) ) );
         }
 
         if ( request.getName ( ) != null ) {
