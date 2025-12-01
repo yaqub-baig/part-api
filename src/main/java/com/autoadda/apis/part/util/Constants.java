@@ -2,6 +2,11 @@ package com.autoadda.apis.part.util;
 
 public class Constants {
 
+    // Private constructor to hide the implicit public one
+    private Constants() {
+        throw new UnsupportedOperationException("This is a utility class and cannot be instantiated");
+    }
+
     //member type
     public static final String NEW = "NEW";
     public static final String REQUESTED = "REQUESTED";
@@ -17,6 +22,4 @@ public class Constants {
     public static final String WAITING_FOR_SPARES = "WAITING_FOR_SPARES";
     public static final String INPROGRESS = "JOB_INPROGRESS";
     public static final String JOB_COMPLETED = "JOB_COMPLETED";
-
-
 }

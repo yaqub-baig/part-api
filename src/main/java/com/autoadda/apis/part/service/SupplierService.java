@@ -17,14 +17,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -36,6 +32,7 @@ public class SupplierService {
     private final MediaFileRepository mediaFileRepository;
     private final LocationService locationService;
     private final InventoryPartRepository inventoryPartRepository;
+    private final MediaFileCleanupService mediaFileCleanupService;
 
     public ResponseEntity<Supplier> createSupplier(SupplierRequest request, String autoAddaId) {
         Supplier supplier = prepareSupplier ( request );
@@ -60,7 +57,7 @@ public class SupplierService {
     /**
      * Prepare Supplier entity from SupplierRequest
      *
-     * @param request
+     * @param request SupplierRequest
      * @return Supplier
      */
     private Supplier prepareSupplier(SupplierRequest request) {
@@ -202,7 +199,7 @@ public class SupplierService {
 
 
         if ( ! filesToCleanup.isEmpty ( ) ) {
-            scheduleMediaFileCleanup ( filesToCleanup );
+            mediaFileCleanupService.scheduleCleanup ( filesToCleanup );
         }
 
 
@@ -262,44 +259,6 @@ public class SupplierService {
         if ( request.getMobileNumber ( ) != null ) {
             existing.setMobileNumber ( request.getMobileNumber ( ) );
         }
-    }
-
-    @Async
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void scheduleMediaFileCleanup(List<Long> mediaFileIds) {
-        // Small delay to ensure transaction is committed
-        try {
-            Thread.sleep ( 5000 );
-            for (Long fileId : mediaFileIds) {
-                try {
-                    // Check if file is still referenced elsewhere before deleting
-                    if ( ! isMediaFileStillReferenced ( fileId ) ) {
-                        mediaFileRepository.deleteById ( fileId );
-                        log.info ( "Successfully cleaned up media file: {}", fileId );
-                    } else {
-                        log.info ( "Media file {} still referenced, skipping cleanup", fileId );
-                    }
-                }
-                catch ( Exception e ) {
-                    log.warn ( "Failed to cleanup media file {}: {}", fileId, e.getMessage ( ) );
-                }
-            }
-        }
-        catch ( InterruptedException e ) {
-            Thread.currentThread ( ).interrupt ( );
-            log.warn ( "Media file cleanup interrupted" );
-        }
-    }
-
-    private boolean isMediaFileStillReferenced(Long mediaFileId) {
-
-        long logoCount = supplierRepository.countByShopLogoId ( mediaFileId );
-        long shopImageCount = supplierRepository.countByShopImageId ( mediaFileId );
-        long tradeLicenseCount = supplierRepository.countByTradeLicenseId ( mediaFileId );
-        long vatCertCount = supplierRepository.countByVatCertificateId ( mediaFileId );
-
-        return (logoCount + shopImageCount + tradeLicenseCount + vatCertCount) > 0;
-
     }
 
     /**

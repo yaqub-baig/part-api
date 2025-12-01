@@ -71,7 +71,7 @@ class InventoryServiceTest {
 
 		InventoryPartResponse result = inventoryService.getPartById(1);
 
-		assertThat(result);
+		assertThat(result).isNotNull();
 	}
 
 	@Test
@@ -80,7 +80,7 @@ class InventoryServiceTest {
 
 		InventoryPartResponse result = inventoryService.getPartById(2);
 
-		assertThat(result);
+		assertThat(result).isNotNull();
 	}
 
 	@Test
@@ -109,7 +109,7 @@ class InventoryServiceTest {
 
 		inventoryService.removeStock(1, 4, "Used in job");
 
-//		assertThat(part.getQuantity()).isEqualTo(6);
+
 		verify(transactionRepository).save(any(InventoryTransaction.class));
 	}
 
@@ -117,7 +117,7 @@ class InventoryServiceTest {
 	void testRemoveStock_Failure_InsufficientQty() {
 		InventoryPart part = new InventoryPart();
 		part.setId(1);
-//		part.setQuantity(2);
+
 
 		when(partRepository.findById(1)).thenReturn(Optional.of(part));
 
