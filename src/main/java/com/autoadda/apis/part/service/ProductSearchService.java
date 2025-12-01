@@ -5,6 +5,7 @@ import com.autoadda.apis.part.entity.ProductAttribute;
 import com.autoadda.apis.part.repository.InventoryPartRepository;
 import com.autoadda.apis.part.repository.ProductRepository;
 import com.autoadda.apis.part.request.ProductSearchRequest;
+import com.autoadda.apis.part.response.ProductAttributeResponse;
 import com.autoadda.apis.part.response.ProductResponse;
 import com.autoadda.apis.part.response.SupplierAvailabilityResponse;
 import lombok.RequiredArgsConstructor;
@@ -92,7 +93,7 @@ public class ProductSearchService {
         if (includeAttributes) {
             Object attributesResponse = productAttributeService.getProductAttributeByProductId(product.getId()).getBody();
             builder.attributes(
-                    attributesResponse != null ? (List<ProductAttribute>) attributesResponse : new ArrayList<>()
+                    attributesResponse != null ? (List<ProductAttributeResponse>) attributesResponse : new ArrayList<>()
             );
         }
 

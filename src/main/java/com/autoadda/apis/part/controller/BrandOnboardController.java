@@ -1,6 +1,7 @@
 package com.autoadda.apis.part.controller;
 
 
+import com.autoadda.apis.part.request.ApproveRejectRequest;
 import com.autoadda.apis.part.request.BrandOnboardRequest;
 import com.autoadda.apis.part.response.BrandOnboardResponse;
 import com.autoadda.apis.part.response.GenericResponse;
@@ -33,9 +34,36 @@ public class BrandOnboardController {
         return ResponseEntity.ok ( brandOnboardService.getBrandById ( referenceId ) );
     }
 
+    @DeleteMapping("/delete/{id}")
+    public ResponseEntity<GenericResponse> deleteBrand(@PathVariable Integer id) {
+        return ResponseEntity.ok ( brandOnboardService.deleteBrand ( id ) );
+    }
+
     @GetMapping("/all")
     public ResponseEntity<GenericResponse> getAllBrands() {
         return ResponseEntity.ok ( brandOnboardService.getAllBrands ( ) );
+    }
+
+    @PutMapping("/approve/{id}")
+    public ResponseEntity<GenericResponse> approveRequest(
+            @PathVariable Integer id,
+            @RequestHeader(value = "X-Auto-Adda-Id") String adminId) {
+        return ResponseEntity.ok ( brandOnboardService.approveRequest ( id, adminId ) );
+    }
+
+    @PutMapping("/reject/{id}")
+    public ResponseEntity<GenericResponse> rejectRequest(
+            @PathVariable Integer id,
+            @RequestBody ApproveRejectRequest request,
+            @RequestHeader(value = "X-Auto-Adda-Id") String adminId) {
+        return ResponseEntity.ok ( brandOnboardService.rejectRequest (
+                id, adminId, request.getRejectionReason ( ) ) );
+    }
+
+    @GetMapping("/status/{status}")
+    public ResponseEntity<GenericResponse> getRequestsByStatus(
+            @PathVariable String status) {
+        return ResponseEntity.ok ( brandOnboardService.getRequestsByStatus ( status ) );
     }
 
 }

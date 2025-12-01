@@ -113,6 +113,30 @@ public class CategoryService {
                         .code ( category.getCode ( ) )
                         .parentCategoryId ( category.getParentCategoryId ( ) )
                         .images ( category.getImages ( ) )
+                        .subCategories(categoryRepository
+                                .findByParentCategoryId(category.getId())
+                                .stream().map(cat->
+                                        CategoryResponse.builder()
+                                                .name(cat.getName())
+                                                .id(cat.getId())
+                                                .attributeUrl(prepareAttributeUrl(cat.getId()))
+                                                .code(cat.getCode())
+                                                .parentCategoryId(cat.getParentCategoryId())
+                                                .images(cat.getImages())
+                                                .subCategories(categoryRepository
+                                                        .findByParentCategoryId(category.getId())
+                                                        .stream().map(cat2->
+                                                                CategoryResponse.builder()
+                                                                        .name(cat2.getName())
+                                                                        .id(cat2.getId())
+                                                                        .attributeUrl(prepareAttributeUrl(cat2.getId()))
+                                                                        .code(cat2.getCode())
+                                                                        .parentCategoryId(cat2.getParentCategoryId())
+                                                                        .images(cat2.getImages())
+                                                                        .build())
+                                                        .toList())
+                                                .build())
+                                .toList())
                         .build ( ) )
                 .toList ( );
 

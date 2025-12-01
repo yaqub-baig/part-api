@@ -36,7 +36,7 @@ public class Product {
     private String otherNames;
 
     @Column(name = "year")
-    private Integer year;
+    private String year;
 
     @Column(name = "make")
     private String make;

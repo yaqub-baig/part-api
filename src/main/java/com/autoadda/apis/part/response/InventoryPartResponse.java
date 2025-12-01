@@ -38,7 +38,7 @@ public class InventoryPartResponse {
     private String productDescription;
     private String productTag;
     private String productOtherNames;
-    private Integer productYear;
+    private String productYear;
     private String productMake;
     private String productModel;
     private List<MediaFile> productImages;

@@ -12,6 +12,7 @@ import com.autoadda.apis.part.repository.ProductAttributeRepository;
 import com.autoadda.apis.part.repository.ProductRepository;
 import com.autoadda.apis.part.request.ProductRequest;
 import com.autoadda.apis.part.response.GenericResponse;
+import com.autoadda.apis.part.response.ProductAttributeResponse;
 import com.autoadda.apis.part.response.ProductResponse;
 import com.autoadda.apis.part.util.GUIDGenerator;
 import com.autoadda.apis.part.validator.PartsDataValidator;
@@ -89,7 +90,7 @@ public class ProductService {
         if ( includeAttributes ) {
             builder.attributes (
                     productAttributeServcie.getProductAttributeByProductId ( product.getId ( ) ).getBody ( ) != null
-                            ? (List<ProductAttribute>) productAttributeServcie.getProductAttributeByProductId ( product.getId ( ) ).getBody ( )
+                            ? (List<ProductAttributeResponse>) productAttributeServcie.getProductAttributeByProductId ( product.getId ( ) ).getBody ( )
                             : new ArrayList<> ( )
             );
         }
@@ -252,6 +253,20 @@ public class ProductService {
                 product.getImages ( ).addAll ( images );
             }
             productRepository.save ( product );
+
+            if ( request.getAttributes ( ) != null ) {
+                List<ProductAttribute> productAttributes = request.getAttributes ( ).stream ( )
+                        .map ( attrReq -> ProductAttribute.builder ( )
+                                .id ( GUIDGenerator.generateGUID ( ) )
+                                .productId ( product.getId ( ) )
+                                .attributeId ( attrReq.getAttributeId ( ) )
+                                .attributeValue ( attrReq.getAttributeValue ( ) )
+                                .build ( ) )
+                        .toList ( );
+
+                productAttributeRepository.saveAll ( productAttributes );
+                log.info ( "Product attributes saved for product: {}", product.getId ( ) );
+            }
         }
         return GenericResponse.builder ( )
                 .body ( "Product is been Updated" )

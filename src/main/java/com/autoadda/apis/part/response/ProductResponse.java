@@ -20,7 +20,7 @@ public class ProductResponse {
     private String name;
 
     private String partNumber;
-    private Integer year;
+    private String year;
     private String make;
     private String model;
     private String tag;
@@ -29,7 +29,7 @@ public class ProductResponse {
     private String manufacturerId;
     private String attributeUrl;
     private CategoryResponse category;
-    private List<ProductAttribute> attributes;
+    private List<ProductAttributeResponse> attributes;
     private List<MediaFile> images;
 
     // Supplier availability information

@@ -20,15 +20,27 @@ public class BrandOnboardMapper {
     }
 
     public BrandOnboardResponse toResponse(BrandOnboard entity) {
-        BrandOnboardResponse brandOnboardResponse = new BrandOnboardResponse ( );
-        brandOnboardResponse.setId ( entity.getId ( ) != null ? entity.getId ( ) : null );
-        brandOnboardResponse.setBrandName ( entity.getBrandName ( ) != null ? entity.getBrandName ( ) : null );
-        brandOnboardResponse.setModelName ( entity.getModelName ( ) != null ? entity.getModelName ( ) : null );
-        brandOnboardResponse.setEngineType ( entity.getEngineType ( ) != null ? entity.getEngineType ( ) : null );
-        brandOnboardResponse.setVehicleType ( entity.getVehicleType ( ) != null ? entity.getVehicleType ( ) : null );
-        brandOnboardResponse.setRequestReferenceId ( entity.getRequestReferenceId ( ) != null ? entity.getRequestReferenceId ( ) : null );
-        brandOnboardResponse.setIsChecked ( entity.getIsChecked ( ) != null ? entity.getIsChecked ( ) : null );
-        return brandOnboardResponse;
+        BrandOnboardResponse response = new BrandOnboardResponse ( );
+        response.setId ( entity.getId ( ) );
+        response.setBrandName ( entity.getBrandName ( ) );
+        response.setModelName ( entity.getModelName ( ) );
+        response.setEngineType ( entity.getEngineType ( ) );
+        response.setVehicleType ( entity.getVehicleType ( ) );
+        response.setRequestReferenceId ( entity.getRequestReferenceId ( ) );
+        response.setIsChecked ( entity.getIsChecked ( ) );
+
+        // New workflow fields
+        response.setRequestStatus ( entity.getRequestStatus ( ) );
+        response.setRequestBy ( entity.getRequestBy ( ) );
+        response.setCreatedAt ( entity.getCreatedAt ( ) );
+        response.setUpdatedAt ( entity.getUpdatedAt ( ) );
+        response.setApprovedBy ( entity.getApprovedBy ( ) );
+        response.setApprovedAt ( entity.getApprovedAt ( ) );
+        response.setRejectedBy ( entity.getRejectedBy ( ) );
+        response.setRejectedAt ( entity.getRejectedAt ( ) );
+        response.setRejectionReason ( entity.getRejectionReason ( ) );
+
+        return response;
     }
 
 

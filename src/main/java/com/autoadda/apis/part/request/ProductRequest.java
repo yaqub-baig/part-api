@@ -19,7 +19,7 @@ public class ProductRequest {
     private String description;
     private String name;
     private String partNumber;
-    private Integer year;
+    private String year;
     private String make;
     private String model;
     private String tag;

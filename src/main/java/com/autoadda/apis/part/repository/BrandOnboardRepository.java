@@ -1,6 +1,7 @@
 package com.autoadda.apis.part.repository;
 
 import com.autoadda.apis.part.entity.BrandOnboard;
+import com.autoadda.apis.part.util.BrandRequestStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -18,4 +19,10 @@ public interface BrandOnboardRepository extends JpaRepository<BrandOnboard, Inte
     List<String> findAllCodesForGlobalSequence(@Param("prefix") String prefix);
 
     Optional<BrandOnboard> findByRequestReferenceId(String referenceId);
+
+    // Find all requests by status
+    List<BrandOnboard> findByRequestStatus(BrandRequestStatus status);
+
+    // Find all requests by status ordered by creation date
+    List<BrandOnboard> findByRequestStatusOrderByCreatedAtDesc(BrandRequestStatus status);
 }
