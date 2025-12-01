@@ -382,12 +382,11 @@ public class ProductService {
     }
 
     /**
-     * @deprecated since 1.0, forRemoval = true
      * Searches for products by supplier ID - NO LONGER SUPPORTED
      * Products are predefined and not supplier-specific
      * Use InventoryPartRepository.findBySupplierId() instead
      */
-    @Deprecated(since = "1.0", forRemoval = true)
+
     @Transactional
     public GenericResponse searchProductsBySupplier(String supplierId) {
         return GenericResponse.builder()
