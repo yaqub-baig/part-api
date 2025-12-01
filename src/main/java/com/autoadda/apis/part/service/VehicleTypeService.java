@@ -20,6 +20,9 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class VehicleTypeService {
+    public static final String VEHICLE_TYPE = " VehicleType";
+    public static final String PERFORM_VEHICLE_TYPE_INPUT_VALIDATION = "perform VehicleType input validation";
+    public static final String SUCCESS = "success";
     private final PartsDataValidator partsDataValidator;
     private final VehicleTypeRepository vehicleTypeRepository;
 
@@ -48,7 +51,7 @@ public class VehicleTypeService {
         for (VehicleType vehicleType : vehicleTypes) {
             responseBody.add ( VehicleTypeResponse.builder ( ).id ( vehicleType.getId ( ) ).name ( vehicleType.getName ( ) ).build ( ) );
         }
-        return GenericResponse.builder ( ).body ( responseBody ).code ( "200" ).message ( "success" ).status ( "success" ).build ( );
+        return GenericResponse.builder ( ).body ( responseBody ).code ( "200" ).message (SUCCESS).status (SUCCESS).build ( );
     }
 
     /**
@@ -68,7 +71,7 @@ public class VehicleTypeService {
         List<VehicleType> vehicleTypeList = new ArrayList<> ( );
         for (VehicleTypeRequest vehicleTypeRequest : vehicleTypeRequestList) {
 
-            log.info ( "perform VehicleType input validation" );
+            log.info (PERFORM_VEHICLE_TYPE_INPUT_VALIDATION);
             partsDataValidator.isVehicleTypeAlreadyExists ( vehicleTypeRequest.getName ( ) );
 
             VehicleType vehicleType = vehicleTypeRepository.save ( prepareVehicleType ( vehicleTypeRequest ) );
@@ -77,7 +80,7 @@ public class VehicleTypeService {
         }
 
         return GenericResponse.builder ( ).body ( vehicleTypeList ).code ( "201" ).message ( "successfully Created  VehicleType" )
-                .status ( "success" ).build ( );
+                .status (SUCCESS).build ( );
 
     }
 
@@ -94,14 +97,14 @@ public class VehicleTypeService {
     public GenericResponse getVehicleTypeById(String id) throws NotFoundException {
         List<VehicleTypeResponse> responseBody = new ArrayList<> ( );
 
-        log.info ( "perform VehicleType input validation" );
+        log.info (PERFORM_VEHICLE_TYPE_INPUT_VALIDATION);
         partsDataValidator.validateVehicleTypeId ( id );
         VehicleType vehicleType = vehicleTypeRepository.findById ( id ).get ( );
         if ( vehicleType != null && vehicleType.getId ( ) != null ) {
             responseBody.add ( VehicleTypeResponse.builder ( ).id ( vehicleType.getId ( ) ).name ( vehicleType.getName ( ) ).build ( ) );
         }
         return GenericResponse.builder ( ).body ( responseBody ).code ( "200" )
-                .message ( "successfully Retrived " + id + " VehicleType" ).status ( "success" ).build ( );
+                .message ( "successfully Retrived " + id + VEHICLE_TYPE).status (SUCCESS).build ( );
     }
 
     /**
@@ -116,12 +119,12 @@ public class VehicleTypeService {
      */
     public GenericResponse getVehicleTypeByName(String name) throws NotFoundException {
 
-        log.info ( "perform VehicleType input validation" );
+        log.info (PERFORM_VEHICLE_TYPE_INPUT_VALIDATION);
         partsDataValidator.validateVehicleTypeName ( name );
         VehicleType vehicleType = vehicleTypeRepository.findByName ( name );
 
         return GenericResponse.builder ( ).body ( vehicleType ).code ( "200" )
-                .message ( "successfully Retrived " + name + " VehicleType" ).status ( "success" ).build ( );
+                .message ( "successfully Retrived " + name + VEHICLE_TYPE).status (SUCCESS).build ( );
     }
 
     /**
@@ -136,7 +139,7 @@ public class VehicleTypeService {
      *                           found.
      */
     public GenericResponse updateVehicleType(VehicleTypeRequest request) throws NotFoundException {
-        log.info ( "perform VehicleType input validation" );
+        log.info (PERFORM_VEHICLE_TYPE_INPUT_VALIDATION);
         partsDataValidator.validateVehicleTypeId ( request.getId ( ) );
         VehicleType vehicleType = vehicleTypeRepository.findById ( request.getId ( ) ).get ( );
         log.info ( "Updating service status" );
@@ -145,7 +148,7 @@ public class VehicleTypeService {
             vehicleTypeRepository.save ( vehicleType );
         }
         return GenericResponse.builder ( ).body ( "VehicleType is been Updated" ).code ( "200" )
-                .message ( "successfully Updated " + request.getId ( ) + " VehicleType" ).status ( "success" ).build ( );
+                .message ( "successfully Updated " + request.getId ( ) + VEHICLE_TYPE).status (SUCCESS).build ( );
     }
 
     /**
@@ -158,7 +161,7 @@ public class VehicleTypeService {
      *                           found.
      */
     public GenericResponse deleteVehicleTypeById(String id) throws NotFoundException {
-        log.info ( "perform VehicleType input validation" );
+        log.info (PERFORM_VEHICLE_TYPE_INPUT_VALIDATION);
         partsDataValidator.validateVehicleTypeId ( id );
         VehicleType vehicleType = vehicleTypeRepository.findById ( id ).get ( );
         log.info ( "Deleting VehicleType by Id" );
@@ -166,6 +169,6 @@ public class VehicleTypeService {
             vehicleTypeRepository.delete ( vehicleType );
         }
         return GenericResponse.builder ( ).body ( "VehicleType is been Deleted" ).code ( "200" ).message ( "successfully Deleted" )
-                .status ( "success" ).build ( );
+                .status (SUCCESS).build ( );
     }
 }

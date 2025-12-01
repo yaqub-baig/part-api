@@ -23,6 +23,11 @@ import java.util.List;
 public class CategoryAttributeService {
 
 
+    public static final String ERROR_WHILE_GETTING_ATTRIBUTE_BY_ID = "ERROR while getting attribute By Id";
+    public static final String FAILED = "failed";
+    public static final String RESOURCE_NOT_FOUND = "Resource Not Found";
+    public static final String PERFORM_CATEGORY_ATTRIBUTE_INPUT_VALIDATION = "perform CategoryAttribute input validation";
+    public static final String SUCCESS = "success";
     private final CategoryAttributeRepository categoryAttributeRepository;
 
 
@@ -59,7 +64,7 @@ public class CategoryAttributeService {
 
         List<CategoryAttributeResponse> responseList = categoryAttributes.stream ( ).map ( this::mapToResponse ).toList ( );
         log.info ( "Retrieved {} category attributes", responseList.size ( ) );
-        return GenericResponse.builder ( ).body ( responseList ).code ( "200" ).message ( "success" ).status ( "success" ).build ( );
+        return GenericResponse.builder ( ).body ( responseList ).code ( "200" ).message (SUCCESS).status ( SUCCESS ).build ( );
 
     }
 
@@ -85,13 +90,13 @@ public class CategoryAttributeService {
                 categoryAttributeList.add ( categoryAttribute );
             }
             return GenericResponse.builder ( ).body ( categoryAttributeList ).code ( "201" )
-                    .message ( "successfully Created CategoryAttribute" ).status ( "success" ).build ( );
+                    .message ( "successfully Created CategoryAttribute" ).status ( SUCCESS ).build ( );
         }
         catch ( Exception e ) {
             e.printStackTrace ( );
             log.error ( "ERROR while creating attribute" );
         }
-        return GenericResponse.builder ( ).status ( "failed" ).message ( "failed" ).code ( "500" ).build ( );
+        return GenericResponse.builder ( ).status (FAILED).message ( FAILED ).code ( "500" ).build ( );
     }
 
     /**
@@ -117,16 +122,16 @@ public class CategoryAttributeService {
                         .build ( ) );
             }
             return GenericResponse.builder ( ).body ( responseBody ).code ( "200" )
-                    .message ( "successfully Retrived " + id + " Attribute" ).status ( "success" ).build ( );
+                    .message ( "successfully Retrived " + id + " Attribute" ).status ( SUCCESS ).build ( );
         }
         catch ( NotFoundException exc ) {
-            return GenericResponse.builder ( ).status ( "failed" ).message ( "Resource Not Found" ).code ( "404" ).build ( );
+            return GenericResponse.builder ( ).status ( FAILED ).message (RESOURCE_NOT_FOUND).code ( "404" ).build ( );
         }
         catch ( Exception e ) {
             e.printStackTrace ( );
-            log.error ( "ERROR while getting attribute By Id" );
+            log.error (ERROR_WHILE_GETTING_ATTRIBUTE_BY_ID);
         }
-        return GenericResponse.builder ( ).status ( "failed" ).message ( "failed" ).code ( "500" ).build ( );
+        return GenericResponse.builder ( ).status ( FAILED ).message ( FAILED ).code ( "500" ).build ( );
     }
 
     /**
@@ -144,7 +149,7 @@ public class CategoryAttributeService {
         List<CategoryAttributeResponse> responseBody = new ArrayList<> ( );
         try {
 
-            log.info ( "perform CategoryAttribute input validation" );
+            log.info (PERFORM_CATEGORY_ATTRIBUTE_INPUT_VALIDATION);
             partsDataValidator.validateCategoryIdAndAttributeId ( categoryId, attributeId );
             CategoryAttribute categoryAttribute = categoryAttributeRepository.findByCategoryIdAndAttributeId ( categoryId,
                     attributeId );
@@ -155,16 +160,16 @@ public class CategoryAttributeService {
                         .build ( ) );
             }
             return GenericResponse.builder ( ).body ( responseBody ).code ( "200" )
-                    .message ( "successfully Retrieved  CategoryAttribute" ).status ( "success" ).build ( );
+                    .message ( "successfully Retrieved  CategoryAttribute" ).status ( SUCCESS ).build ( );
         }
         catch ( NotFoundException exc ) {
-            return GenericResponse.builder ( ).status ( "failed" ).message ( "Resource Not Found" ).code ( "404" ).build ( );
+            return GenericResponse.builder ( ).status ( FAILED ).message ( RESOURCE_NOT_FOUND ).code ( "404" ).build ( );
         }
         catch ( Exception e ) {
             e.printStackTrace ( );
-            log.error ( "ERROR while getting attribute By Id" );
+            log.error ( ERROR_WHILE_GETTING_ATTRIBUTE_BY_ID );
         }
-        return GenericResponse.builder ( ).status ( "failed" ).message ( "failed" ).code ( "500" ).build ( );
+        return GenericResponse.builder ( ).status ( FAILED ).message ( FAILED ).code ( "500" ).build ( );
     }
 
     /**
@@ -190,13 +195,13 @@ public class CategoryAttributeService {
                         .build ( ) );
             }
             return GenericResponse.builder ( ).body ( responseBody ).code ( "200" )
-                    .message ( "successfully Retrieved  CategoryAttribute" ).status ( "success" ).build ( );
+                    .message ( "successfully Retrieved  CategoryAttribute" ).status ( SUCCESS ).build ( );
         }
         catch ( Exception e ) {
             e.printStackTrace ( );
-            log.error ( "ERROR while getting attribute By Id" );
+            log.error ( ERROR_WHILE_GETTING_ATTRIBUTE_BY_ID );
         }
-        return GenericResponse.builder ( ).status ( "failed" ).message ( "failed" ).code ( "500" ).build ( );
+        return GenericResponse.builder ( ).status ( FAILED ).message ( FAILED ).code ( "500" ).build ( );
     }
 
     /**
@@ -211,7 +216,7 @@ public class CategoryAttributeService {
     @Transactional(readOnly = true)
     public GenericResponse updateCategoryAttribute(CategoryAttributeRequest request) throws AlreadyExistException {
         try {
-            log.info ( "perform CategoryAttribute input validation" );
+            log.info ( PERFORM_CATEGORY_ATTRIBUTE_INPUT_VALIDATION );
             partsDataValidator.validateCategoryIdAndAttributeId ( request.getCategoryId ( ), request.getAttributeId ( ) );
             CategoryAttribute categoryAttribute = categoryAttributeRepository.findById ( request.getId ( ) ).get ( );
             if ( categoryAttribute != null ) {
@@ -220,17 +225,17 @@ public class CategoryAttributeService {
                 categoryAttributeRepository.save ( categoryAttribute );
             }
             return GenericResponse.builder ( ).body ( "CategoryAttribute is been Updated" ).code ( "200" )
-                    .message ( "successfully Updated " + request.getId ( ) + " CategoryAttribute" ).status ( "success" )
+                    .message ( "successfully Updated " + request.getId ( ) + " CategoryAttribute" ).status ( SUCCESS )
                     .build ( );
         }
         catch ( NotFoundException exc ) {
-            return GenericResponse.builder ( ).status ( "failed" ).message ( "Resource Not Found" ).code ( "404" ).build ( );
+            return GenericResponse.builder ( ).status ( FAILED ).message ( RESOURCE_NOT_FOUND ).code ( "404" ).build ( );
         }
         catch ( Exception e ) {
             e.printStackTrace ( );
             log.error ( "ERROR while updating CategoryAttribute" );
         }
-        return GenericResponse.builder ( ).status ( "failed" ).message ( "failed" ).code ( "500" ).build ( );
+        return GenericResponse.builder ( ).status ( FAILED ).message ( FAILED ).code ( "500" ).build ( );
     }
 
     /**
@@ -244,7 +249,7 @@ public class CategoryAttributeService {
     @Transactional(readOnly = true)
     public GenericResponse deleteCategoryAttributeById(String id) {
         try {
-            log.info ( "perform CategoryAttribute input validation" );
+            log.info ( PERFORM_CATEGORY_ATTRIBUTE_INPUT_VALIDATION );
             partsDataValidator.validateCategoryAttributeId ( id );
             CategoryAttribute attribute = categoryAttributeRepository.findById ( id ).get ( );
             log.info ( "Deleting CategoryAttribute by Id" );
@@ -252,16 +257,16 @@ public class CategoryAttributeService {
                 categoryAttributeRepository.delete ( attribute );
             }
             return GenericResponse.builder ( ).body ( "CategoryAttribute is been Deleted" ).code ( "200" )
-                    .message ( "successfully Deleted" ).status ( "success" ).build ( );
+                    .message ( "successfully Deleted" ).status ( SUCCESS ).build ( );
         }
         catch ( NotFoundException exc ) {
-            return GenericResponse.builder ( ).status ( "failed" ).message ( "Resource Not Found" ).code ( "404" ).build ( );
+            return GenericResponse.builder ( ).status ( FAILED ).message ( RESOURCE_NOT_FOUND ).code ( "404" ).build ( );
         }
         catch ( Exception e ) {
             e.printStackTrace ( );
             log.error ( "ERROR while deleting CategoryAttribute" );
         }
-        return GenericResponse.builder ( ).status ( "failed" ).message ( "failed" ).code ( "500" ).build ( );
+        return GenericResponse.builder ( ).status ( FAILED ).message ( FAILED ).code ( "500" ).build ( );
     }
 
 }

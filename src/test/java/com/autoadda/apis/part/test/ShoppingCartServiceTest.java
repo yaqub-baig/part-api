@@ -19,7 +19,7 @@ import com.autoadda.apis.part.repository.ShoppingCartRepository;
 import com.autoadda.apis.part.service.ShoppingCartService;
 
 @ExtendWith(MockitoExtension.class)
-public class ShoppingCartServiceTest {
+ class ShoppingCartServiceTest {
 
 	@Mock
 	private ShoppingCartRepository cartRepo;
@@ -29,7 +29,7 @@ public class ShoppingCartServiceTest {
 	private ShoppingCartService service;
 
 	@Test
-	public void testAddToCart_NewCart() {
+	 void testAddToCart_NewCart() {
 		InventoryPart part = new InventoryPart();
 		part.setId(1);
 

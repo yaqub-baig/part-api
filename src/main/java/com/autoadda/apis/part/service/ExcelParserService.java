@@ -113,7 +113,7 @@ public class ExcelParserService {
             errors.append ( "Condition must be one of: GENUINE, USED, AFTER_MARKET. " );
         }
 
-        if ( errors.length ( ) > 0 ) {
+        if ( !errors.isEmpty() ) {
             row.setIsValid ( false );
             row.setErrorMessage ( errors.toString ( ).trim ( ) );
         }

@@ -1,6 +1,5 @@
 package com.autoadda.apis.part.service;
 
-import com.autoadda.apis.part.controller.CategoryController;
 import com.autoadda.apis.part.entity.MediaFile;
 import com.autoadda.apis.part.entity.Product;
 import com.autoadda.apis.part.entity.ProductAttribute;
@@ -29,6 +28,11 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ProductService {
 
+    public static final String PRODUCT = " Product";
+    public static final String SUCCESS = "success";
+    public static final String SUCCESSFULLY_RETRIVED = "successfully Retrived ";
+    public static final String SUCCESS1 = "successfully Retrieved";
+    public static final String PERFORM_PRODUCT_INPUT_VALIDATION = "perform Product input validation";
     private final ProductRepository productRepository;
     private final PartsDataValidator partsDataValidator;
     private final ProductAttributeRepository productAttributeRepository;
@@ -42,22 +46,22 @@ public class ProductService {
     private Product prepareProduct(ProductRequest request) {
         List<MediaFile> allById;
 
-        Product build = Product.builder ( )
-                .id ( GUIDGenerator.generateGUID ( ) )
-                .name ( request.getName ( ) )
-                .description ( request.getDescription ( ) )
-                .manufacturerId ( request.getManufacturerId ( ) )
-                .categoryId ( request.getCategoryId ( ) )
-                .model ( request.getModel ( ) )
-                .otherNames ( request.getOtherNames ( ) )
-                .partNumber ( request.getPartNumber ( ) )
-                .tag ( request.getTag ( ) )
-                .year ( request.getYear ( ) )
-                .make ( request.getMake ( ) )
-                .build ( );
-        if ( ! request.getImageIds ( ).isEmpty ( ) ) {
-            allById = mediaFileRepository.findAllById ( request.getImageIds ( ) );
-            build.setImages ( allById );
+        Product build = Product.builder()
+                .id(GUIDGenerator.generateGUID())
+                .name(request.getName())
+                .description(request.getDescription())
+                .manufacturerId(request.getManufacturerId())
+                .categoryId(request.getCategoryId())
+                .model(request.getModel())
+                .otherNames(request.getOtherNames())
+                .partNumber(request.getPartNumber())
+                .tag(request.getTag())
+                .year(request.getYear())
+                .make(request.getMake())
+                .build();
+        if (!request.getImageIds().isEmpty()) {
+            allById = mediaFileRepository.findAllById(request.getImageIds());
+            build.setImages(allById);
         }
         return build;
     }
@@ -71,49 +75,49 @@ public class ProductService {
      * Helper method to build ProductResponse from Product entity
      */
     private ProductResponse buildProductResponse(Product product, boolean includeAttributes) {
-        ProductResponse.ProductResponseBuilder builder = ProductResponse.builder ( )
-                .id ( product.getId ( ) )
-                .name ( product.getName ( ) )
-                .description ( product.getDescription ( ) )
-                .manufacturerId ( product.getManufacturerId ( ) )
-                .categoryId ( product.getCategoryId ( ) )
+        ProductResponse.ProductResponseBuilder builder = ProductResponse.builder()
+                .id(product.getId())
+                .name(product.getName())
+                .description(product.getDescription())
+                .manufacturerId(product.getManufacturerId())
+                .categoryId(product.getCategoryId())
                 .category(categoryService.getCategoryById(product.getCategoryId()))
-                .make ( product.getMake ( ) )
-                .partNumber ( product.getPartNumber ( ) )
-                .year ( product.getYear ( ) )
-                .tag ( product.getTag ( ) )
-                .model ( product.getModel ( ) )
-                .otherNames ( product.getOtherNames ( ) )
-                .attributeUrl ( prepareAttributeUrl ( product.getId ( ) ) )
-                .images ( product.getImages ( ) );
+                .make(product.getMake())
+                .partNumber(product.getPartNumber())
+                .year(product.getYear())
+                .tag(product.getTag())
+                .model(product.getModel())
+                .otherNames(product.getOtherNames())
+                .attributeUrl(prepareAttributeUrl(product.getId()))
+                .images(product.getImages());
 
-        if ( includeAttributes ) {
-            builder.attributes (
-                    productAttributeServcie.getProductAttributeByProductId ( product.getId ( ) ).getBody ( ) != null
-                            ? (List<ProductAttributeResponse>) productAttributeServcie.getProductAttributeByProductId ( product.getId ( ) ).getBody ( )
-                            : new ArrayList<> ( )
+        if (includeAttributes) {
+            builder.attributes(
+                    productAttributeServcie.getProductAttributeByProductId(product.getId()).getBody() != null
+                            ? (List<ProductAttributeResponse>) productAttributeServcie.getProductAttributeByProductId(product.getId()).getBody()
+                            : new ArrayList<>()
             );
         }
 
-        return builder.build ( );
+        return builder.build();
     }
 
     /**
      * Retrieves all products from the repository and prepares a response.
      */
-    @SuppressWarnings("unchecked")
+
     @Transactional
     public GenericResponse getAllProducts() {
-        List<ProductResponse> responseBody = productRepository.findAll ( ).stream ( )
-                .map ( product -> buildProductResponse ( product, true ) )
-                .toList ( );
+        List<ProductResponse> responseBody = productRepository.findAll().stream()
+                .map(product -> buildProductResponse(product, true))
+                .toList();
 
-        return GenericResponse.builder ( )
-                .body ( responseBody )
-                .code ( "200" )
-                .message ( "success" )
-                .status ( "success" )
-                .build ( );
+        return GenericResponse.builder()
+                .body(responseBody)
+                .code("200")
+                .message(SUCCESS)
+                .status(SUCCESS)
+                .build();
     }
 
     /**
@@ -121,15 +125,15 @@ public class ProductService {
      */
     @Transactional
     public GenericResponse getProductsById(String id) throws NotFoundException {
-        Product product = productRepository.findById ( id )
-                .orElseThrow ( () -> new ResourceNotFoundException ( "Product not found with id " + id ) );
-        ProductResponse build = buildProductResponse ( product, true );
-        return GenericResponse.builder ( )
-                .body ( build )
-                .code ( "200" )
-                .message ( "successfully Retrived " + id + " Product" )
-                .status ( "success" )
-                .build ( );
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found with id " + id));
+        ProductResponse build = buildProductResponse(product, true);
+        return GenericResponse.builder()
+                .body(build)
+                .code("200")
+                .message(SUCCESSFULLY_RETRIVED + id + PRODUCT)
+                .status(SUCCESS)
+                .build();
     }
 
     /**
@@ -137,16 +141,16 @@ public class ProductService {
      */
     @Transactional
     public GenericResponse getProductsByName(String name) throws NotFoundException {
-        log.info ( "perform Product input validation" );
-        partsDataValidator.validateProductName ( name );
-        Product product = productRepository.findByName ( name );
-        ProductResponse build = buildProductResponse ( product, true );
-        return GenericResponse.builder ( )
-                .body ( build )
-                .code ( "200" )
-                .message ( "successfully Retrived " + name + " Product" )
-                .status ( "success" )
-                .build ( );
+        log.info(PERFORM_PRODUCT_INPUT_VALIDATION);
+        partsDataValidator.validateProductName(name);
+        Product product = productRepository.findByName(name);
+        ProductResponse build = buildProductResponse(product, true);
+        return GenericResponse.builder()
+                .body(build)
+                .code("200")
+                .message(SUCCESSFULLY_RETRIVED + name + PRODUCT)
+                .status(SUCCESS)
+                .build();
     }
 
     /**
@@ -154,16 +158,16 @@ public class ProductService {
      */
     @Transactional
     public GenericResponse getProductsByCategoryId(String id) throws NotFoundException {
-        List<ProductResponse> responseBody = productRepository.findByCategoryId ( id ).stream ( )
-                .map ( product -> buildProductResponse ( product, false ) )
-                .toList ( );
+        List<ProductResponse> responseBody = productRepository.findByCategoryId(id).stream()
+                .map(product -> buildProductResponse(product, false))
+                .toList();
 
-        return GenericResponse.builder ( )
-                .body ( responseBody )
-                .code ( "200" )
-                .message ( "successfully Retrived " + id + " Product" )
-                .status ( "success" )
-                .build ( );
+        return GenericResponse.builder()
+                .body(responseBody)
+                .code("200")
+                .message(SUCCESSFULLY_RETRIVED + id + PRODUCT)
+                .status(SUCCESS)
+                .build();
     }
 
     /**
@@ -171,37 +175,37 @@ public class ProductService {
      */
     @Transactional
     public GenericResponse createProduct(List<ProductRequest> productRequestList) throws AlreadyExistException {
-        List<Product> productList = new ArrayList<> ( );
+        List<Product> productList = new ArrayList<>();
         for (ProductRequest productRequest : productRequestList) {
-            log.info ( "perform Product input validation" );
-            partsDataValidator.validateManufacturerId ( productRequest.getManufacturerId () );
-            partsDataValidator.isProductAlreadyExists ( productRequest.getName ( ) );
-            partsDataValidator.validateCategoryId ( productRequest.getCategoryId () );
-            Product product = productRepository.save ( prepareProduct ( productRequest ) );
-            log.info ( "Product created - " + productRequest.toString ( ) );
+            log.info(PERFORM_PRODUCT_INPUT_VALIDATION);
+            partsDataValidator.validateManufacturerId(productRequest.getManufacturerId());
+            partsDataValidator.isProductAlreadyExists(productRequest.getName());
+            partsDataValidator.validateCategoryId(productRequest.getCategoryId());
+            Product product = productRepository.save(prepareProduct(productRequest));
+            log.info("Product created - " + productRequest.toString());
 
             // Save associated attributes
-            if ( productRequest.getAttributes ( ) != null ) {
-                List<ProductAttribute> productAttributes = productRequest.getAttributes ( ).stream ( )
-                        .map ( attrReq -> ProductAttribute.builder ( )
-                                .id ( GUIDGenerator.generateGUID ( ) )
-                                .productId ( product.getId ( ) )
-                                .attributeId ( attrReq.getAttributeId ( ) )
-                                .attributeValue ( attrReq.getAttributeValue ( ) )
-                                .build ( ) )
-                        .toList ( );
+            if (productRequest.getAttributes() != null) {
+                List<ProductAttribute> productAttributes = productRequest.getAttributes().stream()
+                        .map(attrReq -> ProductAttribute.builder()
+                                .id(GUIDGenerator.generateGUID())
+                                .productId(product.getId())
+                                .attributeId(attrReq.getAttributeId())
+                                .attributeValue(attrReq.getAttributeValue())
+                                .build())
+                        .toList();
 
-                productAttributeRepository.saveAll ( productAttributes );
-                log.info ( "Product attributes saved for product: {}", product.getId ( ) );
+                productAttributeRepository.saveAll(productAttributes);
+                log.info("Product attributes saved for product: {}", product.getId());
             }
-            productList.add ( product );
+            productList.add(product);
         }
-        return GenericResponse.builder ( )
-                .body ( productList )
-                .code ( "201" )
-                .message ( "successfully Created  Product" )
-                .status ( "success" )
-                .build ( );
+        return GenericResponse.builder()
+                .body(productList)
+                .code("201")
+                .message("successfully Created  Product")
+                .status(SUCCESS)
+                .build();
     }
 
     /**
@@ -209,78 +213,82 @@ public class ProductService {
      */
     @Transactional
     public GenericResponse updateProduct(ProductRequest request) throws NotFoundException {
-        log.info ( "perform Product input validation" );
-        partsDataValidator.validateProductId ( request.getId ( ) );
-        partsDataValidator.validateManufacturerId ( request.getManufacturerId () );
-        partsDataValidator.validateCategoryId ( request.getCategoryId ( ) );
-        List<MediaFile> images = takeOutMediaFileFromRequestImageIds ( request.getImageIds ( ) );
-        Product product = productRepository.findById ( request.getId ( ) ).orElseThrow ( () -> new ResourceNotFoundException ( "product repository " ) );
-        if ( product != null ) {
+        log.info(PERFORM_PRODUCT_INPUT_VALIDATION);
+        partsDataValidator.validateProductId(request.getId());
+        partsDataValidator.validateManufacturerId(request.getManufacturerId());
+        partsDataValidator.validateCategoryId(request.getCategoryId());
+        List<MediaFile> images = takeOutMediaFileFromRequestImageIds(request.getImageIds());
+        Product product = productRepository.findById(request.getId()).orElseThrow(() -> new ResourceNotFoundException("product repository "));
+        if (product != null) {
             // Only update fields that are provided (not null)
-            if ( request.getName ( ) != null ) {
-                product.setName ( request.getName ( ) );
-            }
-            if ( request.getDescription ( ) != null ) {
-                product.setDescription ( request.getDescription ( ) );
-            }
-            if ( request.getPartNumber ( ) != null ) {
-                product.setPartNumber ( request.getPartNumber ( ) );
-            }
-            if ( request.getCategoryId ( ) != null ) {
-                product.setCategoryId ( request.getCategoryId ( ) );
-            }
-            if ( request.getYear ( ) != null ) {
-                product.setYear ( request.getYear ( ) );
-            }
-            if ( request.getMake ( ) != null ) {
-                product.setMake ( request.getMake ( ) );
-            }
-            if ( request.getModel ( ) != null ) {
-                product.setModel ( request.getModel ( ) );
-            }
-            if ( request.getOtherNames ( ) != null ) {
-                product.setOtherNames ( request.getOtherNames ( ) );
-            }
-            if ( request.getTag ( ) != null ) {
-                product.setTag ( request.getTag ( ) );
-            }
-            if ( request.getManufacturerId ( ) != null ) {
-                product.setManufacturerId ( request.getManufacturerId ( ) );
-            }
-            // Update images only if imageIds are provided
-            if ( request.getImageIds ( ) != null && ! request.getImageIds ( ).isEmpty ( ) ) {
-                product.getImages ( ).clear ( );
-                product.getImages ( ).addAll ( images );
-            }
-            productRepository.save ( product );
+            updateOnlyRequestedField(request, product, images);
+            productRepository.save(product);
 
-            if ( request.getAttributes ( ) != null ) {
-                List<ProductAttribute> productAttributes = request.getAttributes ( ).stream ( )
-                        .map ( attrReq -> ProductAttribute.builder ( )
-                                .id ( GUIDGenerator.generateGUID ( ) )
-                                .productId ( product.getId ( ) )
-                                .attributeId ( attrReq.getAttributeId ( ) )
-                                .attributeValue ( attrReq.getAttributeValue ( ) )
-                                .build ( ) )
-                        .toList ( );
+            if (request.getAttributes() != null) {
+                List<ProductAttribute> productAttributes = request.getAttributes().stream()
+                        .map(attrReq -> ProductAttribute.builder()
+                                .id(GUIDGenerator.generateGUID())
+                                .productId(product.getId())
+                                .attributeId(attrReq.getAttributeId())
+                                .attributeValue(attrReq.getAttributeValue())
+                                .build())
+                        .toList();
 
-                productAttributeRepository.saveAll ( productAttributes );
-                log.info ( "Product attributes saved for product: {}", product.getId ( ) );
+                productAttributeRepository.saveAll(productAttributes);
+                log.info("Product attributes saved for product: {}", product.getId());
             }
         }
-        return GenericResponse.builder ( )
-                .body ( "Product is been Updated" )
-                .code ( "200" )
-                .message ( "successfully Updated " + request.getId ( ) + " Product" )
-                .status ( "success" )
-                .build ( );
+        return GenericResponse.builder()
+                .body("Product is been Updated")
+                .code("200")
+                .message("successfully Updated " + request.getId() + PRODUCT)
+                .status(SUCCESS)
+                .build();
+    }
+
+    private static void updateOnlyRequestedField(ProductRequest request, Product product, List<MediaFile> images) {
+        if (request.getName() != null) {
+            product.setName(request.getName());
+        }
+        if (request.getDescription() != null) {
+            product.setDescription(request.getDescription());
+        }
+        if (request.getPartNumber() != null) {
+            product.setPartNumber(request.getPartNumber());
+        }
+        if (request.getCategoryId() != null) {
+            product.setCategoryId(request.getCategoryId());
+        }
+        if (request.getYear() != null) {
+            product.setYear(request.getYear());
+        }
+        if (request.getMake() != null) {
+            product.setMake(request.getMake());
+        }
+        if (request.getModel() != null) {
+            product.setModel(request.getModel());
+        }
+        if (request.getOtherNames() != null) {
+            product.setOtherNames(request.getOtherNames());
+        }
+        if (request.getTag() != null) {
+            product.setTag(request.getTag());
+        }
+        if (request.getManufacturerId() != null) {
+            product.setManufacturerId(request.getManufacturerId());
+        }
+        // Update images only if imageIds are provided
+        if (request.getImageIds() != null && !request.getImageIds().isEmpty()) {
+            product.getImages().clear();
+            product.getImages().addAll(images);
+        }
     }
 
     private List<MediaFile> takeOutMediaFileFromRequestImageIds(List<Long> imageIds) {
-        List<MediaFile> mediaFiles = new ArrayList<> ( );
+        List<MediaFile> mediaFiles = new ArrayList<>();
         for (Long imageId : imageIds) {
-            mediaFiles.add ( mediaFileRepository.findById ( imageId )
-                    .orElseThrow ( () -> new ResourceNotFoundException ( "media File not found" ) ) );
+            mediaFiles.add(mediaFileRepository.findById(imageId)
+                    .orElseThrow(() -> new ResourceNotFoundException("media File not found")));
         }
         return mediaFiles;
     }
@@ -290,18 +298,18 @@ public class ProductService {
      */
     @Transactional
     public GenericResponse deleteProductById(String id) throws NotFoundException {
-        log.info ( "perform Product input validation" );
-        partsDataValidator.validateProductId ( id );
-        Product product = productRepository.findById ( id ).orElseThrow ( () -> new ResourceNotFoundException ( "resource not found exception" ) );
-        if ( product != null ) {
-            productRepository.delete ( product );
+        log.info(PERFORM_PRODUCT_INPUT_VALIDATION);
+        partsDataValidator.validateProductId(id);
+        Product product = productRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("resource not found exception"));
+        if (product != null) {
+            productRepository.delete(product);
         }
-        return GenericResponse.builder ( )
-                .body ( "Product is been Deleted" )
-                .code ( "200" )
-                .message ( "successfully Deleted" )
-                .status ( "success" )
-                .build ( );
+        return GenericResponse.builder()
+                .body("Product is been Deleted")
+                .code("200")
+                .message("successfully Deleted")
+                .status(SUCCESS)
+                .build();
     }
 
     /**
@@ -309,16 +317,16 @@ public class ProductService {
      */
     @Transactional
     public GenericResponse searchProductsByName(String name) {
-        List<ProductResponse> responseBody = productRepository.findByNameContaining ( name ).stream ( )
-                .map ( product -> buildProductResponse ( product, false ) )
-                .toList ( );
+        List<ProductResponse> responseBody = productRepository.findByNameContaining(name).stream()
+                .map(product -> buildProductResponse(product, false))
+                .toList();
 
-        return GenericResponse.builder ( )
-                .body ( responseBody )
-                .code ( "200" )
-                .message ( "successfully Retrieved" )
-                .status ( "success" )
-                .build ( );
+        return GenericResponse.builder()
+                .body(responseBody)
+                .code("200")
+                .message(SUCCESS1)
+                .status(SUCCESS)
+                .build();
     }
 
     /**
@@ -326,16 +334,16 @@ public class ProductService {
      */
     @Transactional
     public GenericResponse searchProductsByOtherNames(String otherName) throws NotFoundException {
-        List<ProductResponse> responseBody = productRepository.findByOtherNamesContaining ( otherName ).stream ( )
-                .map ( product -> buildProductResponse ( product, false ) )
-                .toList ( );
+        List<ProductResponse> responseBody = productRepository.findByOtherNamesContaining(otherName).stream()
+                .map(product -> buildProductResponse(product, false))
+                .toList();
 
-        return GenericResponse.builder ( )
-                .body ( responseBody )
-                .code ( "200" )
-                .message ( "successfully Retrieved" )
-                .status ( "success" )
-                .build ( );
+        return GenericResponse.builder()
+                .body(responseBody)
+                .code("200")
+                .message(SUCCESS1)
+                .status(SUCCESS)
+                .build();
     }
 
     /**
@@ -343,66 +351,51 @@ public class ProductService {
      */
     @Transactional
     public GenericResponse searchProductsByTag(String tag) {
-        List<ProductResponse> responseBody = productRepository.findByTagContaining ( tag ).stream ( )
-                .map ( product -> buildProductResponse ( product, false ) )
-                .toList ( );
+        List<ProductResponse> responseBody = productRepository.findByTagContaining(tag).stream()
+                .map(product -> buildProductResponse(product, false))
+                .toList();
 
-        return GenericResponse.builder ( )
-                .body ( responseBody )
-                .code ( "200" )
-                .message ( "successfully Retrieved" )
-                .status ( "success" )
-                .build ( );
+        return GenericResponse.builder()
+                .body(responseBody)
+                .code("200")
+                .message(SUCCESS1)
+                .status(SUCCESS)
+                .build();
     }
 
-    /**
-     * Searches for products by SKU and prepares a response.
-     */
-//    @Transactional
-//    public GenericResponse searchProductsBySku(String sku) {
-//        List<ProductResponse> responseBody = productRepository.findBySkuContaining ( sku ).stream ( )
-//                .map ( product -> buildProductResponse ( product, false ) )
-//                .toList ( );
-//
-//        return GenericResponse.builder ( )
-//                .body ( responseBody )
-//                .code ( "200" )
-//                .message ( "successfully Retrieved" )
-//                .status ( "success" )
-//                .build ( );
-//    }
 
     /**
      * Searches for products by category ID and prepares a response.
      */
     @Transactional
     public GenericResponse searchProductsByCategory(String categoryId) {
-        List<ProductResponse> responseBody = productRepository.findByCategoryId ( categoryId ).stream ( )
-                .map ( product -> buildProductResponse ( product, false ) )
-                .toList ( );
+        List<ProductResponse> responseBody = productRepository.findByCategoryId(categoryId).stream()
+                .map(product -> buildProductResponse(product, false))
+                .toList();
 
-        return GenericResponse.builder ( )
-                .body ( responseBody )
-                .code ( "200" )
-                .message ( "successfully Retrieved" )
-                .status ( "success" )
-                .build ( );
+        return GenericResponse.builder()
+                .body(responseBody)
+                .code("200")
+                .message(SUCCESS1)
+                .status(SUCCESS)
+                .build();
     }
 
     /**
+     * @deprecated since 1.0, forRemoval = true
      * Searches for products by supplier ID - NO LONGER SUPPORTED
      * Products are predefined and not supplier-specific
      * Use InventoryPartRepository.findBySupplierId() instead
      */
-    @Deprecated
+    @Deprecated(since = "1.0", forRemoval = true)
     @Transactional
     public GenericResponse searchProductsBySupplier(String supplierId) {
-        return GenericResponse.builder ( )
-                .body ( new ArrayList<> ( ) )
-                .code ( "400" )
-                .message ( "This endpoint is deprecated. Products are not supplier-specific. Use inventory API instead." )
-                .status ( "error" )
-                .build ( );
+        return GenericResponse.builder()
+                .body(new ArrayList<>())
+                .code("400")
+                .message("This endpoint is deprecated. Products are not supplier-specific. Use inventory API instead.")
+                .status("error")
+                .build();
     }
 
     /**
@@ -410,14 +403,14 @@ public class ProductService {
      */
     @Transactional
     public GenericResponse searchProductsByPartNumber(String partNumber) {
-        ProductResponse responseBody = buildProductResponse ( productRepository.findByPartNumber ( partNumber ), false );
+        ProductResponse responseBody = buildProductResponse(productRepository.findByPartNumber(partNumber), false);
 
-        return GenericResponse.builder ( )
-                .body ( responseBody )
-                .code ( "200" )
-                .message ( "successfully Retrieved" )
-                .status ( "success" )
-                .build ( );
+        return GenericResponse.builder()
+                .body(responseBody)
+                .code("200")
+                .message(SUCCESS1)
+                .status(SUCCESS)
+                .build();
     }
 
     /**
@@ -425,16 +418,16 @@ public class ProductService {
      */
     @Transactional
     public GenericResponse searchProductsByYearMakeModel(Integer year, String make, String model) {
-        List<ProductResponse> responseBody = productRepository.findByYearAndMakeAndModel ( year, make, model ).stream ( )
-                .map ( product -> buildProductResponse ( product, false ) )
-                .toList ( );
+        List<ProductResponse> responseBody = productRepository.findByYearAndMakeAndModel(year, make, model).stream()
+                .map(product -> buildProductResponse(product, false))
+                .toList();
 
-        return GenericResponse.builder ( )
-                .body ( responseBody )
-                .code ( "200" )
-                .message ( "successfully Retrieved" )
-                .status ( "success" )
-                .build ( );
+        return GenericResponse.builder()
+                .body(responseBody)
+                .code("200")
+                .message(SUCCESS1)
+                .status(SUCCESS)
+                .build();
     }
 
     /**
@@ -442,15 +435,15 @@ public class ProductService {
      */
     @Transactional
     public GenericResponse searchProductsByManufacturer(String manufacturerId) {
-        List<ProductResponse> responseBody = productRepository.findByManufacturerId ( manufacturerId ).stream ( )
-                .map ( product -> buildProductResponse ( product, false ) )
-                .toList ( );
+        List<ProductResponse> responseBody = productRepository.findByManufacturerId(manufacturerId).stream()
+                .map(product -> buildProductResponse(product, false))
+                .toList();
 
-        return GenericResponse.builder ( )
-                .body ( responseBody )
-                .code ( "200" )
-                .message ( "successfully Retrieved" )
-                .status ( "success" )
-                .build ( );
+        return GenericResponse.builder()
+                .body(responseBody)
+                .code("200")
+                .message(SUCCESS1)
+                .status(SUCCESS)
+                .build();
     }
 }

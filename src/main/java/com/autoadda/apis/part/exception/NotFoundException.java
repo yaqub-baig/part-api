@@ -5,18 +5,16 @@ package com.autoadda.apis.part.exception;
  */
 public class NotFoundException extends RuntimeException {
 
-    private String message;
 
     public NotFoundException() {
-        super ( );
+        super();
     }
 
     public NotFoundException(String message) {
-        super ( message );
-        this.message = message;
+        super(message);
     }
 
     public NotFoundException(String message, Throwable cause) {
-        super ( message, cause );
+        super(message, cause);
     }
 }

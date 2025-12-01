@@ -24,6 +24,8 @@ import java.util.List;
 public class CategoryService {
 
 
+    public static final String PERFORM_CATEGORY_INPUT_VALIDATION = "Perform Category input validation";
+    public static final String SUCCESS = "success";
     private final CategoryRepository categoryRepository;
 
     private final MediaFileRepository mediaFileRepository;
@@ -89,7 +91,7 @@ public class CategoryService {
                                 .build ( ) )
                 .toList ( );
 
-        return GenericResponse.builder ( ).body ( responseBody ).code ( "200" ).message ( "success" ).status ( "success" ).build ( );
+        return GenericResponse.builder ( ).body ( responseBody ).code ( "200" ).message (SUCCESS).status ( SUCCESS ).build ( );
     }
 
     /**
@@ -140,7 +142,7 @@ public class CategoryService {
                         .build ( ) )
                 .toList ( );
 
-        return GenericResponse.builder ( ).body ( responseBody ).code ( "200" ).message ( "success" ).status ( "success" ).build ( );
+        return GenericResponse.builder ( ).body ( responseBody ).code ( "200" ).message ( SUCCESS ).status ( SUCCESS ).build ( );
     }
 
     /**
@@ -152,14 +154,14 @@ public class CategoryService {
      */
     @Transactional(readOnly = true)
     public GenericResponse getCategoryByName(String name) {
-        log.info ( "Perform Category input validation" );
+        log.info (PERFORM_CATEGORY_INPUT_VALIDATION);
         partsDataValidator.validateCategoryName ( name );
 
         Category category = categoryRepository.findByName ( name ).orElseThrow ( () -> new NotFoundException ( "Category not found for name: " + name ) );
 
 
         return GenericResponse.builder ( ).body ( category ).code ( "200" ).message ( "Successfully retrieved category: " + name )
-                .status ( "success" ).build ( );
+                .status ( SUCCESS ).build ( );
     }
 
     /**
@@ -174,7 +176,7 @@ public class CategoryService {
         List<Category> categoryList = new ArrayList<> ( );
 
         for (CategoryRequest categoryRequest : categoryRequestList) {
-            log.info ( "Perform Category input validation" );
+            log.info ( PERFORM_CATEGORY_INPUT_VALIDATION );
             partsDataValidator.isCategoryAlreadyExists ( categoryRequest.getName ( ) );
             Category category = categoryRepository.save ( prepareCategory ( categoryRequest ) );
             log.info ( "Category created - {}", categoryRequest.toString ( ) );
@@ -182,7 +184,7 @@ public class CategoryService {
         }
 
         return GenericResponse.builder ( ).body ( categoryList ).code ( "201" ).message ( "Successfully created category" )
-                .status ( "success" ).build ( );
+                .status ( SUCCESS ).build ( );
     }
 
     /**
@@ -194,7 +196,7 @@ public class CategoryService {
      */
     @Transactional
     public GenericResponse updateCategory(CategoryRequest request) throws NotFoundException {
-        log.info ( "Perform Category input validation" );
+        log.info ( PERFORM_CATEGORY_INPUT_VALIDATION );
         partsDataValidator.validateCategoryId ( request.getId ( ) );
 
         Category category = categoryRepository.findById ( request.getId ( ) )
@@ -222,7 +224,7 @@ public class CategoryService {
 
         return GenericResponse.builder ( ).body ( "Category has been Updated" ).code ( "200" )
                 .message ( "Successfully updated category: " + request.getId ( ) )
-                .status ( "success" ).build ( );
+                .status ( SUCCESS ).build ( );
     }
 
     /**
@@ -234,7 +236,7 @@ public class CategoryService {
      */
     @Transactional
     public GenericResponse deleteCategoryById(String id) throws NotFoundException {
-        log.info ( "Perform Category input validation" );
+        log.info ( PERFORM_CATEGORY_INPUT_VALIDATION );
         partsDataValidator.validateCategoryId ( id );
 
         Category category = categoryRepository.findById ( id )
@@ -243,7 +245,7 @@ public class CategoryService {
         categoryRepository.delete ( category );
 
         return GenericResponse.builder ( ).body ( "Category has been deleted" ).code ( "200" ).message ( "Successfully deleted" )
-                .status ( "success" ).build ( );
+                .status ( SUCCESS ).build ( );
     }
 
     public CategoryResponse getCategoryById(String categoryId) {

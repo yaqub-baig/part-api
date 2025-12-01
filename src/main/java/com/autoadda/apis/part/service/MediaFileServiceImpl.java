@@ -2,6 +2,7 @@ package com.autoadda.apis.part.service;
 
 
 import com.autoadda.apis.part.entity.MediaFile;
+import com.autoadda.apis.part.exception.FileStorageException;
 import com.autoadda.apis.part.exception.ResourceNotFoundException;
 import com.autoadda.apis.part.mapper.MediaFileMapper;
 import com.autoadda.apis.part.repository.MediaFileRepository;
@@ -39,7 +40,7 @@ public class MediaFileServiceImpl implements MediaFileService {
 
         List<MediaFile> mediaFileResponses = new ArrayList<> ( );
         if ( files.isEmpty ( ) ) {
-            throw new RuntimeException ( "No files uploaded" );
+            throw new FileStorageException( "No files uploaded" );
         }
         for (MultipartFile file : files) {
             // 1. Detect type
@@ -72,7 +73,6 @@ public class MediaFileServiceImpl implements MediaFileService {
             String url = baseUrl + "/uploads/" + subFolder + "/" + fileName;
             log.info ( "6. Adding to response" );
             log.info ( "File uploaded: {}, URL: {}", file.getOriginalFilename ( ), url );
-//            MediaFileResponse mediaFileResponse = mediaFileMapper.toResponse(save,url);
             // 6. Add to response
             mediaFileResponses.add ( save );
         }

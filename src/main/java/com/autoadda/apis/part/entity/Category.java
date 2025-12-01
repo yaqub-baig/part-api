@@ -5,8 +5,7 @@ import lombok.*;
 import javax.persistence.*;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
-import java.util.UUID;
+
 
 @Entity
 @Table(name = "category")
@@ -35,15 +34,5 @@ public class Category {
     @OneToMany(orphanRemoval = true)
     @JoinColumn(name = "category_id")
     private List<MediaFile> images = new ArrayList<> ( );
-
-//	@OneToMany(mappedBy = "parentCategory", cascade = CascadeType.ALL)
-//	private Set<Category> subCategories;
-
-//    @PrePersist
-//    public void generateId() {
-//        if ( this.id == null || this.id.isEmpty ( ) ) {
-//            this.id = UUID.randomUUID ( ).toString ( );
-//        }
-//    }
 
 }

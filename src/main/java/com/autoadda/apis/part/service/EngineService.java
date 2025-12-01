@@ -14,7 +14,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -22,6 +21,10 @@ import java.util.stream.Collectors;
 public class EngineService {
 
 
+    public static final String SUCCESSFULLY_RETRIEVED = "Successfully retrieved";
+    public static final String VALIDATING_ENGINE_ID = "Validating engine ID";
+    public static final String SUCCESS = "success";
+    public static final String ENGINE_NOT_FOUND_WITH_ID = "Engine not found with id: ";
     private final EngineRepository engineRepository;
 
 
@@ -35,7 +38,7 @@ public class EngineService {
      */
     private Engine prepareEngine(EngineRequest request) {
         return Engine.builder ( ).id ( GUIDGenerator.generateGUID ( ) ).fullName ( request.getFullName ( ) )
-                .transmissionType ( request.getTransmissionType ( ) ).engine ( request.getEngine ( ) )
+                .transmissionType ( request.getTransmissionType ( ) ).engineCapacity( request.getEngineCapacity( ) )
                 .fuelType ( request.getFuelType ( ) ).modelId ( request.getModelId ( ) ).build ( );
     }
 
@@ -49,18 +52,18 @@ public class EngineService {
         List<EngineResponse> responseBody = engines.stream ( )
                 .map ( engine -> EngineResponse.builder ( ).id ( engine.getId ( ) ).fullName ( engine.getFullName ( ) )
                         .transmissionType ( engine.getTransmissionType ( ) ).modelId ( engine.getModelId ( ) )
-                        .engine ( engine.getEngine ( ) ).fuelType ( engine.getFuelType ( ) ).build ( ) )
-                .collect ( Collectors.toList ( ) );
+                        .engineCapacity( engine.getEngineCapacity( ) ).fuelType ( engine.getFuelType ( ) ).build ( ) )
+                .toList ( );
 
-        return GenericResponse.builder ( ).body ( responseBody ).code ( "200" ).message ( "success" ).status ( "success" ).build ( );
+        return GenericResponse.builder ( ).body ( responseBody ).code ( "200" ).message (SUCCESS).status ( SUCCESS ).build ( );
     }
 
     /**
      * * Creates a new engine or a list of engines based on the provided
      * EngineRequest
      *
-     * @param engineRequestList
-     * @return
+     * @param engineRequestList List of EngineRequest objects.
+     * @return GenericResponse containing a list of EngineResponse objects.
      */
     public GenericResponse createEngine(List<EngineRequest> engineRequestList) {
         List<Engine> engineList = new ArrayList<> ( );
@@ -75,7 +78,7 @@ public class EngineService {
         }
 
         return GenericResponse.builder ( ).body ( engineList ).code ( "201" ).message ( "Successfully created engine(s)" )
-                .status ( "success" ).build ( );
+                .status ( SUCCESS ).build ( );
     }
 
     /**
@@ -86,25 +89,25 @@ public class EngineService {
      * @throws NotFoundException if the engine with the given ID does not exist.
      */
     public GenericResponse getEngineById(String id) throws NotFoundException {
-        log.info ( "Validating engine ID" );
+        log.info (VALIDATING_ENGINE_ID);
         partsDataValidator.validateEngineId ( id );
 
         Engine engine = engineRepository.findById ( id )
-                .orElseThrow ( () -> new NotFoundException ( "Engine not found with id: " + id ) );
+                .orElseThrow ( () -> new NotFoundException ( ENGINE_NOT_FOUND_WITH_ID + id ) );
 
         EngineResponse response = EngineResponse.builder ( ).id ( engine.getId ( ) ).fullName ( engine.getFullName ( ) )
-                .transmissionType ( engine.getTransmissionType ( ) ).modelId ( engine.getModelId ( ) ).engine ( engine.getEngine ( ) )
+                .transmissionType ( engine.getTransmissionType ( ) ).modelId ( engine.getModelId ( ) ).engineCapacity( engine.getEngineCapacity( ) )
                 .fuelType ( engine.getFuelType ( ) ).build ( );
 
         return GenericResponse.builder ( ).body ( List.of ( response ) ).code ( "200" )
-                .message ( "Successfully retrieved engine " + id ).status ( "success" ).build ( );
+                .message ( "Successfully retrieved engine " + id ).status ( SUCCESS ).build ( );
     }
 
     /**
      * * Retrieves an engine by its full name and maps it to a response object.
      *
-     * @param name
-     * @return
+     * @param name engine name
+     * @return GenericResponse containing the EngineResponse object.
      * @throws NotFoundException if the engine with the given name does not exist.
      */
     public GenericResponse getEngineByName(String name) throws NotFoundException {
@@ -117,32 +120,32 @@ public class EngineService {
         }
 
         return GenericResponse.builder ( ).body ( engine ).code ( "200" ).message ( "Successfully retrieved engine: " + name )
-                .status ( "success" ).build ( );
+                .status ( SUCCESS ).build ( );
     }
 
     /**
      * * Updates an existing engine based on the provided EngineRequest.
      *
-     * @param request
-     * @return
+     * @param request The EngineRequest containing engine details.
+     * @return GenericResponse containing the updated EngineResponse object.
      * @throws NotFoundException if the engine with the specified ID does not exist.
      */
     public GenericResponse updateEngine(EngineRequest request) throws NotFoundException {
-        log.info ( "Validating engine ID" );
+        log.info ( VALIDATING_ENGINE_ID );
         partsDataValidator.validateEngineId ( request.getId ( ) );
 
         Engine engine = engineRepository.findById ( request.getId ( ) )
-                .orElseThrow ( () -> new NotFoundException ( "Engine not found with id: " + request.getId ( ) ) );
+                .orElseThrow ( () -> new NotFoundException ( ENGINE_NOT_FOUND_WITH_ID + request.getId ( ) ) );
 
         engine.setFullName ( request.getFullName ( ) );
         engine.setModelId ( request.getModelId ( ) );
-        engine.setEngine ( request.getEngine ( ) );
+        engine.setEngineCapacity( request.getEngineCapacity( ) );
         engine.setFuelType ( request.getFuelType ( ) );
         engine.setTransmissionType ( request.getTransmissionType ( ) );
         engineRepository.save ( engine );
 
         return GenericResponse.builder ( ).body ( "Engine has been updated" ).code ( "200" )
-                .message ( "Successfully updated engine: " + request.getId ( ) ).status ( "success" ).build ( );
+                .message ( "Successfully updated engine: " + request.getId ( ) ).status ( SUCCESS ).build ( );
     }
 
     /**
@@ -153,71 +156,71 @@ public class EngineService {
      * @throws NotFoundException if the engine with the specified ID does not exist.
      */
     public GenericResponse deleteEngineById(String id) throws NotFoundException {
-        log.info ( "Validating engine ID" );
+        log.info ( VALIDATING_ENGINE_ID );
         partsDataValidator.validateEngineId ( id );
 
         Engine engine = engineRepository.findById ( id )
-                .orElseThrow ( () -> new NotFoundException ( "Engine not found with id: " + id ) );
+                .orElseThrow ( () -> new NotFoundException ( ENGINE_NOT_FOUND_WITH_ID + id ) );
 
         engineRepository.delete ( engine );
 
         return GenericResponse.builder ( ).body ( "Engine has been deleted" ).code ( "200" ).message ( "Successfully deleted" )
-                .status ( "success" ).build ( );
+                .status ( SUCCESS ).build ( );
     }
 
     /**
      * * Retrieves engines by model ID and maps them to a response object.
      *
-     * @param modelId
-     * @return
+     * @param modelId model ID
+     * @return GenericResponse containing a list of EngineResponse objects.
      */
     public GenericResponse getEnginesByModelId(String modelId) {
         List<Engine> engines = engineRepository.findByModelId ( modelId );
         List<EngineResponse> responseBody = engines.stream ( )
                 .map ( engine -> EngineResponse.builder ( ).id ( engine.getId ( ) ).fullName ( engine.getFullName ( ) )
                         .transmissionType ( engine.getTransmissionType ( ) ).modelId ( engine.getModelId ( ) )
-                        .engine ( engine.getEngine ( ) ).fuelType ( engine.getFuelType ( ) ).build ( ) )
-                .collect ( Collectors.toList ( ) );
+                        .engineCapacity( engine.getEngineCapacity( ) ).fuelType ( engine.getFuelType ( ) ).build ( ) )
+                .toList ( );
 
-        return GenericResponse.builder ( ).body ( responseBody ).code ( "200" ).message ( "Successfully retrieved" )
-                .status ( "success" ).build ( );
+        return GenericResponse.builder ( ).body ( responseBody ).code ( "200" ).message (SUCCESSFULLY_RETRIEVED)
+                .status ( SUCCESS ).build ( );
     }
 
     /**
      * * Retrieves engines by fuel type and maps them to a response object. * This
      * method filters engines based on the specified fuel type.
      *
-     * @param fuelType
-     * @return
+     * @param fuelType fuel type of vehicle
+     * @return GenericResponse containing a list of EngineResponse objects.
      */
     public GenericResponse getEnginesByFuelType(String fuelType) {
         List<Engine> engines = engineRepository.findByFuelType ( fuelType );
         List<EngineResponse> responseBody = engines.stream ( )
                 .map ( engine -> EngineResponse.builder ( ).id ( engine.getId ( ) ).fullName ( engine.getFullName ( ) )
                         .transmissionType ( engine.getTransmissionType ( ) ).modelId ( engine.getModelId ( ) )
-                        .engine ( engine.getEngine ( ) ).fuelType ( engine.getFuelType ( ) ).build ( ) )
-                .collect ( Collectors.toList ( ) );
+                        .engineCapacity( engine.getEngineCapacity( ) ).fuelType ( engine.getFuelType ( ) ).build ( ) )
+                .toList ( );
 
-        return GenericResponse.builder ( ).body ( responseBody ).code ( "200" ).message ( "Successfully retrieved" )
-                .status ( "success" ).build ( );
+        return GenericResponse.builder ( ).body ( responseBody ).code ( "200" ).message ( SUCCESSFULLY_RETRIEVED )
+                .status ( SUCCESS ).build ( );
     }
 
     /**
      * * Retrieves engines by transmission type and maps them to a response object.
      * * This method filters engines based on the specified transmission type.
      *
-     * @param transmissionType
-     * @return
+     * @param transmissionType transmissionType of vehicle
+     * @return GenericResponse containing a list of EngineResponse objects.
      */
     public GenericResponse getEnginesByTransmissionType(String transmissionType) {
         List<Engine> engines = engineRepository.findByTransmissionType ( transmissionType );
         List<EngineResponse> responseBody = engines.stream ( )
                 .map ( engine -> EngineResponse.builder ( ).id ( engine.getId ( ) ).fullName ( engine.getFullName ( ) )
                         .transmissionType ( engine.getTransmissionType ( ) ).modelId ( engine.getModelId ( ) )
-                        .engine ( engine.getEngine ( ) ).fuelType ( engine.getFuelType ( ) ).build ( ) )
-                .collect ( Collectors.toList ( ) );
+                        .engineCapacity( engine.getEngineCapacity( ) ).fuelType ( engine.getFuelType ( ) ).build ( ) )
+                .toList ( ) ;
 
-        return GenericResponse.builder ( ).body ( responseBody ).code ( "200" ).message ( "Successfully retrieved" )
-                .status ( "success" ).build ( );
+        return GenericResponse.builder ( ).body ( responseBody ).code ( "200" ).message ( SUCCESSFULLY_RETRIEVED )
+                .status ( SUCCESS ).build ( );
     }
 }

@@ -5,7 +5,6 @@ package com.autoadda.apis.part.exception;
  */
 public class AlreadyExistException extends RuntimeException {
 
-    private String message;
 
     public AlreadyExistException() {
         super ( );
@@ -13,7 +12,6 @@ public class AlreadyExistException extends RuntimeException {
 
     public AlreadyExistException(String message) {
         super ( message );
-        this.message = message;
     }
 
     public AlreadyExistException(String message, Throwable cause) {

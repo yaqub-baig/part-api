@@ -31,6 +31,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class SupplierService {
 
+    public static final String FILE_NOT_FOUND = "File not found";
     private final SupplierRepository supplierRepository;
     private final MediaFileRepository mediaFileRepository;
     private final LocationService locationService;
@@ -120,10 +121,95 @@ public class SupplierService {
     }
 
     public ResponseEntity<Supplier> updateSupplier(SupplierRequest request, String autoAddaId, Integer id) {
+        log.info ( "Updating supplier by userId : {} ", autoAddaId );
         Supplier existing = supplierRepository.findById ( id )
                 .orElseThrow ( () -> new ResourceNotFoundException ( "Supplier not found with id: " + id ) );
 
 
+        updateSupplierDetails(request, existing);
+
+        List<Long> filesToCleanup = new ArrayList<> ( );
+
+        // Handle garage logo update
+        if ( request.getShopLogoId ( ) != null ) {
+            if ( existing.getShopLogo ( ) != null ) {
+                filesToCleanup.add ( existing.getShopLogo ( ).getId ( ) );
+            }
+            MediaFile mediaFile = mediaFileRepository.findById ( request.getShopLogoId ( ) )
+                    .orElseThrow ( () -> new ResourceNotFoundException (FILE_NOT_FOUND) );
+            existing.setShopLogo ( mediaFile );
+        }
+
+
+        if ( request.getTradeLicenseIds ( ) != null ) {
+            // Schedule old trade licenses for cleanup
+            List<Long> oldTradeLicenseIds = existing.getTradeLicenseAttachment ( ).stream ( )
+                    .map ( MediaFile::getId )
+                    .toList ( );
+            if ( ! oldTradeLicenseIds.isEmpty ( ) ) {
+                filesToCleanup.addAll ( oldTradeLicenseIds );
+            }
+
+            // Create new trade license collection
+            List<MediaFile> newTradeLicenseAttachments = new ArrayList<> ( );
+            request.getTradeLicenseIds ( ).forEach ( tid -> {
+                MediaFile mediaFile = mediaFileRepository.findById ( tid )
+                        .orElseThrow ( () -> new ResourceNotFoundException (FILE_NOT_FOUND) );
+                newTradeLicenseAttachments.add ( mediaFile );
+            } );
+            existing.getTradeLicenseAttachment ( ).addAll ( newTradeLicenseAttachments );
+        }
+
+
+        if ( request.getShopImageIds ( ) != null ) {
+            // Schedule old company images for cleanup
+            List<Long> oldShopImageIds = existing.getShopImages ( ).stream ( )
+                    .map ( MediaFile::getId )
+                    .toList ( );
+            if ( ! oldShopImageIds.isEmpty ( ) ) {
+                filesToCleanup.addAll ( oldShopImageIds );
+            }
+
+            // Create new shop images collection
+            List<MediaFile> newShopImages = new ArrayList<> ( );
+            request.getShopImageIds ( ).forEach ( cid -> {
+                MediaFile mediaFile = mediaFileRepository.findById ( cid )
+                        .orElseThrow ( () -> new ResourceNotFoundException (FILE_NOT_FOUND) );
+                newShopImages.add ( mediaFile );
+            } );
+            existing.getShopImages ( ).addAll ( newShopImages );
+        }
+
+        if ( request.getVatCertificateIds ( ) != null ) {
+            // Schedule old VAT certificates for cleanup
+            List<Long> oldVatCertIds = existing.getVatCertificate ( ).stream ( )
+                    .map ( MediaFile::getId )
+                    .toList ( );
+            if ( ! oldVatCertIds.isEmpty ( ) ) {
+                filesToCleanup.addAll ( oldVatCertIds );
+            }
+
+            // Create new VAT certificates collection
+            List<MediaFile> newVatCertificates = new ArrayList<> ( );
+            request.getVatCertificateIds ( ).forEach ( vid -> {
+                MediaFile mediaFile = mediaFileRepository.findById ( vid )
+                        .orElseThrow ( () -> new ResourceNotFoundException (FILE_NOT_FOUND) );
+                newVatCertificates.add ( mediaFile );
+            } );
+            existing.getVatCertificate ( ).addAll ( newVatCertificates );
+        }
+        ResponseEntity<Supplier> supplierResponseEntity = new ResponseEntity<> ( supplierRepository.save ( existing ), HttpStatus.OK );
+
+
+        if ( ! filesToCleanup.isEmpty ( ) ) {
+            scheduleMediaFileCleanup ( filesToCleanup );
+        }
+
+
+        return supplierResponseEntity;
+    }
+
+    private void updateSupplierDetails(SupplierRequest request, Supplier existing) {
         if ( request.getLocation ( ) != null ) {
             Location existingGarageLocation = existing.getLocation ( );
             Location location = locationService.updateLocation ( existingGarageLocation.getId ( ), request.getLocation ( ) );
@@ -140,7 +226,7 @@ public class SupplierService {
         }
 
         if ( request.getTradeLicenceNumber ( ) != null ) {
-            validTradingLicense ( request );
+            validTradingLicense (request);
             existing.setTradeLicenceNumber ( request.getTradeLicenceNumber ( ) );
         }
 
@@ -176,86 +262,6 @@ public class SupplierService {
         if ( request.getMobileNumber ( ) != null ) {
             existing.setMobileNumber ( request.getMobileNumber ( ) );
         }
-
-        List<Long> filesToCleanup = new ArrayList<> ( );
-
-        // Handle garage logo update
-        if ( request.getShopLogoId ( ) != null ) {
-            if ( existing.getShopLogo ( ) != null ) {
-                filesToCleanup.add ( existing.getShopLogo ( ).getId ( ) );
-            }
-            MediaFile mediaFile = mediaFileRepository.findById ( request.getShopLogoId ( ) )
-                    .orElseThrow ( () -> new ResourceNotFoundException ( "File not found" ) );
-            existing.setShopLogo ( mediaFile );
-        }
-
-
-        if ( request.getTradeLicenseIds ( ) != null ) {
-            // Schedule old trade licenses for cleanup
-            List<Long> oldTradeLicenseIds = existing.getTradeLicenseAttachment ( ).stream ( )
-                    .map ( MediaFile::getId )
-                    .toList ( );
-            if ( ! oldTradeLicenseIds.isEmpty ( ) ) {
-                filesToCleanup.addAll ( oldTradeLicenseIds );
-            }
-
-            // Create new trade license collection
-            List<MediaFile> newTradeLicenseAttachments = new ArrayList<> ( );
-            request.getTradeLicenseIds ( ).forEach ( tid -> {
-                MediaFile mediaFile = mediaFileRepository.findById ( tid )
-                        .orElseThrow ( () -> new ResourceNotFoundException ( "File not found" ) );
-                newTradeLicenseAttachments.add ( mediaFile );
-            } );
-            existing.getTradeLicenseAttachment ( ).addAll ( newTradeLicenseAttachments );
-        }
-
-
-        if ( request.getShopImageIds ( ) != null ) {
-            // Schedule old company images for cleanup
-            List<Long> oldShopImageIds = existing.getShopImages ( ).stream ( )
-                    .map ( MediaFile::getId )
-                    .toList ( );
-            if ( ! oldShopImageIds.isEmpty ( ) ) {
-                filesToCleanup.addAll ( oldShopImageIds );
-            }
-
-            // Create new shop images collection
-            List<MediaFile> newShopImages = new ArrayList<> ( );
-            request.getShopImageIds ( ).forEach ( cid -> {
-                MediaFile mediaFile = mediaFileRepository.findById ( cid )
-                        .orElseThrow ( () -> new ResourceNotFoundException ( "File not found" ) );
-                newShopImages.add ( mediaFile );
-            } );
-            existing.getShopImages ( ).addAll ( newShopImages );
-        }
-
-        if ( request.getVatCertificateIds ( ) != null ) {
-            // Schedule old VAT certificates for cleanup
-            List<Long> oldVatCertIds = existing.getVatCertificate ( ).stream ( )
-                    .map ( MediaFile::getId )
-                    .toList ( );
-            if ( ! oldVatCertIds.isEmpty ( ) ) {
-                filesToCleanup.addAll ( oldVatCertIds );
-            }
-
-            // Create new VAT certificates collection
-            List<MediaFile> newVatCertificates = new ArrayList<> ( );
-            request.getVatCertificateIds ( ).forEach ( vid -> {
-                MediaFile mediaFile = mediaFileRepository.findById ( vid )
-                        .orElseThrow ( () -> new ResourceNotFoundException ( "File not found" ) );
-                newVatCertificates.add ( mediaFile );
-            } );
-            existing.getVatCertificate ( ).addAll ( newVatCertificates );
-        }
-        ResponseEntity<Supplier> supplierResponseEntity = new ResponseEntity<> ( supplierRepository.save ( existing ), HttpStatus.OK );
-
-
-        if ( ! filesToCleanup.isEmpty ( ) ) {
-            scheduleMediaFileCleanup ( filesToCleanup );
-        }
-
-
-        return supplierResponseEntity;
     }
 
     @Async
@@ -310,7 +316,7 @@ public class SupplierService {
         // Map each inventory part to a SupplierAvailabilityResponse
         return inventoryParts.stream()
                 .map(this::mapToSupplierAvailabilityResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     /**

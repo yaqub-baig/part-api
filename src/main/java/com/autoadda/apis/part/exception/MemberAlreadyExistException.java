@@ -4,19 +4,15 @@ package com.autoadda.apis.part.exception;
  * throw exception when username already exist
  */
 public class MemberAlreadyExistException extends RuntimeException {
-
-    private String message;
-
     public MemberAlreadyExistException() {
-        super ( );
+        super();
     }
 
     public MemberAlreadyExistException(String message) {
-        super ( message );
-        this.message = message;
+        super(message);
     }
 
     public MemberAlreadyExistException(String message, Throwable cause) {
-        super ( message, cause );
+        super(message, cause);
     }
 }

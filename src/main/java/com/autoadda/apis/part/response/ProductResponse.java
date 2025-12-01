@@ -1,7 +1,6 @@
 package com.autoadda.apis.part.response;
 
 import com.autoadda.apis.part.entity.MediaFile;
-import com.autoadda.apis.part.entity.ProductAttribute;
 import lombok.*;
 
 import java.util.List;

@@ -26,6 +26,8 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class BrandOnboardService {
+    public static final String SUCCESS = "success";
+    public static final String UNKNOWN = "UNKNOWN";
     private final BrandOnboardRepository brandOnboardRepository;
     private final BrandOnboardMapper brandOnboardMapper;
     private final MakeRepository makeRepository;
@@ -36,9 +38,7 @@ public class BrandOnboardService {
         Make brand = makeRepository.findByName ( request.getBrandName ( ) );
         if ( brand != null ) {
             Model existingModel = modelRepository.findByName ( request.getModelName ( ) );
-            if ( existingModel != null ) {
-                // Verify that the model belongs to the make
-                if ( existingModel.getMakeId ( ).equals ( brand.getId ( ) ) ) {
+            if ( existingModel != null && existingModel.getMakeId ( ).equals ( brand.getId ( ) ) ) {
                     // Check if engine type exists for this model
                     List<Engine> enginesForModel = engineRepository.findByModelId ( existingModel.getId ( ) );
                     boolean engineTypeExists = enginesForModel.stream ( )
@@ -47,7 +47,7 @@ public class BrandOnboardService {
                         throw new ResourceNotFoundException ( "Brand, model, and engine type already exist" );
                     }
                 }
-            }
+
         }
 
         BrandOnboard entity = brandOnboardMapper.toEntity ( request );
@@ -55,14 +55,16 @@ public class BrandOnboardService {
         entity.setRequestReferenceId ( generateRequestReferenceId ( entity ) );
 
         BrandOnboard save = brandOnboardRepository.save ( entity );
-        return new GenericResponse ( "success", "200", "Your request is successfully taken our team will look into it and add brand if needed", brandOnboardMapper.toResponse ( save ) );
+        return new GenericResponse (SUCCESS, "200", "Your request is successfully taken our team will look into it and add brand if needed", brandOnboardMapper.toResponse ( save ) );
     }
 
     public GenericResponse updateBrand(Integer id, BrandOnboardRequest request) {
         BrandOnboard tempVehicle = brandOnboardRepository.findById ( id ).orElseThrow ( () -> new ResourceNotFoundException ( "update Brand request not found" ) );
-
+        tempVehicle.setBrandName ( request.getBrandName ( ) );
+        tempVehicle.setModelName ( request.getModelName ( ) );
+        tempVehicle.setEngineType ( request.getEngineType ( ) );
         BrandOnboard save = brandOnboardRepository.save ( tempVehicle );
-        return new GenericResponse ( "success", "200", "Brand updated Successfully", brandOnboardMapper.toResponse ( save ) );
+        return new GenericResponse ( SUCCESS, "200", "Brand updated Successfully", brandOnboardMapper.toResponse ( save ) );
     }
 
     public String generateRequestReferenceId(BrandOnboard entity) {
@@ -71,9 +73,9 @@ public class BrandOnboardService {
         String yearMonth = now.format ( DateTimeFormatter.ofPattern ( "yyMM" ) );
 
         // Get brand name and model name (keep original names for frontend parsing)
-        String brandName = entity.getBrandName ( ) != null ? entity.getBrandName ( ).trim ( ) : "UNKNOWN";
-        String modelName = entity.getModelName ( ) != null ? entity.getModelName ( ).trim ( ) : "UNKNOWN";
-        String engineType = entity.getEngineType ( ) != null ? entity.getEngineType ( ).trim ( ) : "UNKNOWN";
+        String brandName = entity.getBrandName ( ) != null ? entity.getBrandName ( ).trim ( ) : UNKNOWN;
+        String modelName = entity.getModelName ( ) != null ? entity.getModelName ( ).trim ( ) : UNKNOWN;
+        String engineType = entity.getEngineType ( ) != null ? entity.getEngineType ( ).trim ( ) : UNKNOWN;
 
         String globalPrefix = String.format ( "BR-%s-", yearMonth );
         List<String> allCodes = brandOnboardRepository.findAllCodesForGlobalSequence ( globalPrefix );
@@ -111,12 +113,12 @@ public class BrandOnboardService {
         List<BrandOnboardResponse> responses = brands.stream ( )
                 .map ( brandOnboardMapper::toResponse )
                 .toList ( );
-        return new GenericResponse ( "success", "200", "Brands retrieved successfully", responses );
+        return new GenericResponse ( SUCCESS, "200", "Brands retrieved successfully", responses );
     }
 
     public GenericResponse deleteBrand(Integer id) {
         brandOnboardRepository.deleteById(id);
-        return new GenericResponse ( "success", "200", "Brands request resolved successfully",null );
+        return new GenericResponse ( SUCCESS, "200", "Brands request resolved successfully",null );
     }
 
     public GenericResponse approveRequest(Integer id, String adminId) {
@@ -133,7 +135,7 @@ public class BrandOnboardService {
 
         BrandOnboard saved = brandOnboardRepository.save ( request );
 
-        return new GenericResponse ( "success", "200",
+        return new GenericResponse ( SUCCESS, "200",
                 "Brand request approved successfully. Admin can now manually create Make/Model/Engine records.",
                 brandOnboardMapper.toResponse ( saved ) );
     }
@@ -157,7 +159,7 @@ public class BrandOnboardService {
 
         BrandOnboard saved = brandOnboardRepository.save ( request );
 
-        return new GenericResponse ( "success", "200",
+        return new GenericResponse ( SUCCESS, "200",
                 "Brand request rejected successfully",
                 brandOnboardMapper.toResponse ( saved ) );
     }
@@ -178,7 +180,7 @@ public class BrandOnboardService {
                 .map ( brandOnboardMapper::toResponse )
                 .toList ( );
 
-        return new GenericResponse ( "success", "200",
+        return new GenericResponse ( SUCCESS, "200",
                 "Requests retrieved successfully", responses );
     }
 }

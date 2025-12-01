@@ -22,6 +22,7 @@ import java.util.List;
 public class AttributeService {
 
 
+    public static final String SUCCESS = "success";
     private final AttributeRepository attributeRepository;
 
     private AttributeResponse mapToResponse(Attribute attribute) {
@@ -47,8 +48,8 @@ public class AttributeService {
                 .builder ( )
                 .body ( responseList )
                 .code ( "200" )
-                .message ( "success" )
-                .status ( "success" )
+                .message (SUCCESS)
+                .status ( SUCCESS )
                 .build ( );
 
     }
@@ -75,7 +76,7 @@ public class AttributeService {
         } ).toList ( );
         List<Attribute> saved = attributeRepository.saveAll ( attributes );
         return GenericResponse.builder ( ).body ( saved ).code ( "201" ).message ( "successfully Created Attribute(s)" )
-                .status ( "success" ).build ( );
+                .status ( SUCCESS ).build ( );
 
     }
 
@@ -92,7 +93,7 @@ public class AttributeService {
         Attribute attribute = attributeRepository.findById ( id )
 
                 .orElseThrow ( () -> new ResourceNotFoundException ( "Attribute not found with ID: " + id ) );
-        return GenericResponse.builder ( ).status ( "success" ).code ( "200" )
+        return GenericResponse.builder ( ).status ( SUCCESS ).code ( "200" )
 
                 .message ( "Successfully retrieved Product with ID " + id ).body ( List.of ( mapToResponse ( attribute ) ) )
                 .build ( );
@@ -110,7 +111,7 @@ public class AttributeService {
     public GenericResponse getAttributeByName(String name) {
         Attribute attribute = attributeRepository.findByName ( name )
                 .orElseThrow ( () -> new ResourceNotFoundException ( "Attribute not found with Name: " + name ) );
-        return GenericResponse.builder ( ).status ( "success" ).code ( "200" )
+        return GenericResponse.builder ( ).status ( SUCCESS ).code ( "200" )
                 .message ( "Successfully retrieved Product with ID " + name ).body ( List.of ( mapToResponse ( attribute ) ) )
                 .build ( );
     }
@@ -136,7 +137,7 @@ public class AttributeService {
             existing.setName ( updateRequest.getName ( ) );
 
         Attribute updated = attributeRepository.save ( existing );
-        return GenericResponse.builder ( ).status ( "success" ).code ( "200" )
+        return GenericResponse.builder ( ).status ( SUCCESS ).code ( "200" )
                 .message ( "Successfully updated Product with ID " + updateRequest.getId ( ) ).body ( List.of ( updated ) )
                 .build ( );
 
@@ -158,7 +159,7 @@ public class AttributeService {
 
         attributeRepository.delete ( existing );
 
-        return GenericResponse.builder ( ).status ( "success" ).code ( "200" )
+        return GenericResponse.builder ( ).status ( SUCCESS ).code ( "200" )
 
                 .message ( "Successfully deleted Product with ID " + id ).body ( "Deleted" ).build ( );
     }

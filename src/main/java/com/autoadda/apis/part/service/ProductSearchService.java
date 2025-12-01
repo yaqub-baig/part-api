@@ -228,19 +228,19 @@ public class ProductSearchService {
         if (request.getInStockOnly() != null && request.getInStockOnly()) {
             enrichedProducts = enrichedProducts.stream()
                     .filter(p -> p.getAvailableSupplierCount() > 0)
-                    .collect(Collectors.toList());
+                    .toList();
         }
 
         if (request.getMinSuppliers() != null) {
             enrichedProducts = enrichedProducts.stream()
                     .filter(p -> p.getAvailableSupplierCount() >= request.getMinSuppliers())
-                    .collect(Collectors.toList());
+                    .toList();
         }
 
         if (request.getMaxSuppliers() != null) {
             enrichedProducts = enrichedProducts.stream()
                     .filter(p -> p.getAvailableSupplierCount() <= request.getMaxSuppliers())
-                    .collect(Collectors.toList());
+                    .toList();
         }
 
         // Step 4: Sort by supplier count if requested
@@ -250,7 +250,7 @@ public class ProductSearchService {
                         int comparison = p1.getAvailableSupplierCount().compareTo(p2.getAvailableSupplierCount());
                         return "DESC".equalsIgnoreCase(request.getSortDirection()) ? -comparison : comparison;
                     })
-                    .collect(Collectors.toList());
+                    .toList();
         }
 
         log.info("Advanced search returned {} products", enrichedProducts.size());
@@ -382,19 +382,19 @@ public class ProductSearchService {
         if (request.getInStockOnly() != null && request.getInStockOnly()) {
             enrichedProducts = enrichedProducts.stream()
                     .filter(p -> p.getAvailableSupplierCount() > 0)
-                    .collect(Collectors.toList());
+                    .toList();
         }
 
         if (request.getMinSuppliers() != null) {
             enrichedProducts = enrichedProducts.stream()
                     .filter(p -> p.getAvailableSupplierCount() >= request.getMinSuppliers())
-                    .collect(Collectors.toList());
+                    .toList();
         }
 
         if (request.getMaxSuppliers() != null) {
             enrichedProducts = enrichedProducts.stream()
                     .filter(p -> p.getAvailableSupplierCount() <= request.getMaxSuppliers())
-                    .collect(Collectors.toList());
+                    .toList();
         }
 
         // Step 4: Sort by supplier count if requested
@@ -404,7 +404,7 @@ public class ProductSearchService {
                         int comparison = p1.getAvailableSupplierCount().compareTo(p2.getAvailableSupplierCount());
                         return "DESC".equalsIgnoreCase(request.getSortDirection()) ? -comparison : comparison;
                     })
-                    .collect(Collectors.toList());
+                    .toList();
         }
 
         log.info("Advanced search returned {} products", enrichedProducts.size());

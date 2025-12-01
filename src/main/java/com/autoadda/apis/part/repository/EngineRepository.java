@@ -15,6 +15,6 @@ public interface EngineRepository extends JpaRepository<Engine, String> {
 
     List<Engine> findByFuelType(String fuelType);
 
-    List<Engine> findByTransmissionType(String TransmissionType);
+    List<Engine> findByTransmissionType(String transmissionType);
 
 }

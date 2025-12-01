@@ -11,7 +11,6 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
 
 
 @Service
@@ -36,7 +35,7 @@ public class OrderService {
             oi.setQuantity ( ci.getQuantity ( ) );
             oi.setOrder ( order );
             return oi;
-        } ).collect ( Collectors.toList ( ) );
+        } ).toList ( );
 
         order.setItems ( items );
         cartRepo.delete ( cart );

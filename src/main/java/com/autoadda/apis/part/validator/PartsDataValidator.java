@@ -64,12 +64,6 @@ public class PartsDataValidator {
         }
     }
 
-//	public void validateSupplierId(String id) throws NotFoundException {
-//		Optional<Supplier> optSupplier = supplierRepository.findById(id);
-//		if (!optSupplier.isPresent()) {
-//			throw new NotFoundException("Supplier not found");
-//		}
-//	}
 
     public void validateSupplierName(String name) throws NotFoundException {
         Supplier supplier = supplierRepository.findByName ( name );
@@ -234,7 +228,7 @@ public class PartsDataValidator {
     public void validateAttributeName(String name) throws NotFoundException {
         Optional<Attribute> attribute = attributeRepository.findByName ( name );
 
-        if ( null == attribute ) {
+        if (attribute.isEmpty()) {
             throw new NotFoundException ( "Attribute not found" );
         }
     }
@@ -242,7 +236,7 @@ public class PartsDataValidator {
     public void isAttributeAlreadyExists(String name) throws AlreadyExistException {
         Optional<Attribute> attribute = attributeRepository.findByName ( name );
 
-        if ( null != attribute ) {
+        if (attribute.isPresent()) {
             throw new AlreadyExistException ( "Attribute already exist.." );
         }
     }

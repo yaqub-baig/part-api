@@ -20,6 +20,9 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ProductAttributeService {
 
+    public static final String PRODUCT_ATTRIBUTE_NOT_FOUND_WITH_ID = "ProductAttribute not found with ID: ";
+    public static final String VALIDATING_PRODUCT_ATTRIBUTE_ID = "Validating productAttribute ID";
+    public static final String SUCCESS = "success";
     private final ProductAttributeRepository productAttributeRepository;
     private final PartsDataValidator partsDataValidator;
 
@@ -68,8 +71,8 @@ public class ProductAttributeService {
         return GenericResponse.builder ( )
                 .body ( responseBody )
                 .code ( "200" )
-                .message ( "success" )
-                .status ( "success" )
+                .message (SUCCESS)
+                .status (SUCCESS)
                 .build ( );
     }
 
@@ -95,7 +98,7 @@ public class ProductAttributeService {
                 .body ( responseBody )
                 .code ( "200" )
                 .message ( "Successfully retrieved attributes for productId: " + productId )
-                .status ( "success" )
+                .status (SUCCESS)
                 .build ( );
     }
 
@@ -107,17 +110,17 @@ public class ProductAttributeService {
      * @throws NotFoundException
      */
     public GenericResponse getProductAttributeById(String id) throws NotFoundException {
-        log.info ( "Validating productAttribute ID" );
+        log.info (VALIDATING_PRODUCT_ATTRIBUTE_ID);
         partsDataValidator.validateProductAttributeId ( id );
 
         ProductAttribute productAttribute = productAttributeRepository.findById ( id )
-                .orElseThrow ( () -> new NotFoundException ( "ProductAttribute not found with ID: " + id ) );
+                .orElseThrow ( () -> new NotFoundException ( PRODUCT_ATTRIBUTE_NOT_FOUND_WITH_ID + id ) );
 
         return GenericResponse.builder ( )
                 .body ( productAttribute )
                 .code ( "200" )
                 .message ( "Successfully retrieved ProductAttribute: " + id )
-                .status ( "success" )
+                .status (SUCCESS)
                 .build ( );
     }
 
@@ -140,7 +143,7 @@ public class ProductAttributeService {
                 .body ( productAttributeList )
                 .code ( "201" )
                 .message ( "Successfully created ProductAttribute(s)" )
-                .status ( "success" )
+                .status (SUCCESS)
                 .build ( );
     }
 
@@ -152,11 +155,11 @@ public class ProductAttributeService {
      * @throws NotFoundException
      */
     public GenericResponse updateProductAttribute(ProductAttributeRequest request) throws NotFoundException {
-        log.info ( "Validating productAttribute ID" );
+        log.info (VALIDATING_PRODUCT_ATTRIBUTE_ID);
         partsDataValidator.validateProductAttributeId ( request.getId ( ) );
 
         ProductAttribute productAttribute = productAttributeRepository.findById ( request.getId ( ) )
-                .orElseThrow ( () -> new NotFoundException ( "ProductAttribute not found with ID: " + request.getId ( ) ) );
+                .orElseThrow ( () -> new NotFoundException ( PRODUCT_ATTRIBUTE_NOT_FOUND_WITH_ID + request.getId ( ) ) );
 
         productAttribute.setAttributeId ( request.getAttributeId ( ) );
         productAttribute.setAttributeValue ( request.getAttributeValue ( ) );
@@ -168,7 +171,7 @@ public class ProductAttributeService {
                 .body ( "ProductAttribute has been updated" )
                 .code ( "200" )
                 .message ( "Successfully updated ProductAttribute: " + request.getId ( ) )
-                .status ( "success" )
+                .status (SUCCESS)
                 .build ( );
     }
 
@@ -180,11 +183,11 @@ public class ProductAttributeService {
      * @throws NotFoundException
      */
     public GenericResponse deleteProductAttributeById(String id) throws NotFoundException {
-        log.info ( "Validating productAttribute ID" );
+        log.info (VALIDATING_PRODUCT_ATTRIBUTE_ID);
         partsDataValidator.validateProductAttributeId ( id );
 
         ProductAttribute productAttribute = productAttributeRepository.findById ( id )
-                .orElseThrow ( () -> new NotFoundException ( "ProductAttribute not found with ID: " + id ) );
+                .orElseThrow ( () -> new NotFoundException ( PRODUCT_ATTRIBUTE_NOT_FOUND_WITH_ID + id ) );
 
         productAttributeRepository.delete ( productAttribute );
 
@@ -192,7 +195,7 @@ public class ProductAttributeService {
                 .body ( "ProductAttribute has been deleted" )
                 .code ( "200" )
                 .message ( "Successfully deleted" )
-                .status ( "success" )
+                .status (SUCCESS)
                 .build ( );
     }
 }

@@ -7,6 +7,7 @@ import static org.mockito.Mockito.when;
 import java.util.List;
 import java.util.Optional;
 
+import com.autoadda.apis.part.util.Status;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -22,7 +23,7 @@ import com.autoadda.apis.part.repository.ShoppingCartRepository;
 import com.autoadda.apis.part.service.OrderService;
 
 @ExtendWith(MockitoExtension.class)
-public class OrderServiceTest {
+ class OrderServiceTest {
 
 	@Mock
 	private ShoppingCartRepository cartRepo;
@@ -32,7 +33,7 @@ public class OrderServiceTest {
 	private OrderService service;
 
 	@Test
-	public void testPlaceOrder() {
+	 void testPlaceOrder() {
 		InventoryPart part = new InventoryPart();
 		part.setId(1);
 
@@ -50,6 +51,6 @@ public class OrderServiceTest {
 		Order order = service.placeOrder(1);
 
 		assertEquals(1, order.getItems().size());
-		assertEquals("CREATED", order.getStatus());
+		assertEquals(Status.CREATED, order.getStatus());
 	}
 }

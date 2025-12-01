@@ -5,18 +5,15 @@ package com.autoadda.apis.part.exception;
  */
 public class GarageNotFoundException extends RuntimeException {
 
-    private String message;
-
     public GarageNotFoundException() {
-        super ( );
+        super();
     }
 
     public GarageNotFoundException(String message) {
-        super ( message );
-        this.message = message;
+        super(message);
     }
 
     public GarageNotFoundException(String message, Throwable cause) {
-        super ( message, cause );
+        super(message, cause);
     }
 }

@@ -5,18 +5,16 @@ package com.autoadda.apis.part.exception;
  */
 public class MemberNotFoundException extends RuntimeException {
 
-    private String message;
 
     public MemberNotFoundException() {
-        super ( );
+        super();
     }
 
     public MemberNotFoundException(String message) {
-        super ( message );
-        this.message = message;
+        super(message);
     }
 
     public MemberNotFoundException(String message, Throwable cause) {
-        super ( message, cause );
+        super(message, cause);
     }
 }

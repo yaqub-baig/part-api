@@ -24,8 +24,7 @@ public class InventoryPartMapper {
                 .quantityInStock ( request.getQuantityInStock ( ) != null ? request.getQuantityInStock ( ) : 0 )
                 .unitPrice ( request.getUnitPrice ( ) )
                 .location ( request.getLocation ( ) )
-                .isActive ( request.getIsActive ( ) != null ? request.getIsActive ( ) : true )
-
+                .isActive(Boolean.TRUE.equals(request.getIsActive()))
                 .partName ( product.getName ( ) )
                 .partNumber ( product.getPartNumber ( ) )
                 .category ( product.getCategoryId ( ) )

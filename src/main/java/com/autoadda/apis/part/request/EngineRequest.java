@@ -12,7 +12,7 @@ import lombok.*;
 public class EngineRequest {
 
     private String id;
-    private String engine;
+    private String engineCapacity;
     private String fuelType;
     private String fullName;
     private String modelId;

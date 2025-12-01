@@ -3,15 +3,13 @@ package com.autoadda.apis.part.util;
 import java.util.UUID;
 
 public class GUIDGenerator {
+
+    private GUIDGenerator() {
+        throw new UnsupportedOperationException("Utility class cannot be instantiated");
+    }
     public static String generateGUID() {
         // Generate a random UUID (GUID)
         UUID uuid = UUID.randomUUID ( );
         return uuid.toString ( );
     }
-
-//	public static void main(String[] args) {
-//		// Generate and print a GUID
-//		String guid = generateGUID();
-//		System.out.println("Generated GUID: " + guid);
-//	}
 }

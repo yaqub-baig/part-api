@@ -4,19 +4,15 @@ package com.autoadda.apis.part.exception;
  * throw exception when username not exist
  */
 public class CustomerNotFoundException extends RuntimeException {
-
-    private String message;
-
     public CustomerNotFoundException() {
-        super ( );
+        super();
     }
 
     public CustomerNotFoundException(String message) {
-        super ( message );
-        this.message = message;
+        super(message);
     }
 
     public CustomerNotFoundException(String message, Throwable cause) {
-        super ( message, cause );
+        super(message, cause);
     }
 }

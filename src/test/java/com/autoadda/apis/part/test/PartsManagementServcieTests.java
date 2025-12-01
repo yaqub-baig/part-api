@@ -30,7 +30,7 @@ class PartsManagementServcieTests {
 	@Test
 	@Order(1)
 	@Rollback(value = false)
-	public void saveCategoryTest() {
+	void saveCategoryTest() {
 
 		Category category = Category.builder().id("cat-1001").name("ac filters").code("ac").build();
 
@@ -41,18 +41,18 @@ class PartsManagementServcieTests {
 
 	@Test
 	@Order(2)
-	public void getListOfCategoriesTest() {
+	void getListOfCategoriesTest() {
 
 		List<Category> categories = categoryRepository.findAll();
 
-		Assertions.assertThat(categories.size()).isGreaterThan(0);
+		Assertions.assertThat(categories).hasSizeGreaterThan(0);
 
 	}
 
 	@Test
 	@Order(3)
 	@Rollback(value = false)
-	public void updateCategoryTest() {
+	void updateCategoryTest() {
 
 		Category category = categoryRepository.findById("cat-1001").get();
 
@@ -67,7 +67,7 @@ class PartsManagementServcieTests {
 	@Test
 	@Order(4)
 	@Rollback(value = false)
-	public void deleteCategoryTest() {
+	void deleteCategoryTest() {
 
 		Category category = categoryRepository.findById("cat-1001").get();
 

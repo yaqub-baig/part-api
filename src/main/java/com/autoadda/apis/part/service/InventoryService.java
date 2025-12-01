@@ -33,6 +33,8 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class InventoryService {
 
+    public static final String INVENTORY_PART_NOT_FOUND_WITH_ID = "Inventory part not found with id: ";
+    public static final String PART_NOT_FOUND = "Part not found";
     private final InventoryPartRepository partRepo;
     private final InventoryTransactionRepository txnRepo;
     private final ProductRepository productRepo;
@@ -63,7 +65,7 @@ public class InventoryService {
     public InventoryPartResponse updatePart(Integer id, InventoryPartRequest request) {
         // Find existing inventory part
         InventoryPart existingPart = partRepo.findById ( id )
-                .orElseThrow ( () -> new ResourceNotFoundException ( "Inventory part not found with id: " + id ) );
+                .orElseThrow ( () -> new ResourceNotFoundException ( INVENTORY_PART_NOT_FOUND_WITH_ID + id ) );
 
         // Get product information
         Product product = productRepo.findByPartNumber ( request.getPartNumber ( ) );
@@ -122,7 +124,7 @@ public class InventoryService {
     @Transactional
     public void softDeletePart(Integer id) {
         InventoryPart part = partRepo.findById ( id )
-                .orElseThrow ( () -> new ResourceNotFoundException ( "Inventory part not found with id: " + id ) );
+                .orElseThrow ( () -> new ResourceNotFoundException ( INVENTORY_PART_NOT_FOUND_WITH_ID + id ) );
 
         part.setIsActive ( false );
         partRepo.save ( part );
@@ -131,7 +133,7 @@ public class InventoryService {
     @Transactional
     public void restorePart(Integer id) {
         InventoryPart part = partRepo.findById ( id )
-                .orElseThrow ( () -> new ResourceNotFoundException ( "Inventory part not found with id: " + id ) );
+                .orElseThrow ( () -> new ResourceNotFoundException ( INVENTORY_PART_NOT_FOUND_WITH_ID + id ) );
 
         part.setIsActive ( true );
         partRepo.save ( part );
@@ -208,7 +210,7 @@ public class InventoryService {
 
     @Transactional
     public void addStock(Integer partId, int quantity, String note) {
-        InventoryPart part = partRepo.findById ( partId ).orElseThrow ( () -> new RuntimeException ( "Part not found" ) );
+        InventoryPart part = partRepo.findById ( partId ).orElseThrow ( () -> new RuntimeException (PART_NOT_FOUND) );
 
         part.setQuantityInStock ( part.getQuantityInStock ( ) + quantity );
         partRepo.save ( part );
@@ -226,7 +228,7 @@ public class InventoryService {
 
     @Transactional
     public void removeStock(Integer partId, int quantity, String note) {
-        InventoryPart part = partRepo.findById ( partId ).orElseThrow ( () -> new RuntimeException ( "Part not found" ) );
+        InventoryPart part = partRepo.findById ( partId ).orElseThrow ( () -> new RuntimeException (PART_NOT_FOUND) );
 
         if ( part.getQuantityInStock ( ) < quantity ) {
             throw new IllegalArgumentException ( "Not enough stock to remove" );
@@ -247,19 +249,13 @@ public class InventoryService {
      */
     @Transactional
     public void syncProductStock(String productId) {
-        Product product = productRepo.findById ( productId )
+       productRepo.findById ( productId )
                 .orElseThrow ( () -> new RuntimeException ( "Product not found" ) );
-
-        Optional<InventoryPart> inventoryPart = partRepo.findByProductId ( productId );
-
-//		if (inventoryPart.isPresent()) {
-//			product.setStock(inventoryPart.get().getQuantityInStock());
-//			productRepo.save(product);
-//		}
+      partRepo.findByProductId ( productId );
     }
 
     public List<InventoryTransaction> getTransactionsForPart(Integer partId) {
-        InventoryPart part = partRepo.findById ( partId ).orElseThrow ( () -> new RuntimeException ( "Part not found" ) );
+        InventoryPart part = partRepo.findById ( partId ).orElseThrow ( () -> new RuntimeException (PART_NOT_FOUND) );
         return txnRepo.findByPart ( part );
     }
 
@@ -267,109 +263,227 @@ public class InventoryService {
      * Bulk import inventory parts from Excel file
      * Expected columns: Part Number, SKU, Quantity, Price/PC, Condition
      */
+//    @Transactional
+//    public InventoryPartExcelUploadResponse bulkImportFromExcel(MultipartFile file, String supplierId) {
+//        InventoryPartExcelUploadResponse response = new InventoryPartExcelUploadResponse ( 0, 0, 0 );
+//        List<InventoryPartExcelRow> failedRows = new ArrayList<> ( );
+//
+//        try {
+//            // Parse Excel file
+//            List<InventoryPartExcelRow> excelRows = excelParserService.parseExcelFile ( file );
+//            response.setTotalRows ( excelRows.size ( ) );
+//
+//            int successCount = 0;
+//            int failedCount = 0;
+//
+//            // Process each row
+//            for (InventoryPartExcelRow row : excelRows) {
+//                if ( Boolean.FALSE.equals ( row.getIsValid ( ) ) ) {
+//                    failedCount++;
+//                    failedRows.add ( row );
+//                    continue;
+//                }
+//
+//                try {
+//                    // Find product by part number or SKU
+//                    Product products = productRepo.findByPartNumber ( row.getPartNumber ( ) );
+//
+////
+//                    if ( products == null ) {
+//                        row.setIsValid ( false );
+//                        row.setErrorMessage ( "Product not found with Part Number: " + row.getPartNumber ( ) + " or SKU: " + row.getSku ( ) );
+//                        failedCount++;
+//                        failedRows.add ( row );
+//                        continue;
+//                    }
+//
+//                    Product product = products; // Take first match
+//
+//                    // Check if inventory part already exists for this supplier and product
+//                    List<InventoryPart> existingPart = partRepo.findByProductIdAndSupplierIdAndProductCondition ( product.getId ( ), supplierId, ProductCondition.valueOf ( row.getCondition ( ) ) );
+//
+//                    if ( ! existingPart.isEmpty ( ) ) {
+//                        // Update existing inventory
+//                        InventoryPart part = existingPart.get ( 0 );
+//                        part.setQuantityInStock ( part.getQuantityInStock ( ) + row.getQuantity ( ) );
+//                        part.setUnitPrice ( row.getPricePerPiece ( ) );
+//                        part.setSku ( row.getSku ( ) );
+//                        part.setIsActive ( true );
+//                        partRepo.save ( part );
+//                        // Update product stock
+//                        successCount++;
+//                    } else {
+//                        // Create new inventory part
+//                        InventoryPart newPart = InventoryPart.builder ( )
+//                                .productId ( product.getId ( ) )
+//                                .supplierId ( supplierId )
+//                                .partName ( product.getName ( ) )
+//                                .partNumber ( row.getPartNumber ( ) )
+//                                .productCondition ( ProductCondition.valueOf ( row.getCondition ( ) ) )
+//                                .category ( product.getCategoryId ( ) )
+//                                .manufacturer ( product.getManufacturerId ( ) )
+//                                .quantityInStock ( row.getQuantity ( ) )
+//                                .unitPrice ( row.getPricePerPiece ( ) )
+//                                .location ( null )
+//                                .isActive ( true )
+//                                .build ( );
+//
+//                        partRepo.save ( newPart );
+//
+//                        // Update product stock
+//
+//
+//                        successCount++;
+//                    }
+//
+//                }
+//                catch ( Exception e ) {
+//                    row.setIsValid ( false );
+//                    row.setErrorMessage ( "Error processing row: " + e.getMessage ( ) );
+//                    failedCount++;
+//                    failedRows.add ( row );
+//                }
+//            }
+//            response.setStatusCode ( failedCount < 1 ? "200" : "400" );
+//            response.setSuccessfulRows ( successCount );
+//            response.setFailedRows ( failedCount );
+//            response.setFailedRowDetails ( failedRows );
+//            response.setMessage ( "Import completed: " + successCount + " successful, " + failedCount + " failed" );
+//
+//        }
+//        catch ( Exception e ) {
+//            response.setMessage ( "Error reading Excel file: " + e.getMessage ( ) );
+//        }
+//
+//        return response;
+//    }
     @Transactional
     public InventoryPartExcelUploadResponse bulkImportFromExcel(MultipartFile file, String supplierId) {
-        InventoryPartExcelUploadResponse response = new InventoryPartExcelUploadResponse ( 0, 0, 0 );
-        List<InventoryPartExcelRow> failedRows = new ArrayList<> ( );
+        InventoryPartExcelUploadResponse response = new InventoryPartExcelUploadResponse(0, 0, 0);
+        List<InventoryPartExcelRow> failedRows = new ArrayList<>();
 
         try {
-            // Parse Excel file
-            List<InventoryPartExcelRow> excelRows = excelParserService.parseExcelFile ( file );
-            response.setTotalRows ( excelRows.size ( ) );
+            List<InventoryPartExcelRow> excelRows = excelParserService.parseExcelFile(file);
+            response.setTotalRows(excelRows.size());
 
             int successCount = 0;
             int failedCount = 0;
 
-            // Process each row
             for (InventoryPartExcelRow row : excelRows) {
-                if ( Boolean.FALSE.equals ( row.getIsValid ( ) ) ) {
+                ProcessResult result = processRow(row, supplierId);
+
+                if (result.isSuccess()) {
+                    successCount++;
+                } else {
                     failedCount++;
-                    failedRows.add ( row );
-                    continue;
-                }
-
-                try {
-                    // Find product by part number or SKU
-                    Product products = productRepo.findByPartNumber ( row.getPartNumber ( ) );
-
-//
-                    if ( products == null ) {
-                        row.setIsValid ( false );
-                        row.setErrorMessage ( "Product not found with Part Number: " + row.getPartNumber ( ) + " or SKU: " + row.getSku ( ) );
-                        failedCount++;
-                        failedRows.add ( row );
-                        continue;
-                    }
-
-                    Product product = products; // Take first match
-
-                    // Check if inventory part already exists for this supplier and product
-                    List<InventoryPart> existingPart = partRepo.findByProductIdAndSupplierIdAndProductCondition ( product.getId ( ), supplierId, ProductCondition.valueOf ( row.getCondition ( ) ) );
-
-                    if ( ! existingPart.isEmpty ( ) ) {
-                        // Update existing inventory
-                        InventoryPart part = existingPart.get ( 0 );
-                        part.setQuantityInStock ( part.getQuantityInStock ( ) + row.getQuantity ( ) );
-                        part.setUnitPrice ( row.getPricePerPiece ( ) );
-                        part.setSku ( row.getSku ( ) );
-                        part.setIsActive ( true );
-                        partRepo.save ( part );
-                        // Update product stock
-                        successCount++;
-                    } else {
-                        // Create new inventory part
-                        InventoryPart newPart = InventoryPart.builder ( )
-                                .productId ( product.getId ( ) )
-                                .supplierId ( supplierId )
-                                .partName ( product.getName ( ) )
-                                .partNumber ( row.getPartNumber ( ) )
-                                .productCondition ( ProductCondition.valueOf ( row.getCondition ( ) ) )
-                                .category ( product.getCategoryId ( ) )
-                                .manufacturer ( product.getManufacturerId ( ) )
-                                .quantityInStock ( row.getQuantity ( ) )
-                                .unitPrice ( row.getPricePerPiece ( ) )
-                                .location ( null )
-                                .isActive ( true )
-                                .build ( );
-
-                        partRepo.save ( newPart );
-
-                        // Update product stock
-
-
-                        successCount++;
-                    }
-
-                }
-                catch ( Exception e ) {
-                    row.setIsValid ( false );
-                    row.setErrorMessage ( "Error processing row: " + e.getMessage ( ) );
-                    failedCount++;
-                    failedRows.add ( row );
+                    failedRows.add(row); // Failed rows are added here
                 }
             }
-            response.setStatusCode ( failedCount < 1 ? "200" : "400" );
-            response.setSuccessfulRows ( successCount );
-            response.setFailedRows ( failedCount );
-            response.setFailedRowDetails ( failedRows );
-            response.setMessage ( "Import completed: " + successCount + " successful, " + failedCount + " failed" );
 
-        }
-        catch ( Exception e ) {
-            response.setMessage ( "Error reading Excel file: " + e.getMessage ( ) );
+            response.setStatusCode(failedCount < 1 ? "200" : "400");
+            response.setSuccessfulRows(successCount);
+            response.setFailedRows(failedCount);
+            response.setFailedRowDetails(failedRows);
+            response.setMessage("Import completed: " + successCount + " successful, " + failedCount + " failed");
+
+        } catch (Exception e) {
+            response.setMessage("Error reading Excel file: " + e.getMessage());
         }
 
         return response;
     }
 
+    private ProcessResult processRow(InventoryPartExcelRow row, String supplierId) {
+        // Case 1: Already invalid row → return failure (row already in failedRows will be added by caller)
+        if (Boolean.FALSE.equals(row.getIsValid())) {
+            return ProcessResult.failure();
+        }
+
+        try {
+            Product product = productRepo.findByPartNumber(row.getPartNumber());
+
+            // Case 2: Product not found → mark invalid, set error message, return failure
+            if (product == null) {
+                row.setIsValid(false);
+                row.setErrorMessage("Product not found with Part Number: " + row.getPartNumber() + " or SKU: " + row.getSku());
+                return ProcessResult.failure();
+            }
+
+            List<InventoryPart> existingPart = partRepo.findByProductIdAndSupplierIdAndProductCondition(
+                    product.getId(), supplierId, ProductCondition.valueOf(row.getCondition())
+            );
+
+            if (!existingPart.isEmpty()) {
+                updateExistingPart(existingPart.get(0), row);
+            } else {
+                createNewPart(product, row, supplierId);
+            }
+
+            // Case 3: Success → return success (row will NOT be added to failedRows)
+            return ProcessResult.success();
+
+        } catch (Exception e) {
+            // Case 4: Exception → mark invalid, set error message, return failure
+            row.setIsValid(false);
+            row.setErrorMessage("Error processing row: " + e.getMessage());
+            return ProcessResult.failure();
+        }
+    }
+
+    private void updateExistingPart(InventoryPart part, InventoryPartExcelRow row) {
+        part.setQuantityInStock(part.getQuantityInStock() + row.getQuantity());
+        part.setUnitPrice(row.getPricePerPiece());
+        part.setSku(row.getSku());
+        part.setIsActive(true);
+        partRepo.save(part);
+    }
+
+    private void createNewPart(Product product, InventoryPartExcelRow row, String supplierId) {
+        InventoryPart newPart = InventoryPart.builder()
+                .productId(product.getId())
+                .supplierId(supplierId)
+                .partName(product.getName())
+                .partNumber(row.getPartNumber())
+                .productCondition(ProductCondition.valueOf(row.getCondition()))
+                .category(product.getCategoryId())
+                .manufacturer(product.getManufacturerId())
+                .quantityInStock(row.getQuantity())
+                .unitPrice(row.getPricePerPiece())
+                .location(null)
+                .isActive(true)
+                .build();
+
+        partRepo.save(newPart);
+    }
+
+    private static class ProcessResult {
+        private final boolean success;
+
+        private ProcessResult(boolean success) {
+            this.success = success;
+        }
+
+        public boolean isSuccess() {
+            return success;
+        }
+
+        public static ProcessResult success() {
+            return new ProcessResult(true);
+        }
+
+        public static ProcessResult failure() {
+            return new ProcessResult(false);
+        }
+    }
     /**
      * Search inventory parts with multiple filter criteria
      * Returns lightweight search responses with supplier information
      */
     public List<InventoryPartResponse> searchInventoryParts(InventoryPartSearchRequest request) {
         // Set default values for boolean filters
-        Boolean inStockOnly = request.getInStockOnly ( ) != null ? request.getInStockOnly ( ) : false;
-        Boolean activeOnly = request.getActiveOnly ( ) != null ? request.getActiveOnly ( ) : true;
+        Boolean inStockOnly = Boolean.TRUE.equals(request.getInStockOnly());
+        Boolean activeOnly  = request.getActiveOnly() == null || request.getActiveOnly();
+
 
         // Set default sorting (default to id ascending if not specified)
         String sortBy = request.getSortBy ( );

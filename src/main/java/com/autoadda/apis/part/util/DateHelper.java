@@ -8,9 +8,11 @@ import java.util.TimeZone;
 
 public class DateHelper {
 
+    public static final String YYYY_MM_DD_HH_MM_SS_SSS = "yyyy-MM-dd HH:mm:ss.SSS";
+
     public static Date dbTimeStampp() {
-        SimpleDateFormat sdfAmerica = new SimpleDateFormat ( "yyyy-MM-dd HH:mm:ss.SSS" );
-        SimpleDateFormat formatter = new SimpleDateFormat ( "yyyy-MM-dd HH:mm:ss.SSS" );
+        SimpleDateFormat sdfAmerica = new SimpleDateFormat (YYYY_MM_DD_HH_MM_SS_SSS);
+        SimpleDateFormat formatter = new SimpleDateFormat ( YYYY_MM_DD_HH_MM_SS_SSS );
         TimeZone tzAmerica = TimeZone.getTimeZone ( "America/New_York" );
         sdfAmerica.setTimeZone ( tzAmerica );
         Date date = new Date ( );
@@ -27,8 +29,8 @@ public class DateHelper {
 
 
     public static Date getVerifyEndDate() {
-        SimpleDateFormat sdfAmerica = new SimpleDateFormat ( "yyyy-MM-dd HH:mm:ss.SSS" );
-        SimpleDateFormat formatter = new SimpleDateFormat ( "yyyy-MM-dd HH:mm:ss.SSS" );
+        SimpleDateFormat sdfAmerica = new SimpleDateFormat ( YYYY_MM_DD_HH_MM_SS_SSS );
+        SimpleDateFormat formatter = new SimpleDateFormat ( YYYY_MM_DD_HH_MM_SS_SSS );
         Date date = new Date ( );
         Date dateInAmerica = null;
         Calendar c = Calendar.getInstance ( );
@@ -45,8 +47,8 @@ public class DateHelper {
     }
 
     public static Date getDateWith90Days() {
-        SimpleDateFormat sdfAmerica = new SimpleDateFormat ( "yyyy-MM-dd HH:mm:ss.SSS" );
-        SimpleDateFormat formatter = new SimpleDateFormat ( "yyyy-MM-dd HH:mm:ss.SSS" );
+        SimpleDateFormat sdfAmerica = new SimpleDateFormat ( YYYY_MM_DD_HH_MM_SS_SSS );
+        SimpleDateFormat formatter = new SimpleDateFormat ( YYYY_MM_DD_HH_MM_SS_SSS );
         Date date = new Date ( );
         Date dateInAmerica = null;
         Calendar c = Calendar.getInstance ( );

@@ -25,6 +25,10 @@ import java.util.stream.Collectors;
 public class MakeService {
 
 
+    public static final String MAKE_NOT_FOUND_WITH_ID = "Make not found with ID: ";
+    public static final String SUCCESS = "success";
+    public static final String MAKE = " Make";
+    public static final String VALIDATING_MAKE_ID = "Validating Make ID";
     private final MakeRepository makeRepository;
     private final PartsDataValidator partsDataValidator;
     private final MediaFileRepository mediaFileRepository;
@@ -37,9 +41,8 @@ public class MakeService {
         List<Make> makes = makeRepository.findAll ( );
         List<MakeResponse> responseBody = makes.stream ( )
                 .map ( make -> MakeResponse.builder ( ).id ( make.getId ( ) ).name ( make.getName ( ) ).logo(make.getLogo()!=null?make.getLogo ():null).build ( ) )
-                .collect ( Collectors.toList ( ) );
-
-        return GenericResponse.builder ( ).body ( responseBody ).code ( "200" ).message ( "success" ).status ( "success" ).build ( );
+                .toList ();
+        return GenericResponse.builder ( ).body ( responseBody ).code ( "200" ).message (SUCCESS).status ( SUCCESS ).build ( );
     }
 
     public GenericResponse createMake(List<MakeRequest> makeRequestList) {
@@ -65,20 +68,20 @@ public class MakeService {
         ).toList ( );
 
         return GenericResponse.builder ( ).body ( makeResponseList ).code ( "201" ).message ( "Successfully Created Make" )
-                .status ( "success" ).build ( );
+                .status ( SUCCESS ).build ( );
     }
 
     public GenericResponse getMakeById(String id) throws NotFoundException {
-        log.info ( "Validating Make ID" );
+        log.info ( VALIDATING_MAKE_ID );
         partsDataValidator.validateMakeId ( id );
 
         Make make = makeRepository.findById ( id )
-                .orElseThrow ( () -> new NotFoundException ( "Make not found with ID: " + id ) );
+                .orElseThrow ( () -> new NotFoundException ( MAKE_NOT_FOUND_WITH_ID + id ) );
 
         MakeResponse response = MakeResponse.builder ( ).id ( make.getId ( ) ).logo ( make.getLogo ( ) != null ? make.getLogo ( ) : null ).name ( make.getName ( ) ).build ( );
 
         return GenericResponse.builder ( ).body ( List.of ( response ) ).code ( "200" )
-                .message ( "Successfully Retrieved " + id + " Make" ).status ( "success" ).build ( );
+                .message ( "Successfully Retrieved " + id + MAKE).status ( SUCCESS ).build ( );
     }
 
     public GenericResponse getMakeByName(String name) throws NotFoundException {
@@ -90,16 +93,16 @@ public class MakeService {
             throw new NotFoundException ( "Make not found with name: " + name );
         }
 
-        return GenericResponse.builder ( ).body ( make ).code ( "200" ).message ( "Successfully Retrieved " + name + " Make" )
-                .status ( "success" ).build ( );
+        return GenericResponse.builder ( ).body ( make ).code ( "200" ).message ( "Successfully Retrieved " + name + MAKE )
+                .status ( SUCCESS ).build ( );
     }
 
     public GenericResponse updateMake(MakeRequest request) throws NotFoundException {
-        log.info ( "Validating Make ID" );
+        log.info ( VALIDATING_MAKE_ID );
         partsDataValidator.validateMakeId ( request.getId ( ) );
 
         Make make = makeRepository.findById ( request.getId ( ) )
-                .orElseThrow ( () -> new NotFoundException ( "Make not found with ID: " + request.getId ( ) ) );
+                .orElseThrow ( () -> new NotFoundException ( MAKE_NOT_FOUND_WITH_ID + request.getId ( ) ) );
 
         if ( request.getLogoId ( ) != null ) {
             make.setLogo ( mediaFileRepository.findById ( request.getLogoId ( ) ).orElseThrow ( () -> new ResourceNotFoundException ( "logo image not found" ) ) );
@@ -111,19 +114,19 @@ public class MakeService {
         makeRepository.save ( make );
 
         return GenericResponse.builder ( ).body ( "Make has been Updated" ).code ( "200" )
-                .message ( "Successfully Updated " + request.getId ( ) + " Make" ).status ( "success" ).build ( );
+                .message ( "Successfully Updated " + request.getId ( ) + MAKE ).status ( SUCCESS ).build ( );
     }
 
     public GenericResponse deleteMakeById(String id) throws NotFoundException {
-        log.info ( "Validating Make ID" );
+        log.info (VALIDATING_MAKE_ID);
         partsDataValidator.validateMakeId ( id );
 
         Make make = makeRepository.findById ( id )
-                .orElseThrow ( () -> new NotFoundException ( "Make not found with ID: " + id ) );
+                .orElseThrow ( () -> new NotFoundException ( MAKE_NOT_FOUND_WITH_ID + id ) );
 
         makeRepository.delete ( make );
 
         return GenericResponse.builder ( ).body ( "Make has been Deleted" ).code ( "200" ).message ( "Successfully Deleted" )
-                .status ( "success" ).build ( );
+                .status ( SUCCESS ).build ( );
     }
 }

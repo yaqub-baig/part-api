@@ -25,6 +25,12 @@ import java.util.List;
 public class ModelService {
 
 
+    public static final String MODEL = " Model";
+    public static final String MODEL_NOT_FOUND_WITH_ID = "Model not found with ID: ";
+    public static final String VEHICLE_TYPE_NOT_FOUND = "VehicleType not found";
+    public static final String VALIDATING_MODEL_ID = "Validating model ID";
+    public static final String MAKE_NOT_FOUND = "Make not found";
+    public static final String SUCCESS = "success";
     private final ModelRepository modelRepository;
 
 
@@ -64,9 +70,9 @@ public class ModelService {
 
         for (Model model : models) {
             VehicleType vehicleType = vehicleTypeRepository.findById ( model.getVehicleTypeId ( ) )
-                    .orElseThrow ( () -> new NotFoundException ( "VehicleType not found" ) );
+                    .orElseThrow ( () -> new NotFoundException (VEHICLE_TYPE_NOT_FOUND) );
             Make make = makeRepository.findById ( model.getMakeId ( ) )
-                    .orElseThrow ( () -> new NotFoundException ( "Make not found" ) );
+                    .orElseThrow ( () -> new NotFoundException (MAKE_NOT_FOUND) );
 
             responseBody.add ( ModelResponse.builder ( )
                     .id ( model.getId ( ) )
@@ -82,8 +88,8 @@ public class ModelService {
         return GenericResponse.builder ( )
                 .body ( responseBody )
                 .code ( "200" )
-                .message ( "success" )
-                .status ( "success" )
+                .message (SUCCESS)
+                .status (SUCCESS)
                 .build ( );
     }
 
@@ -110,7 +116,7 @@ public class ModelService {
                 .body ( modelList )
                 .code ( "201" )
                 .message ( "Successfully Created Model(s)" )
-                .status ( "success" )
+                .status (SUCCESS)
                 .build ( );
     }
 
@@ -122,15 +128,15 @@ public class ModelService {
      * @throws NotFoundException if the model or related entities are not found
      */
     public GenericResponse getModelById(String id) throws NotFoundException {
-        log.info ( "Validating model ID" );
+        log.info (VALIDATING_MODEL_ID);
         partsDataValidator.validateModelId ( id );
 
         Model model = modelRepository.findById ( id )
-                .orElseThrow ( () -> new NotFoundException ( "Model not found with ID: " + id ) );
+                .orElseThrow ( () -> new NotFoundException ( MODEL_NOT_FOUND_WITH_ID + id ) );
         VehicleType vehicleType = vehicleTypeRepository.findById ( model.getVehicleTypeId ( ) )
-                .orElseThrow ( () -> new NotFoundException ( "VehicleType not found" ) );
+                .orElseThrow ( () -> new NotFoundException (VEHICLE_TYPE_NOT_FOUND) );
         Make make = makeRepository.findById ( model.getMakeId ( ) )
-                .orElseThrow ( () -> new NotFoundException ( "Make not found" ) );
+                .orElseThrow ( () -> new NotFoundException (MAKE_NOT_FOUND) );
 
         ModelResponse response = ModelResponse.builder ( )
                 .id ( model.getId ( ) )
@@ -145,8 +151,8 @@ public class ModelService {
         return GenericResponse.builder ( )
                 .body ( List.of ( response ) )
                 .code ( "200" )
-                .message ( "Successfully Retrieved " + id + " Model" )
-                .status ( "success" )
+                .message ( "Successfully Retrieved " + id + MODEL)
+                .status (SUCCESS)
                 .build ( );
     }
 
@@ -169,8 +175,8 @@ public class ModelService {
         return GenericResponse.builder ( )
                 .body ( model )
                 .code ( "200" )
-                .message ( "Successfully Retrieved " + name + " Model" )
-                .status ( "success" )
+                .message ( "Successfully Retrieved " + name + MODEL )
+                .status (SUCCESS)
                 .build ( );
     }
 
@@ -182,11 +188,11 @@ public class ModelService {
      * @throws NotFoundException
      */
     public GenericResponse updateModel(ModelRequest request) throws NotFoundException {
-        log.info ( "Validating model ID" );
+        log.info (VALIDATING_MODEL_ID);
         partsDataValidator.validateModelId ( request.getId ( ) );
 
         Model model = modelRepository.findById ( request.getId ( ) )
-                .orElseThrow ( () -> new NotFoundException ( "Model not found with ID: " + request.getId ( ) ) );
+                .orElseThrow ( () -> new NotFoundException ( MODEL_NOT_FOUND_WITH_ID + request.getId ( ) ) );
 
         model.setName ( request.getName ( ) );
         model.setFullName ( request.getFullName ( ) );
@@ -198,8 +204,8 @@ public class ModelService {
         return GenericResponse.builder ( )
                 .body ( "Model has been Updated" )
                 .code ( "200" )
-                .message ( "Successfully Updated " + request.getId ( ) + " Model" )
-                .status ( "success" )
+                .message ( "Successfully Updated " + request.getId ( ) + MODEL )
+                .status (SUCCESS)
                 .build ( );
     }
 
@@ -211,11 +217,11 @@ public class ModelService {
      * @throws NotFoundException
      */
     public GenericResponse deleteModelById(String id) throws NotFoundException {
-        log.info ( "Validating model ID" );
+        log.info (VALIDATING_MODEL_ID);
         partsDataValidator.validateModelId ( id );
 
         Model model = modelRepository.findById ( id )
-                .orElseThrow ( () -> new NotFoundException ( "Model not found with ID: " + id ) );
+                .orElseThrow ( () -> new NotFoundException ( MODEL_NOT_FOUND_WITH_ID + id ) );
 
         modelRepository.delete ( model );
 
@@ -223,7 +229,7 @@ public class ModelService {
                 .body ( "Model has been Deleted" )
                 .code ( "200" )
                 .message ( "Successfully Deleted" )
-                .status ( "success" )
+                .status (SUCCESS)
                 .build ( );
     }
 
@@ -240,9 +246,9 @@ public class ModelService {
 
         for (Model model : models) {
             VehicleType vehicleType = vehicleTypeRepository.findById ( model.getVehicleTypeId ( ) )
-                    .orElseThrow ( () -> new NotFoundException ( "VehicleType not found" ) );
+                    .orElseThrow ( () -> new NotFoundException (VEHICLE_TYPE_NOT_FOUND) );
             Make make = makeRepository.findById ( model.getMakeId ( ) )
-                    .orElseThrow ( () -> new NotFoundException ( "Make not found" ) );
+                    .orElseThrow ( () -> new NotFoundException (MAKE_NOT_FOUND) );
 
             responseBody.add ( ModelResponse.builder ( )
                     .id ( model.getId ( ) )
@@ -259,7 +265,7 @@ public class ModelService {
                 .body ( responseBody )
                 .code ( "200" )
                 .message ( "Successfully Retrieved" )
-                .status ( "success" )
+                .status (SUCCESS)
                 .build ( );
     }
 
@@ -276,9 +282,9 @@ public class ModelService {
 
         for (Model model : models) {
             VehicleType vehicleType = vehicleTypeRepository.findById ( model.getVehicleTypeId ( ) )
-                    .orElseThrow ( () -> new NotFoundException ( "VehicleType not found" ) );
+                    .orElseThrow ( () -> new NotFoundException (VEHICLE_TYPE_NOT_FOUND) );
             Make make = makeRepository.findById ( model.getMakeId ( ) )
-                    .orElseThrow ( () -> new NotFoundException ( "Make not found" ) );
+                    .orElseThrow ( () -> new NotFoundException (MAKE_NOT_FOUND) );
 
             responseBody.add ( ModelResponse.builder ( )
                     .id ( model.getId ( ) )
@@ -295,7 +301,7 @@ public class ModelService {
                 .body ( responseBody )
                 .code ( "200" )
                 .message ( "Successfully Retrieved" )
-                .status ( "success" )
+                .status (SUCCESS)
                 .build ( );
     }
 }

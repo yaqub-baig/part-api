@@ -21,8 +21,8 @@ public class Engine {
     @Column(name = "id")
     private String id;
 
-    @Column(name = "engine")
-    private String engine;
+    @Column(name = "engine_capacity")
+    private String engineCapacity;
 
     @Column(name = "fuel_type")
     private String fuelType;

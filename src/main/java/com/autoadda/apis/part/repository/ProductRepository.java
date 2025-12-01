@@ -19,7 +19,6 @@ public interface ProductRepository extends JpaRepository<Product, String> {
 
     List<Product> findByTagContaining(String tag);
 
-//	List<Product> findBySkuContaining(String sku);
 
     List<Product> findByYearAndMakeAndModel(Integer year, String make, String model);
 
