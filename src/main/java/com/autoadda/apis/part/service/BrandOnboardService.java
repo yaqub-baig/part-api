@@ -1,5 +1,7 @@
 package com.autoadda.apis.part.service;
 
+
+import com.autoadda.apis.part.clients.AuthClient;
 import com.autoadda.apis.part.entity.BrandOnboard;
 import com.autoadda.apis.part.entity.Engine;
 import com.autoadda.apis.part.entity.Make;
@@ -11,6 +13,7 @@ import com.autoadda.apis.part.repository.EngineRepository;
 import com.autoadda.apis.part.repository.MakeRepository;
 import com.autoadda.apis.part.repository.ModelRepository;
 import com.autoadda.apis.part.request.BrandOnboardRequest;
+import com.autoadda.apis.part.request.SmsRequest;
 import com.autoadda.apis.part.response.BrandOnboardResponse;
 import com.autoadda.apis.part.response.GenericResponse;
 import com.autoadda.apis.part.util.BrandRequestStatus;
@@ -33,6 +36,7 @@ public class BrandOnboardService {
     private final MakeRepository makeRepository;
     private final ModelRepository modelRepository;
     private final EngineRepository engineRepository;
+    private final AuthClient authClient;
 
     public GenericResponse brandOnboard(BrandOnboardRequest request, String autoAddaId) {
         Make brand = makeRepository.findByName ( request.getBrandName ( ) );
@@ -125,15 +129,18 @@ public class BrandOnboardService {
         BrandOnboard request = brandOnboardRepository.findById ( id )
                 .orElseThrow ( () -> new ResourceNotFoundException ( "Brand onboard request not found" ) );
 
-        if ( request.getRequestStatus ( ) != com.autoadda.apis.part.util.BrandRequestStatus.PENDING ) {
+        if ( request.getRequestStatus ( ) != BrandRequestStatus.PENDING ) {
             throw new IllegalStateException ( "Only pending requests can be approved" );
         }
 
-        request.setRequestStatus ( com.autoadda.apis.part.util.BrandRequestStatus.APPROVED );
+        request.setRequestStatus ( BrandRequestStatus.APPROVED );
         request.setApprovedBy ( Integer.parseInt ( adminId ) );
         request.setApprovedAt ( LocalDateTime.now ( ) );
 
         BrandOnboard saved = brandOnboardRepository.save ( request );
+
+        // Send SMS notification to user
+        sendApprovalSms ( saved );
 
         return new GenericResponse ( SUCCESS, "200",
                 "Brand request approved successfully. Admin can now manually create Make/Model/Engine records.",
@@ -159,6 +166,9 @@ public class BrandOnboardService {
 
         BrandOnboard saved = brandOnboardRepository.save ( request );
 
+        // Send SMS notification to user
+        sendRejectionSms ( saved );
+
         return new GenericResponse ( SUCCESS, "200",
                 "Brand request rejected successfully",
                 brandOnboardMapper.toResponse ( saved ) );
@@ -182,5 +192,69 @@ public class BrandOnboardService {
 
         return new GenericResponse ( SUCCESS, "200",
                 "Requests retrieved successfully", responses );
+    }
+
+    /**
+     * Send SMS notification to user when their brand request is approved
+     *
+     * @param brandOnboard the approved brand onboard request
+     */
+    private void sendApprovalSms(BrandOnboard brandOnboard) {
+        try {
+            String message = String.format (
+                    "Dear User, Your brand request for %s %s (%s) has been APPROVED! " +
+                            "Reference ID: %s. The brand will be available in our system soon. Thank you for your contribution!",
+                    brandOnboard.getBrandName ( ),
+                    brandOnboard.getModelName ( ),
+                    brandOnboard.getEngineType ( ),
+                    brandOnboard.getRequestReferenceId ( )
+            );
+
+            SmsRequest smsRequest = new SmsRequest ( null, message );
+            GenericResponse genericResponse = authClient.sendSms(brandOnboard.getRequestBy(), smsRequest);
+            boolean isSuccess = genericResponse.getStatus().equals("200");
+            if (!isSuccess) {
+                log.error ( "Failed to send SMS notification for approved request {}: {}",
+                        brandOnboard.getRequestReferenceId ( ), genericResponse.getMessage ( ) );
+            }
+            log.info ( "SMS notification sent successfully for approved request: {}", brandOnboard.getRequestReferenceId ( ) );
+        }
+        catch ( Exception e ) {
+            log.error ( "Failed to send SMS notification for approved request {}: {}",
+                    brandOnboard.getRequestReferenceId ( ), e.getMessage ( ) );
+        }
+    }
+
+    /**
+     * Send SMS notification to user when their brand request is rejected
+     *
+     * @param brandOnboard the rejected brand onboard request
+     */
+    private void sendRejectionSms(BrandOnboard brandOnboard) {
+        try {
+            String message = String.format (
+                    "Dear User, Your brand request for %s %s (%s) has been REJECTED. " +
+                            "Reference ID: %s. Reason: %s. Please contact support for more details.",
+                    brandOnboard.getBrandName ( ),
+                    brandOnboard.getModelName ( ),
+                    brandOnboard.getEngineType ( ),
+                    brandOnboard.getRequestReferenceId ( ),
+                    brandOnboard.getRejectionReason ( )
+            );
+
+            SmsRequest smsRequest = new SmsRequest ( null, message );
+            GenericResponse genericResponse = authClient.sendSms ( brandOnboard.getRequestBy ( ), smsRequest );
+            boolean isSuccess = genericResponse.getStatus().equals("200");
+            if (!isSuccess) {
+                log.error ( "Failed to send SMS notification for approved request {}: {}",
+                        brandOnboard.getRequestReferenceId ( ), genericResponse.getMessage ( ) );
+            }
+            log.info ( "SMS notification sent successfully for rejected request: {}", brandOnboard.getRequestReferenceId ( ) );
+        }
+        catch ( Exception e ) {
+            log.error ( "Failed to send SMS notification for rejected request {}: {}",
+                    brandOnboard.getRequestReferenceId ( ), e.getMessage ( ) );
+            // Don't throw exception - SMS failure shouldn't fail the rejection process
+        }
     }
 }
