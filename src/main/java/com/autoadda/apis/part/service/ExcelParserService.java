@@ -27,22 +27,48 @@ public class ExcelParserService {
              Workbook workbook = new XSSFWorkbook ( inputStream )) {
 
             Sheet sheet = workbook.getSheetAt ( 0 );
-            int rowIndex = 0;
+            int lastRowNum = sheet.getLastRowNum ( );
 
-            for (Row row : sheet) {
+            for (int rowIndex = 0; rowIndex <= lastRowNum; rowIndex++) {
+                Row row = sheet.getRow ( rowIndex );
+
                 // Skip header row
                 if ( rowIndex == 0 ) {
-                    rowIndex++;
+                    continue;
+                }
+
+                // Skip completely empty rows
+                if ( row == null || isRowEmpty ( row ) ) {
                     continue;
                 }
 
                 InventoryPartExcelRow excelRow = parseRow ( row, rowIndex );
                 rows.add ( excelRow );
-                rowIndex++;
             }
         }
 
         return rows;
+    }
+
+    /**
+     * Check if a row is completely empty (all cells are null or blank)
+     */
+    private boolean isRowEmpty(Row row) {
+        if ( row == null ) {
+            return true;
+        }
+
+        for (int cellIndex = row.getFirstCellNum ( ); cellIndex < row.getLastCellNum ( ); cellIndex++) {
+            Cell cell = row.getCell ( cellIndex );
+            if ( cell != null && cell.getCellType ( ) != org.apache.poi.ss.usermodel.CellType.BLANK ) {
+                String cellValue = getCellValueAsString ( cell );
+                if ( cellValue != null && ! cellValue.trim ( ).isEmpty ( ) ) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
     }
 
     private InventoryPartExcelRow parseRow(Row row, int rowNumber) {

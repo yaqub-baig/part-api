@@ -31,6 +31,7 @@ import java.util.List;
 public class BrandOnboardService {
     public static final String SUCCESS = "success";
     public static final String UNKNOWN = "UNKNOWN";
+    public static final String FAILED_TO_SEND_SMS_NOTIFICATION_FOR_APPROVED_REQUEST = "Failed to send SMS notification for approved request {}: {}";
     private final BrandOnboardRepository brandOnboardRepository;
     private final BrandOnboardMapper brandOnboardMapper;
     private final MakeRepository makeRepository;
@@ -214,13 +215,13 @@ public class BrandOnboardService {
             GenericResponse genericResponse = authClient.sendSms(brandOnboard.getRequestBy(), smsRequest);
             boolean isSuccess = genericResponse.getStatus().equals("200");
             if (!isSuccess) {
-                log.error ( "Failed to send SMS notification for approved request {}: {}",
+                log.error (FAILED_TO_SEND_SMS_NOTIFICATION_FOR_APPROVED_REQUEST,
                         brandOnboard.getRequestReferenceId ( ), genericResponse.getMessage ( ) );
             }
             log.info ( "SMS notification sent successfully for approved request: {}", brandOnboard.getRequestReferenceId ( ) );
         }
         catch ( Exception e ) {
-            log.error ( "Failed to send SMS notification for approved request {}: {}",
+            log.error (FAILED_TO_SEND_SMS_NOTIFICATION_FOR_APPROVED_REQUEST,
                     brandOnboard.getRequestReferenceId ( ), e.getMessage ( ) );
         }
     }
@@ -246,7 +247,7 @@ public class BrandOnboardService {
             GenericResponse genericResponse = authClient.sendSms ( brandOnboard.getRequestBy ( ), smsRequest );
             boolean isSuccess = genericResponse.getStatus().equals("200");
             if (!isSuccess) {
-                log.error ( "Failed to send SMS notification for approved request {}: {}",
+                log.error (FAILED_TO_SEND_SMS_NOTIFICATION_FOR_APPROVED_REQUEST,
                         brandOnboard.getRequestReferenceId ( ), genericResponse.getMessage ( ) );
             }
             log.info ( "SMS notification sent successfully for rejected request: {}", brandOnboard.getRequestReferenceId ( ) );
