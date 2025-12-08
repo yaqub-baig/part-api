@@ -16,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -41,6 +42,7 @@ public class MakeService {
         List<Make> makes = makeRepository.findAll ( );
         List<MakeResponse> responseBody = makes.stream ( )
                 .map ( make -> MakeResponse.builder ( ).id ( make.getId ( ) ).name ( make.getName ( ) ).logo(make.getLogo()!=null?make.getLogo ():null).build ( ) )
+                .sorted(Comparator.comparing(MakeResponse::getName))
                 .toList ();
         return GenericResponse.builder ( ).body ( responseBody ).code ( "200" ).message (SUCCESS).status ( SUCCESS ).build ( );
     }
@@ -123,7 +125,6 @@ public class MakeService {
 
         Make make = makeRepository.findById ( id )
                 .orElseThrow ( () -> new NotFoundException ( MAKE_NOT_FOUND_WITH_ID + id ) );
-
         makeRepository.delete ( make );
 
         return GenericResponse.builder ( ).body ( "Make has been Deleted" ).code ( "200" ).message ( "Successfully Deleted" )
