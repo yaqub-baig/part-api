@@ -36,7 +36,7 @@ public class ProductService {
     private final ProductRepository productRepository;
     private final PartsDataValidator partsDataValidator;
     private final ProductAttributeRepository productAttributeRepository;
-    private final ProductAttributeService productAttributeServcie;
+    private final ProductAttributeService productAttributeService;
     private final MediaFileRepository mediaFileRepository;
     private final CategoryService categoryService;
 
@@ -93,8 +93,8 @@ public class ProductService {
 
         if (includeAttributes) {
             builder.attributes(
-                    productAttributeServcie.getProductAttributeByProductId(product.getId()).getBody() != null
-                            ? (List<ProductAttributeResponse>) productAttributeServcie.getProductAttributeByProductId(product.getId()).getBody()
+                    productAttributeService.getProductAttributeByProductId(product.getId()).getBody() != null
+                            ? (List<ProductAttributeResponse>) productAttributeService.getProductAttributeByProductId(product.getId()).getBody()
                             : new ArrayList<>()
             );
         }

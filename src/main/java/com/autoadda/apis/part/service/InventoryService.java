@@ -53,6 +53,7 @@ public class InventoryService {
                 supplier = supplierRepo.findById ( Integer.parseInt ( request.getSupplierId ( ) ) ).orElse ( null );
             }
             catch ( NumberFormatException e ) {
+                throw new ResourceNotFoundException ( "Invalid supplier ID format" );
                 // Handle invalid supplier ID format
             }
         }

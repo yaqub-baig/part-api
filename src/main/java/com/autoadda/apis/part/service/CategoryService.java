@@ -1,11 +1,16 @@
 package com.autoadda.apis.part.service;
 
 import com.autoadda.apis.part.entity.Category;
+import com.autoadda.apis.part.entity.CategoryAttribute;
 import com.autoadda.apis.part.entity.MediaFile;
+import com.autoadda.apis.part.entity.Product;
+import com.autoadda.apis.part.exception.ConflictException;
 import com.autoadda.apis.part.exception.NotFoundException;
 import com.autoadda.apis.part.exception.ResourceNotFoundException;
+import com.autoadda.apis.part.repository.CategoryAttributeRepository;
 import com.autoadda.apis.part.repository.CategoryRepository;
 import com.autoadda.apis.part.repository.MediaFileRepository;
+import com.autoadda.apis.part.repository.ProductRepository;
 import com.autoadda.apis.part.request.CategoryRequest;
 import com.autoadda.apis.part.response.CategoryResponse;
 import com.autoadda.apis.part.response.GenericResponse;
@@ -31,6 +36,10 @@ public class CategoryService {
     private final MediaFileRepository mediaFileRepository;
 
     private final PartsDataValidator partsDataValidator;
+
+    private final ProductRepository productRepository;
+
+    private final CategoryAttributeRepository categoryAttributeRepository;
 
     private String prepareAttributeUrl(String categoryId) {
         return "http://localhost:8097/api/v1/categoryattributes/categoryid/" + categoryId;
@@ -242,6 +251,9 @@ public class CategoryService {
         Category category = categoryRepository.findById ( id )
                 .orElseThrow ( () -> new NotFoundException ( "Category not found for ID: " + id ) );
 
+        // Validate category has no references before deletion
+        validateCategoryCanBeDeleted(id);
+
         categoryRepository.delete ( category );
 
         return GenericResponse.builder ( ).body ( "Category has been deleted" ).code ( "200" ).message ( "Successfully deleted" )
@@ -259,5 +271,49 @@ public class CategoryService {
                 .images ( category.getImages ( ) )
                 .build ( );
 
+    }
+
+    /**
+     * Validates that a category can be safely deleted by checking for references
+     * @param categoryId the category ID to check
+     * @throws ConflictException if the category has references
+     */
+    private void validateCategoryCanBeDeleted(String categoryId) {
+        // Check for product references
+        List<Product> products = productRepository.findByCategoryId(categoryId);
+
+        // Check for subcategory references
+        List<Category> subCategories = categoryRepository.findByParentCategoryId(categoryId);
+
+        // Check for category attribute references
+        List<CategoryAttribute> attributes = categoryAttributeRepository.findByCategoryId(categoryId);
+
+        // If any references exist, prevent deletion
+        if (!products.isEmpty() || !subCategories.isEmpty() || !attributes.isEmpty()) {
+            String message = buildReferenceErrorMessage(products.size(), subCategories.size(), attributes.size());
+            log.warn("Cannot delete category {}: {}", categoryId, message);
+            throw new ConflictException(message);
+        }
+    }
+
+    /**
+     * Builds a detailed error message listing all references
+     */
+    private String buildReferenceErrorMessage(int productCount, int subcategoryCount, int attributeCount) {
+        List<String> references = new ArrayList<>();
+
+        if (productCount > 0) {
+            references.add(productCount + " product" + (productCount > 1 ? "s" : ""));
+        }
+        if (subcategoryCount > 0) {
+            references.add(subcategoryCount + " subcategory(ies)");
+        }
+        if (attributeCount > 0) {
+            references.add(attributeCount + " category attribute(s)");
+        }
+
+        return "Cannot delete category. It is referenced by " +
+               String.join(" and ", references) +
+               ". Please delete or reassign these items first.";
     }
 }

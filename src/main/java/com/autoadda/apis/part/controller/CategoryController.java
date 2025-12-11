@@ -76,7 +76,9 @@ public class CategoryController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "successfull deleting categories", content = {
                     @Content(mediaType = "application/json", schema = @Schema(implementation = GenericResponse.class))}),
-            @ApiResponse(responseCode = "404", description = "delete category api not found", content = @Content)})
+            @ApiResponse(responseCode = "404", description = "delete category api not found", content = @Content),
+            @ApiResponse(responseCode = "409", description = "Category is referenced by products, subcategories, or attributes", content = {
+                    @Content(mediaType = "application/json", schema = @Schema(implementation = GenericResponse.class))})})
     @DeleteMapping("/{id}")
     public GenericResponse deleteCategoryById(@PathVariable String id) {
         return categoryService.deleteCategoryById ( id );
