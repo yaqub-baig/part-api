@@ -46,6 +46,11 @@ public class InventoryService {
         InventoryPart part = inventoryPartMapper.toEntity ( request, product );
         InventoryPart savedPart = partRepo.save ( part );
 
+        // Update product supplier count
+        if (product != null) {
+            updateProductSupplierCount(product.getId());
+        }
+
         // Fetch supplier for complete response
         Supplier supplier = null;
         if ( request.getSupplierId ( ) != null ) {
@@ -88,6 +93,9 @@ public class InventoryService {
 
         // Save updated part
         InventoryPart updatedPart = partRepo.save ( existingPart );
+
+        // Update product supplier count
+        updateProductSupplierCount(product.getId());
 
         // Fetch supplier for complete response
         Supplier supplier = null;
@@ -268,6 +276,7 @@ public class InventoryService {
     public InventoryPartExcelUploadResponse bulkImportFromExcel(MultipartFile file, String supplierId) {
         InventoryPartExcelUploadResponse response = new InventoryPartExcelUploadResponse(0, 0, 0);
         List<InventoryPartExcelRow> failedRows = new ArrayList<>();
+        List<String> affectedProductIds = new ArrayList<>();
 
         try {
             List<InventoryPartExcelRow> excelRows = excelParserService.parseExcelFile(file);
@@ -281,11 +290,18 @@ public class InventoryService {
 
                 if (result.isSuccess()) {
                     successCount++;
+                    // Track affected product ID for supplier count update
+                    if (result.getProductId() != null) {
+                        affectedProductIds.add(result.getProductId());
+                    }
                 } else {
                     failedCount++;
                     failedRows.add(row); // Failed rows are added here
                 }
             }
+
+            // Update supplier counts for all affected products
+            affectedProductIds.stream().distinct().forEach(this::updateProductSupplierCount);
 
             response.setStatusCode(failedCount < 1 ? "200" : "400");
             response.setSuccessfulRows(successCount);
@@ -326,8 +342,8 @@ public class InventoryService {
                 createNewPart(product, row, supplierId);
             }
 
-            // Case 3: Success → return success (row will NOT be added to failedRows)
-            return ProcessResult.success();
+            // Case 3: Success → return success with product ID (row will NOT be added to failedRows)
+            return ProcessResult.success(product.getId());
 
         } catch (Exception e) {
             // Case 4: Exception → mark invalid, set error message, return failure
@@ -365,21 +381,27 @@ public class InventoryService {
 
     private static class ProcessResult {
         private final boolean success;
+        private final String productId;
 
-        private ProcessResult(boolean success) {
+        private ProcessResult(boolean success, String productId) {
             this.success = success;
+            this.productId = productId;
         }
 
         public boolean isSuccess() {
             return success;
         }
 
-        public static ProcessResult success() {
-            return new ProcessResult(true);
+        public String getProductId() {
+            return productId;
+        }
+
+        public static ProcessResult success(String productId) {
+            return new ProcessResult(true, productId);
         }
 
         public static ProcessResult failure() {
-            return new ProcessResult(false);
+            return new ProcessResult(false, null);
         }
     }
     /**
@@ -469,5 +491,25 @@ public class InventoryService {
             }
         }
         return suppliers;
+    }
+
+    /**
+     * Update the pre-computed supplier count for a product
+     * This method should be called whenever inventory is added, updated, or deleted
+     *
+     * @param productId The ID of the product to update
+     */
+    @Transactional
+    public void updateProductSupplierCount(String productId) {
+        if (productId == null) {
+            return;
+        }
+
+        Long count = partRepo.countByProductIdAndIsActiveAndQuantityInStockGreaterThan(productId, true, 0);
+
+        productRepo.findById(productId).ifPresent(product -> {
+            product.setSupplierCount(count.intValue());
+            productRepo.save(product);
+        });
     }
 }

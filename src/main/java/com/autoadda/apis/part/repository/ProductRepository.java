@@ -1,6 +1,8 @@
 package com.autoadda.apis.part.repository;
 
 import com.autoadda.apis.part.entity.Product;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -57,5 +59,29 @@ public interface ProductRepository extends JpaRepository<Product, String> {
             @Param("model") String model,
             @Param("sortBy") String sortBy,
             @Param("sortDirection") String sortDirection
+    );
+
+    // Advanced search with pagination support
+    @Query("SELECT p FROM Product p WHERE " +
+            "(:name IS NULL OR p.name LIKE %:name%) AND " +
+            "(:partNumber IS NULL OR p.partNumber = :partNumber) AND " +
+            "(:otherNames IS NULL OR p.otherNames LIKE %:otherNames%) AND " +
+            "(:tag IS NULL OR p.tag LIKE %:tag%) AND " +
+            "(:categoryId IS NULL OR p.categoryId = :categoryId) AND " +
+            "(:manufacturerId IS NULL OR p.manufacturerId = :manufacturerId) AND " +
+            "(:year IS NULL OR p.year = :year) AND " +
+            "(:make IS NULL OR p.make = :make) AND " +
+            "(:model IS NULL OR p.model = :model)")
+    Page<Product> advancedSearchPaginated(
+            @Param("name") String name,
+            @Param("partNumber") String partNumber,
+            @Param("otherNames") String otherNames,
+            @Param("tag") String tag,
+            @Param("categoryId") String categoryId,
+            @Param("manufacturerId") String manufacturerId,
+            @Param("year") Integer year,
+            @Param("make") String make,
+            @Param("model") String model,
+            Pageable pageable
     );
 }

@@ -1,6 +1,7 @@
 package com.autoadda.apis.part.controller;
 
 import com.autoadda.apis.part.request.ProductSearchRequest;
+import com.autoadda.apis.part.response.PagedResponse;
 import com.autoadda.apis.part.response.ProductResponse;
 import com.autoadda.apis.part.response.SupplierAvailabilityResponse;
 import com.autoadda.apis.part.service.ProductSearchService;
@@ -15,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import javax.validation.Valid;
 import java.util.List;
 
 /**
@@ -227,5 +229,32 @@ public class ProductSearchController {
         log.info("Advanced product search with filters: {} (includeSuppliers: {})", searchRequest, includeSuppliers);
         List<ProductResponse> products = productSearchService.advancedSearch(searchRequest, includeSuppliers);
         return ResponseEntity.ok(products);
+    }
+
+    @Operation(summary = "Advanced product search with pagination",
+            description = "Search products using multiple optional filters with paginated results. " +
+                    "Supports sorting by supplier count for optimal performance. " +
+                    "Default page size is 10, maximum is 50.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Products found successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid pagination parameters")
+    })
+    @PostMapping("/paginated")
+    public ResponseEntity<PagedResponse<ProductResponse>> advancedSearchPaginated(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    description = "Search criteria with pagination parameters (page, size, sortBy, sortDirection)",
+                    required = true
+            )
+            @RequestBody @Valid ProductSearchRequest searchRequest,
+            @Parameter(description = "Include detailed supplier list with pricing and inventory", required = false)
+            @RequestParam(defaultValue = "false") boolean includeSuppliers) {
+
+        log.info("Advanced paginated product search: page={}, size={}, filters={}",
+                searchRequest.getPage(), searchRequest.getSize(), searchRequest);
+
+        PagedResponse<ProductResponse> response =
+                productSearchService.advancedSearchPaginated(searchRequest, includeSuppliers);
+
+        return ResponseEntity.ok(response);
     }
 }

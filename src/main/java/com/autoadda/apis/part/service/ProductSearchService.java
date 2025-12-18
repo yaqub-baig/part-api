@@ -5,11 +5,16 @@ import com.autoadda.apis.part.entity.ProductAttribute;
 import com.autoadda.apis.part.repository.InventoryPartRepository;
 import com.autoadda.apis.part.repository.ProductRepository;
 import com.autoadda.apis.part.request.ProductSearchRequest;
+import com.autoadda.apis.part.response.PagedResponse;
 import com.autoadda.apis.part.response.ProductAttributeResponse;
 import com.autoadda.apis.part.response.ProductResponse;
 import com.autoadda.apis.part.response.SupplierAvailabilityResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
@@ -409,5 +414,151 @@ public class ProductSearchService {
 
         log.info("Advanced search returned {} products", enrichedProducts.size());
         return enrichedProducts;
+    }
+
+    // ============ Paginated Search Methods ============
+
+    /**
+     * Advanced search with pagination
+     * Uses pre-computed supplier counts from database for optimal performance
+     */
+    @Transactional
+    public PagedResponse<ProductResponse> advancedSearchPaginated(
+            ProductSearchRequest searchRequest,
+            boolean includeSuppliers) {
+
+        log.info("Advanced paginated product search: page={}, size={}, filters={}",
+                searchRequest.getPage(), searchRequest.getSize(), searchRequest);
+
+        // Build Pageable with sorting
+        Pageable pageable = buildPageable(searchRequest);
+
+        // Execute paginated query
+        Page<Product> productPage = productRepository.advancedSearchPaginated(
+                searchRequest.getName(),
+                searchRequest.getPartNumber(),
+                searchRequest.getOtherNames(),
+                searchRequest.getTag(),
+                searchRequest.getCategoryId(),
+                searchRequest.getManufacturerId(),
+                searchRequest.getYear(),
+                searchRequest.getMake(),
+                searchRequest.getModel(),
+                pageable
+        );
+
+        // Convert to ProductResponse (supplier count already in entity)
+        List<ProductResponse> responses = productPage.getContent().stream()
+                .map(product -> buildProductResponse(product, includeSuppliers))
+                .collect(Collectors.toList());
+
+        // Apply supplier filters if specified
+        if (searchRequest.getMinSuppliers() != null ||
+                searchRequest.getMaxSuppliers() != null ||
+                Boolean.TRUE.equals(searchRequest.getInStockOnly())) {
+            responses = filterBySupplierCriteria(responses, searchRequest);
+        }
+
+        // Wrap in paginated response
+        PagedResponse<ProductResponse> pagedResponse = PagedResponse.<ProductResponse>builder()
+                .content(responses)
+                .page(productPage.getNumber())
+                .size(productPage.getSize())
+                .totalElements(productPage.getTotalElements())
+                .totalPages(productPage.getTotalPages())
+                .first(productPage.isFirst())
+                .last(productPage.isLast())
+                .numberOfElements(responses.size())
+                .empty(responses.isEmpty())
+                .build();
+
+        log.info("Advanced paginated search returned {} products in page {}/{}",
+                responses.size(), productPage.getNumber(), productPage.getTotalPages());
+
+        return pagedResponse;
+    }
+
+    /**
+     * Build Pageable object from request parameters
+     */
+    private Pageable buildPageable(ProductSearchRequest request) {
+        int page = request.getPage() != null ? request.getPage() : 0;
+        int size = request.getSize() != null ? request.getSize() : 10;
+
+        if (request.getSortBy() != null && !request.getSortBy().isBlank()) {
+            Sort.Direction direction = "DESC".equalsIgnoreCase(request.getSortDirection())
+                    ? Sort.Direction.DESC
+                    : Sort.Direction.ASC;
+
+            // Map sortBy field (handle supplierCount -> supplier_count)
+            String sortField = "supplierCount".equals(request.getSortBy())
+                    ? "supplierCount"  // Entity field name
+                    : request.getSortBy();
+
+            return PageRequest.of(page, size, Sort.by(direction, sortField));
+        }
+
+        return PageRequest.of(page, size);
+    }
+
+    /**
+     * Build ProductResponse from Product entity using pre-computed supplier count
+     */
+    private ProductResponse buildProductResponse(Product product, boolean includeSuppliers) {
+        String attributeUrl = "http://localhost:8060/api/v1/productattributes/productid/" + product.getId();
+
+        ProductResponse.ProductResponseBuilder builder = ProductResponse.builder()
+                .id(product.getId())
+                .name(product.getName())
+                .description(product.getDescription())
+                .partNumber(product.getPartNumber())
+                .year(product.getYear())
+                .make(product.getMake())
+                .model(product.getModel())
+                .tag(product.getTag())
+                .otherNames(product.getOtherNames())
+                .categoryId(product.getCategoryId())
+                .manufacturerId(product.getManufacturerId())
+                .attributeUrl(attributeUrl)
+                .images(product.getImages())
+                // Use pre-computed supplier count from database
+                .availableSupplierCount(product.getSupplierCount() != null
+                        ? product.getSupplierCount().longValue()
+                        : 0L);
+
+        // Include detailed suppliers if requested
+        if (includeSuppliers) {
+            List<SupplierAvailabilityResponse> suppliers =
+                    supplierService.getSuppliersByProductId(product.getId());
+            builder.suppliers(suppliers);
+        }
+
+        return builder.build();
+    }
+
+    /**
+     * Filter products by supplier criteria
+     */
+    private List<ProductResponse> filterBySupplierCriteria(
+            List<ProductResponse> responses,
+            ProductSearchRequest request) {
+
+        return responses.stream()
+                .filter(p -> {
+                    Long count = p.getAvailableSupplierCount();
+
+                    if (request.getMinSuppliers() != null && count < request.getMinSuppliers()) {
+                        return false;
+                    }
+                    if (request.getMaxSuppliers() != null && count > request.getMaxSuppliers()) {
+                        return false;
+                    }
+                    if (Boolean.TRUE.equals(request.getInStockOnly()) && count == 0) {
+                        return false;
+                    }
+
+                    return true;
+                })
+                .collect(Collectors.toList());
     }
 }

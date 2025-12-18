@@ -3,6 +3,9 @@ package com.autoadda.apis.part.request;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
+import javax.validation.constraints.Max;
+import javax.validation.constraints.Min;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -57,4 +60,14 @@ public class ProductSearchRequest {
 
     @Schema(description = "Sort direction: 'ASC' or 'DESC'", example = "ASC")
     private String sortDirection;
+
+    // Pagination options
+    @Schema(description = "Page number (0-indexed)", example = "0", defaultValue = "0")
+    @Min(0)
+    private Integer page = 0;
+
+    @Schema(description = "Page size", example = "10", defaultValue = "10")
+    @Min(1)
+    @Max(50)
+    private Integer size = 10;
 }

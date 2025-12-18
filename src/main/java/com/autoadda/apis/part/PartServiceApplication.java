@@ -6,10 +6,12 @@ import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfi
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.cloud.client.loadbalancer.LoadBalancerAutoConfiguration;
 import org.springframework.cloud.openfeign.EnableFeignClients;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication(exclude = {SecurityAutoConfiguration.class, LoadBalancerAutoConfiguration.class})
 @EnableDiscoveryClient
 @EnableFeignClients
+@EnableScheduling
 public class PartServiceApplication {
     public static void main(String[] args) {
         SpringApplication.run ( PartServiceApplication.class, args );
