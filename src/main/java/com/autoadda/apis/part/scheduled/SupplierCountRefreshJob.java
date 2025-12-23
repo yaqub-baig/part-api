@@ -57,6 +57,7 @@ public class SupplierCountRefreshJob {
                         product.setSupplierCount(count.intValue());
                         productRepository.save(product);
                         updatedCount++;
+                        log.info("Updated supplier count for product :: {}", updatedCount);
                     }
                 } catch (Exception e) {
                     log.error("Error updating supplier count for product {}: {}",

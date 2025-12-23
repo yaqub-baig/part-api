@@ -13,6 +13,8 @@ import com.autoadda.apis.part.util.GUIDGenerator;
 import com.autoadda.apis.part.validator.PartsDataValidator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -38,6 +40,7 @@ public class MakeService {
         return Make.builder ( ).id ( GUIDGenerator.generateGUID ( ) ).name ( request.getName ( ) ).build ( );
     }
 
+    @Cacheable(value = "makes", key = "'allMakes'")
     public GenericResponse getAllMakes() {
         List<Make> makes = makeRepository.findAll ( );
         List<MakeResponse> responseBody = makes.stream ( )
@@ -46,7 +49,7 @@ public class MakeService {
                 .toList ();
         return GenericResponse.builder ( ).body ( responseBody ).code ( "200" ).message (SUCCESS).status ( SUCCESS ).build ( );
     }
-
+    @CacheEvict(value = "makes", key = "'allMakes'")
     public GenericResponse createMake(List<MakeRequest> makeRequestList) {
         List<Make> makeList = new ArrayList<> ( );
 
@@ -98,7 +101,7 @@ public class MakeService {
         return GenericResponse.builder ( ).body ( make ).code ( "200" ).message ( "Successfully Retrieved " + name + MAKE )
                 .status ( SUCCESS ).build ( );
     }
-
+    @CacheEvict(value = "makes", key = "'allMakes'")
     public GenericResponse updateMake(MakeRequest request) throws NotFoundException {
         log.info ( VALIDATING_MAKE_ID );
         partsDataValidator.validateMakeId ( request.getId ( ) );
