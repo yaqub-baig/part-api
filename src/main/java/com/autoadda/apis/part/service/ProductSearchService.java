@@ -32,6 +32,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ProductSearchService {
 
+    public static final String SUPPLIER_COUNT = "supplierCount";
     private final ProductRepository productRepository;
     private final InventoryPartRepository inventoryPartRepository;
     private final ProductAttributeService productAttributeService;
@@ -249,7 +250,7 @@ public class ProductSearchService {
         }
 
         // Step 4: Sort by supplier count if requested
-        if ("supplierCount".equals(request.getSortBy())) {
+        if (SUPPLIER_COUNT.equals(request.getSortBy())) {
             enrichedProducts = enrichedProducts.stream()
                     .sorted((p1, p2) -> {
                         int comparison = p1.getAvailableSupplierCount().compareTo(p2.getAvailableSupplierCount());
@@ -403,7 +404,7 @@ public class ProductSearchService {
         }
 
         // Step 4: Sort by supplier count if requested
-        if ("supplierCount".equals(request.getSortBy())) {
+        if (SUPPLIER_COUNT.equals(request.getSortBy())) {
             enrichedProducts = enrichedProducts.stream()
                     .sorted((p1, p2) -> {
                         int comparison = p1.getAvailableSupplierCount().compareTo(p2.getAvailableSupplierCount());
@@ -450,7 +451,7 @@ public class ProductSearchService {
         // Convert to ProductResponse (supplier count already in entity)
         List<ProductResponse> responses = productPage.getContent().stream()
                 .map(product -> buildProductResponse(product, includeSuppliers))
-                .collect(Collectors.toList());
+                .toList();
 
         // Apply supplier filters if specified
         if (searchRequest.getMinSuppliers() != null ||
@@ -491,8 +492,8 @@ public class ProductSearchService {
                     : Sort.Direction.ASC;
 
             // Map sortBy field (handle supplierCount -> supplier_count)
-            String sortField = "supplierCount".equals(request.getSortBy())
-                    ? "supplierCount"  // Entity field name
+            String sortField = SUPPLIER_COUNT.equals(request.getSortBy())
+                    ? SUPPLIER_COUNT  // Entity field name
                     : request.getSortBy();
 
             return PageRequest.of(page, size, Sort.by(direction, sortField));
@@ -559,6 +560,6 @@ public class ProductSearchService {
 
                     return true;
                 })
-                .collect(Collectors.toList());
+                .toList();
     }
 }
