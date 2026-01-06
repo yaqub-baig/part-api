@@ -9,12 +9,14 @@ import com.autoadda.apis.part.response.PagedResponse;
 import com.autoadda.apis.part.response.ProductAttributeResponse;
 import com.autoadda.apis.part.response.ProductResponse;
 import com.autoadda.apis.part.response.SupplierAvailabilityResponse;
+import com.autoadda.apis.part.specification.ProductSpecification;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
@@ -212,25 +214,19 @@ public class ProductSearchService {
     public List<ProductResponse> advancedSearch(ProductSearchRequest request) {
         log.info("Performing advanced product search with request: {}", request);
 
-        // Step 1: Search products using repository query
-        List<Product> products = productRepository.advancedSearch(
-                request.getName(),
-                request.getPartNumber(),
-                request.getOtherNames(),
-                request.getTag(),
-                request.getCategoryId(),
-                request.getManufacturerId(),
-                request.getYear(),
-                request.getMake(),
-                request.getModel(),
-                request.getSortBy(),
-                request.getSortDirection()
-        );
+        // Step 1: Build specification from request
+        Specification<Product> spec = ProductSpecification.bySearchRequest(request);
 
-        // Step 2: Enrich with supplier counts
+        // Step 2: Build sort
+        Sort sort = buildSort(request.getSortBy(), request.getSortDirection());
+
+        // Step 3: Execute query with specification and sorting (sort is always non-null)
+        List<Product> products = productRepository.findAll(spec, sort);
+
+        // Step 4: Enrich with supplier counts
         List<ProductResponse> enrichedProducts = enrichProductsWithSupplierCounts(products, false);
 
-        // Step 3: Apply supplier count filters if specified
+        // Step 5: Apply supplier count filters if specified
         if (request.getInStockOnly() != null && request.getInStockOnly()) {
             enrichedProducts = enrichedProducts.stream()
                     .filter(p -> p.getAvailableSupplierCount() > 0)
@@ -249,7 +245,7 @@ public class ProductSearchService {
                     .toList();
         }
 
-        // Step 4: Sort by supplier count if requested
+        // Step 6: Sort by supplier count if requested
         if (SUPPLIER_COUNT.equals(request.getSortBy())) {
             enrichedProducts = enrichedProducts.stream()
                     .sorted((p1, p2) -> {
@@ -366,22 +362,16 @@ public class ProductSearchService {
     public List<ProductResponse> advancedSearch(ProductSearchRequest request, boolean includeSuppliers) {
         log.info("Performing advanced product search with request: {}", request);
 
-        // Step 1: Search products using repository query
-        List<Product> products = productRepository.advancedSearch(
-                request.getName(),
-                request.getPartNumber(),
-                request.getOtherNames(),
-                request.getTag(),
-                request.getCategoryId(),
-                request.getManufacturerId(),
-                request.getYear(),
-                request.getMake(),
-                request.getModel(),
-                request.getSortBy(),
-                request.getSortDirection()
-        );
+        // Step 1: Build specification from request
+        Specification<Product> spec = ProductSpecification.bySearchRequest(request);
 
-        // Step 2: Enrich with supplier counts and optionally supplier details
+        // Step 2: Build sort
+        Sort sort = buildSort(request.getSortBy(), request.getSortDirection());
+
+        // Step 3: Execute query with specification and sorting (sort is always non-null)
+        List<Product> products = productRepository.findAll(spec, sort);
+
+        // Step 4: Enrich with supplier counts and optionally supplier details
         List<ProductResponse> enrichedProducts = enrichProductsWithSupplierCounts(products, false, includeSuppliers);
 
         // Step 3: Apply supplier count filters if specified
@@ -431,22 +421,14 @@ public class ProductSearchService {
         log.info("Advanced paginated product search: page={}, size={}, filters={}",
                 searchRequest.getPage(), searchRequest.getSize(), searchRequest);
 
+        // Build specification from request
+        Specification<Product> spec = ProductSpecification.bySearchRequest(searchRequest);
+
         // Build Pageable with sorting
         Pageable pageable = buildPageable(searchRequest);
 
-        // Execute paginated query
-        Page<Product> productPage = productRepository.advancedSearchPaginated(
-                searchRequest.getName(),
-                searchRequest.getPartNumber(),
-                searchRequest.getOtherNames(),
-                searchRequest.getTag(),
-                searchRequest.getCategoryId(),
-                searchRequest.getManufacturerId(),
-                searchRequest.getYear(),
-                searchRequest.getMake(),
-                searchRequest.getModel(),
-                pageable
-        );
+        // Execute paginated query with specification
+        Page<Product> productPage = productRepository.findAll(spec, pageable);
 
         // Convert to ProductResponse (supplier count already in entity)
         List<ProductResponse> responses = productPage.getContent().stream()
@@ -503,6 +485,27 @@ public class ProductSearchService {
     }
 
     /**
+     * Build Sort object from sort parameters
+     * Used for non-paginated queries that need sorting
+     */
+    private Sort buildSort(String sortBy, String sortDirection) {
+        if (sortBy == null || sortBy.isBlank()) {
+            return Sort.by("id").ascending(); // Default sort
+        }
+
+        Sort.Direction direction = "DESC".equalsIgnoreCase(sortDirection)
+                ? Sort.Direction.DESC
+                : Sort.Direction.ASC;
+
+        // Handle supplierCount separately
+        if (SUPPLIER_COUNT.equals(sortBy)) {
+            return Sort.by(direction, SUPPLIER_COUNT);
+        }
+
+        return Sort.by(direction, sortBy);
+    }
+
+    /**
      * Build ProductResponse from Product entity using pre-computed supplier count
      */
     private ProductResponse buildProductResponse(Product product, boolean includeSuppliers) {
@@ -554,11 +557,8 @@ public class ProductSearchService {
                     if (request.getMaxSuppliers() != null && count > request.getMaxSuppliers()) {
                         return false;
                     }
-                    if (Boolean.TRUE.equals(request.getInStockOnly()) && count == 0) {
-                        return false;
-                    }
 
-                    return true;
+                    return !Boolean.TRUE.equals(request.getInStockOnly()) || count > 0;
                 })
                 .toList();
     }

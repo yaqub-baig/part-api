@@ -15,9 +15,12 @@ import com.autoadda.apis.part.request.InventoryPartRequest;
 import com.autoadda.apis.part.request.InventoryPartSearchRequest;
 import com.autoadda.apis.part.response.InventoryPartExcelUploadResponse;
 import com.autoadda.apis.part.response.InventoryPartResponse;
+import com.autoadda.apis.part.specification.InventoryPartSpecification;
 import com.autoadda.apis.part.util.ProductCondition;
 import com.autoadda.apis.part.util.TransactionType;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -41,6 +44,7 @@ public class InventoryService {
     private final ExcelParserService excelParserService;
     private final InventoryPartMapper inventoryPartMapper;
 
+    @Transactional
     public InventoryPartResponse addPart(InventoryPartRequest request) {
         Product product = productRepo.findByPartNumber ( request.getPartNumber ( ) );
         InventoryPart part = inventoryPartMapper.toEntity ( request, product );
@@ -413,29 +417,15 @@ public class InventoryService {
         Boolean inStockOnly = Boolean.TRUE.equals(request.getInStockOnly());
         Boolean activeOnly  = request.getActiveOnly() == null || request.getActiveOnly();
 
+        // Build specification from request
+        Specification<InventoryPart> spec = InventoryPartSpecification.bySearchRequest(
+                request, inStockOnly, activeOnly);
 
-        // Set default sorting (default to id ascending if not specified)
-        String sortBy = request.getSortBy ( );
-        String sortDirection = request.getSortDirection ( ) != null ? request.getSortDirection ( ).toUpperCase ( ) : "ASC";
+        // Build sort (default to id ascending if not specified)
+        Sort sort = buildSort(request.getSortBy(), request.getSortDirection());
 
-        // Execute search query with new filters
-        List<InventoryPart> inventoryParts = partRepo.searchInventoryParts (
-                request.getPartNumber ( ),
-                request.getPartName ( ),
-                request.getCategory ( ),
-                request.getManufacturer ( ),
-                request.getProductId ( ),
-                request.getLocation ( ),
-                request.getProductCondition ( ),
-                request.getSupplierId ( ),
-                request.getMinPrice ( ),
-                request.getMaxPrice ( ),
-                request.getMinQuantity ( ),
-                inStockOnly,
-                activeOnly,
-                sortBy,
-                sortDirection
-        );
+        // Execute search query using specification (sort is always non-null)
+        List<InventoryPart> inventoryParts = partRepo.findAll(spec, sort);
 
         // Map to lightweight search response with supplier information using mapper
         return inventoryParts.stream ( ).map ( part -> {
@@ -476,7 +466,13 @@ public class InventoryService {
     }
 
     public List<Supplier> getSuppliersByProductId(String productId) {
-        List<InventoryPart> parts = partRepo.searchInventoryParts(null, null, null, null, productId, null, null, null, null, null, null, false, true, null, null);
+        // Build specification for productId with activeOnly=true
+        Specification<InventoryPart> spec = InventoryPartSpecification.byProductIdAndStatus(
+                productId, false, true);
+
+        // Execute query using specification
+        List<InventoryPart> parts = partRepo.findAll(spec);
+
         List<String> supplierIds = parts.stream()
                 .map(InventoryPart::getSupplierId)
                 .distinct()
@@ -496,11 +492,11 @@ public class InventoryService {
     /**
      * Update the pre-computed supplier count for a product
      * This method should be called whenever inventory is added, updated, or deleted
+     * Note: This method must be called from within a @Transactional context
      *
      * @param productId The ID of the product to update
      */
-    @Transactional
-    public void updateProductSupplierCount(String productId) {
+    private void updateProductSupplierCount(String productId) {
         if (productId == null) {
             return;
         }
@@ -511,5 +507,28 @@ public class InventoryService {
             product.setSupplierCount(count.intValue());
             productRepo.save(product);
         });
+    }
+
+    /**
+     * Build Sort object from sort parameters
+     * Used for non-paginated queries that need sorting
+     */
+    private Sort buildSort(String sortBy, String sortDirection) {
+        if (sortBy == null || sortBy.isBlank()) {
+            return Sort.by("id").ascending(); // Default sort
+        }
+
+        Sort.Direction direction = "DESC".equalsIgnoreCase(sortDirection)
+                ? Sort.Direction.DESC
+                : Sort.Direction.ASC;
+
+        // Map sortBy to entity field names
+        String sortField = switch (sortBy.toLowerCase()) {
+            case "price" -> "unitPrice";
+            case "quantity" -> "quantityInStock";
+            default -> sortBy;
+        };
+
+        return Sort.by(direction, sortField);
     }
 }

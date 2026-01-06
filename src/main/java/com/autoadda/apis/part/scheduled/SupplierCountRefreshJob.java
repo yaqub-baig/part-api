@@ -29,7 +29,7 @@ public class SupplierCountRefreshJob {
      * Cron expression: second minute hour day month day-of-week
      */
     @Scheduled(cron = "0 0 2 * * *")
-    @Transactional
+
     public void refreshSupplierCounts() {
         log.info("Starting supplier count refresh job");
 
@@ -46,22 +46,9 @@ public class SupplierCountRefreshJob {
 
             // Update supplier count for each product
             for (Product product : products) {
-                try {
-                    Long count = inventoryPartRepository
-                            .countByProductIdAndIsActiveAndQuantityInStockGreaterThan(
-                                    product.getId(), true, 0);
-
-                    // Only update if count has changed
-                    Integer currentCount = product.getSupplierCount() != null ? product.getSupplierCount() : 0;
-                    if (!count.equals(currentCount.longValue())) {
-                        product.setSupplierCount(count.intValue());
-                        productRepository.save(product);
-                        updatedCount++;
-                        log.info("Updated supplier count for product :: {}", updatedCount);
-                    }
-                } catch (Exception e) {
-                    log.error("Error updating supplier count for product {}: {}",
-                            product.getId(), e.getMessage());
+                if (tryUpdateSingleProductSupplierCount(product)) {
+                    updatedCount++;
+                    log.info("Updated supplier count for product :: {}", updatedCount);
                 }
             }
 
@@ -84,5 +71,33 @@ public class SupplierCountRefreshJob {
     public void refreshSupplierCountsManually() {
         log.info("Manual supplier count refresh triggered");
         refreshSupplierCounts();
+    }
+
+    /**
+     * Try to update supplier count for a single product
+     * Returns true if the product was updated, false otherwise
+     *
+     * @param product the product to update
+     * @return true if updated, false otherwise
+     */
+    private boolean tryUpdateSingleProductSupplierCount(Product product) {
+        try {
+            Long count = inventoryPartRepository
+                    .countByProductIdAndIsActiveAndQuantityInStockGreaterThan(
+                            product.getId(), true, 0);
+
+            // Only update if count has changed
+            Integer currentCount = product.getSupplierCount() != null ? product.getSupplierCount() : 0;
+            if (!count.equals(currentCount.longValue())) {
+                product.setSupplierCount(count.intValue());
+                productRepository.save(product);
+                return true;
+            }
+            return false;
+        } catch (Exception e) {
+            log.error("Error updating supplier count for product {}: {}",
+                    product.getId(), e.getMessage());
+            return false;
+        }
     }
 }

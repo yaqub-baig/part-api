@@ -121,7 +121,7 @@ public class MakeService {
         return GenericResponse.builder ( ).body ( "Make has been Updated" ).code ( "200" )
                 .message ( "Successfully Updated " + request.getId ( ) + MAKE ).status ( SUCCESS ).build ( );
     }
-
+    @CacheEvict(value = "makes", key = "'allMakes'")
     public GenericResponse deleteMakeById(String id) throws NotFoundException {
         log.info (VALIDATING_MAKE_ID);
         partsDataValidator.validateMakeId ( id );

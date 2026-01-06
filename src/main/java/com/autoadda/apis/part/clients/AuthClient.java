@@ -20,14 +20,10 @@ public interface AuthClient {
     @PostMapping("/auth/send-sms/{userId}")
     GenericResponse sendSms(@PathVariable Integer userId, @RequestBody SmsRequest request);
 
-//    @GetMapping("/auth/{id}")
-//    UserResponse getUser(@PathVariable Integer id);
+
 
     @PutMapping("/auth/update/role/{id}")
     GenericResponse updateRole(@PathVariable Integer id, @RequestParam ERole role);
-//
-//    @GetMapping("/auth/byNumber/{phoneNumber}")
-//    ResponseEntity<UserResponse> getUserDetails(@PathVariable String phoneNumber);
 
     @GetMapping("/preferences/isc/{customerId}")
     ResponseEntity<CommunicationPreference> getPreferencesByCustomerId1(

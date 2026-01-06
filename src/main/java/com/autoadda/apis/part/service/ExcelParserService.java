@@ -29,25 +29,24 @@ public class ExcelParserService {
             Sheet sheet = workbook.getSheetAt ( 0 );
             int lastRowNum = sheet.getLastRowNum ( );
 
-            for (int rowIndex = 0; rowIndex <= lastRowNum; rowIndex++) {
-                Row row = sheet.getRow ( rowIndex );
-
-                // Skip header row
-                if ( rowIndex == 0 ) {
-                    continue;
-                }
-
-                // Skip completely empty rows
-                if ( row == null || isRowEmpty ( row ) ) {
-                    continue;
-                }
-
-                InventoryPartExcelRow excelRow = parseRow ( row, rowIndex );
-                rows.add ( excelRow );
-            }
+            skipFirstRow(lastRowNum, sheet, rows);
         }
 
         return rows;
+    }
+
+    private void skipFirstRow(int lastRowNum, Sheet sheet, List<InventoryPartExcelRow> rows) {
+        for (int rowIndex = 0; rowIndex <= lastRowNum; rowIndex++) {
+            Row row = sheet.getRow ( rowIndex );
+
+            // Skip header row and completely empty rows
+            if ( rowIndex == 0 || row == null || isRowEmpty ( row ) ) {
+                continue;
+            }
+
+            InventoryPartExcelRow excelRow = parseRow ( row, rowIndex );
+            rows.add ( excelRow );
+        }
     }
 
     /**
