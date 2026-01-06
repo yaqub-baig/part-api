@@ -64,12 +64,15 @@ public class Supplier {
     private boolean isActive;
     @OneToMany(orphanRemoval = true)
     @JoinColumn(name = "shop_trade_license")
+    @Builder.Default
     private List<MediaFile> tradeLicenseAttachment = new ArrayList<> ( );
     @OneToMany(orphanRemoval = true)
     @JoinColumn(name = "shop_vat_certificate")
+    @Builder.Default
     private List<MediaFile> vatCertificate = new ArrayList<> ( );
     @OneToMany(orphanRemoval = true)
     @JoinColumn
+    @Builder.Default
     private List<MediaFile> shopImages = new ArrayList<> ( );
 
 

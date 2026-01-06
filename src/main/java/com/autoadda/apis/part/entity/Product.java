@@ -51,9 +51,11 @@ public class Product {
     private String manufacturerId;
 
     @Column(name = "supplier_count")
+    @Builder.Default
     private Integer supplierCount = 0;
 
     @OneToMany(orphanRemoval = true)
     @JoinColumn(name = "product_id")
+    @Builder.Default
     private List<MediaFile> images = new ArrayList<> ( );
 }

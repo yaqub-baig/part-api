@@ -16,7 +16,9 @@ public class CategoryResponse {
     private String name;
     private String code;
     private String parentCategoryId;
+    @Builder.Default
     private List<CategoryResponse> subCategories = new ArrayList<>();
     private String attributeUrl;
+    @Builder.Default
     private List<MediaFile> images = new ArrayList<>();
 }

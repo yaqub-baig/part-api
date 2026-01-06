@@ -20,5 +20,6 @@ public class ShoppingCart {
     private Integer vehicleOwnerId;
 
     @OneToMany(mappedBy = "cart", cascade = CascadeType.ALL)
+    @Builder.Default
     private List<ShoppingCartItem> items = new ArrayList<> ( );
 }

@@ -26,6 +26,7 @@ public class ProductRequest {
     private String categoryId;
     private String manufacturerId;
     private List<ProductAttributeRequest> attributes;
+    @Builder.Default
     private List<Long> imageIds = new ArrayList<> ( );
 
 }

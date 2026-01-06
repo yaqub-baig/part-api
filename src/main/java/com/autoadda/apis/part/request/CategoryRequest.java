@@ -17,5 +17,6 @@ public class CategoryRequest {
     private String name;
     private String code;
     private String parentCategoryId;
+    @Builder.Default
     private List<Long> imageIds = new ArrayList<> ( );
 }

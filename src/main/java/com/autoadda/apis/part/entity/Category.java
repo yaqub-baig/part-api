@@ -33,6 +33,7 @@ public class Category {
 
     @OneToMany(orphanRemoval = true)
     @JoinColumn(name = "category_id")
+    @Builder.Default
     private List<MediaFile> images = new ArrayList<> ( );
 
 }

@@ -64,10 +64,12 @@ public class ProductSearchRequest {
     // Pagination options
     @Schema(description = "Page number (0-indexed)", example = "0", defaultValue = "0")
     @Min(0)
+    @Builder.Default
     private Integer page = 0;
 
     @Schema(description = "Page size", example = "10", defaultValue = "10")
     @Min(1)
     @Max(50)
+    @Builder.Default
     private Integer size = 10;
 }
