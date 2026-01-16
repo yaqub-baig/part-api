@@ -19,7 +19,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import javax.transaction.Transactional;
+import jakarta.transaction.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -417,7 +417,7 @@ public class ProductService {
      */
     @Transactional
     public GenericResponse searchProductsByYearMakeModel(Integer year, String make, String model) {
-        List<ProductResponse> responseBody = productRepository.findByYearAndMakeAndModel(year, make, model).stream()
+        List<ProductResponse> responseBody = productRepository.findByYearAndMakeAndModel(year != null ? year.toString() : null, make, model).stream()
                 .map(product -> buildProductResponse(product, false))
                 .toList();
 

@@ -3,7 +3,7 @@ package com.autoadda.apis.part.entity;
 import com.autoadda.apis.part.util.ProductCondition;
 import lombok.*;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 @Entity
 @Getter

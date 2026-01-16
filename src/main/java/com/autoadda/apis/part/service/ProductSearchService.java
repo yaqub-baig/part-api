@@ -19,7 +19,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
-import javax.transaction.Transactional;
+import jakarta.transaction.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -142,7 +142,7 @@ public class ProductSearchService {
      */
     @Transactional
     public List<ProductResponse> searchProductsByYearMakeModel(Integer year, String make, String model) {
-        List<Product> products = productRepository.findByYearAndMakeAndModel(year, make, model);
+        List<Product> products = productRepository.findByYearAndMakeAndModel(year != null ? year.toString() : null, make, model);
         return enrichProductsWithSupplierCounts(products, false);
     }
 
@@ -290,7 +290,7 @@ public class ProductSearchService {
      */
     @Transactional
     public List<ProductResponse> searchProductsByYearMakeModel(Integer year, String make, String model, boolean includeSuppliers) {
-        List<Product> products = productRepository.findByYearAndMakeAndModel(year, make, model);
+        List<Product> products = productRepository.findByYearAndMakeAndModel(year != null ? year.toString() : null, make, model);
         return enrichProductsWithSupplierCounts(products, false, includeSuppliers);
     }
 

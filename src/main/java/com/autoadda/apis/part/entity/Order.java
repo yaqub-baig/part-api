@@ -3,7 +3,7 @@ package com.autoadda.apis.part.entity;
 import com.autoadda.apis.part.util.Status;
 import lombok.*;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -28,5 +28,6 @@ public class Order {
 
     private LocalDateTime orderDate;
 
+    @Enumerated(EnumType.STRING)
     private Status status; // e.g., CREATED, SHIPPED, DELIVERED
 }

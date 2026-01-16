@@ -19,7 +19,7 @@ public interface ProductRepository extends JpaRepository<Product, String>, JpaSp
     List<Product> findByTagContaining(String tag);
 
 
-    List<Product> findByYearAndMakeAndModel(Integer year, String make, String model);
+    List<Product> findByYearAndMakeAndModel(String year, String make, String model);
 
     List<Product> findByManufacturerId(String manufacturerId);
 
