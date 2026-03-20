@@ -70,7 +70,7 @@ public class EngineService {
 
         for (EngineRequest request : engineRequestList) {
             log.info ( "Performing engine validation" );
-            partsDataValidator.isEngineAlreadyExists ( request.getFullName ( ) );
+            partsDataValidator.isEngineAlreadyExists ( request.getFullName ( ), request.getTransmissionType ( ), request.getFuelType ( ) );
 
             Engine engine = engineRepository.save ( prepareEngine ( request ) );
             log.info ( "Engine created - {}", request );
