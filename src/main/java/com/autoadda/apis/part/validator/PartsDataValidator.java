@@ -161,8 +161,8 @@ public class PartsDataValidator {
         }
     }
 
-    public void isEngineAlreadyExists(String name) throws AlreadyExistException {
-        Engine engine = engineRepository.findByFullName ( name );
+    public void isEngineAlreadyExists(String name, String transmissionType, String fuelType) throws AlreadyExistException {
+        Engine engine = engineRepository.findByFullNameAndTransmissionTypeAndFuelType ( name, transmissionType, fuelType );
 
         if ( null != engine ) {
             throw new AlreadyExistException ( "Engine already exist.." );
