@@ -281,6 +281,31 @@ public class ModelService {
     }
 
     /**
+     * Removes all images attached to a model. orphanRemoval deletes the
+     * MediaFile rows; on-disk files are not removed (matches existing
+     * /mediafiles/delete-image behavior).
+     */
+    @Transactional
+    public GenericResponse deleteAllImagesByModelId(String id) throws NotFoundException {
+        log.info (VALIDATING_MODEL_ID);
+        partsDataValidator.validateModelId ( id );
+
+        Model model = modelRepository.findById ( id )
+                .orElseThrow ( () -> new NotFoundException ( MODEL_NOT_FOUND_WITH_ID + id ) );
+
+        int removed = model.getImages ( ).size ( );
+        model.getImages ( ).clear ( );
+        modelRepository.save ( model );
+
+        return GenericResponse.builder ( )
+                .body ( removed + " image(s) removed from model " + id )
+                .code ( "200" )
+                .message ( "Successfully cleared images" )
+                .status (SUCCESS)
+                .build ( );
+    }
+
+    /**
      * Retrieves models by their make ID and prepares a response.
      *
      * @param makeId

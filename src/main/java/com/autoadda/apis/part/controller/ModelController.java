@@ -80,6 +80,15 @@ public class ModelController {
         return modelService.deleteModelById ( id );
     }
 
+    @Operation(summary = "Deleting all Images of a Model by Id")
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "successfull clearing model images", content = {
+            @Content(mediaType = "application/json", schema = @Schema(implementation = GenericResponse.class))}),
+            @ApiResponse(responseCode = "404", description = "clear model images api not found", content = @Content)})
+    @DeleteMapping("/{id}/images")
+    public GenericResponse deleteAllImagesByModelId(@PathVariable String id) {
+        return modelService.deleteAllImagesByModelId ( id );
+    }
+
     @Operation(summary = "Retrieving Models by Make Id")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "successfull retrieving models", content = {
