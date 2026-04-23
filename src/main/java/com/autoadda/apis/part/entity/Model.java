@@ -2,10 +2,9 @@ package com.autoadda.apis.part.entity;
 
 import lombok.*;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "model")
@@ -32,5 +31,10 @@ public class Model {
 
     @Column(name = "vehicle_type_id")
     private String vehicleTypeId;
+
+    @OneToMany(orphanRemoval = true)
+    @JoinColumn(name = "model_id")
+    @Builder.Default
+    private List<MediaFile> images = new ArrayList<> ( );
 
 }

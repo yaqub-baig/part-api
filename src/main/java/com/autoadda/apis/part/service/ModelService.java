@@ -1,10 +1,13 @@
 package com.autoadda.apis.part.service;
 
 import com.autoadda.apis.part.entity.Make;
+import com.autoadda.apis.part.entity.MediaFile;
 import com.autoadda.apis.part.entity.Model;
 import com.autoadda.apis.part.entity.VehicleType;
 import com.autoadda.apis.part.exception.NotFoundException;
+import com.autoadda.apis.part.exception.ResourceNotFoundException;
 import com.autoadda.apis.part.repository.MakeRepository;
+import com.autoadda.apis.part.repository.MediaFileRepository;
 import com.autoadda.apis.part.repository.ModelRepository;
 import com.autoadda.apis.part.repository.VehicleTypeRepository;
 import com.autoadda.apis.part.request.ModelRequest;
@@ -15,6 +18,7 @@ import com.autoadda.apis.part.validator.PartsDataValidator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -40,6 +44,9 @@ public class ModelService {
     private final MakeRepository makeRepository;
 
 
+    private final MediaFileRepository mediaFileRepository;
+
+
     private final PartsDataValidator partsDataValidator;
 
     /**
@@ -49,12 +56,30 @@ public class ModelService {
      * @return a Model entity
      */
     private Model prepareModel(ModelRequest request) {
-        return Model.builder ( )
+        Model model = Model.builder ( )
                 .id ( GUIDGenerator.generateGUID ( ) )
                 .name ( request.getName ( ) )
                 .fullName ( request.getFullName ( ) )
                 .vehicleTypeId ( request.getVehicleTypeId ( ) )
                 .makeId ( request.getMakeId ( ) )
+                .build ( );
+        if ( request.getImageIds ( ) != null && ! request.getImageIds ( ).isEmpty ( ) ) {
+            List<MediaFile> images = mediaFileRepository.findAllById ( request.getImageIds ( ) );
+            model.setImages ( images );
+        }
+        return model;
+    }
+
+    private ModelResponse buildModelResponse(Model model, VehicleType vehicleType, Make make) {
+        return ModelResponse.builder ( )
+                .id ( model.getId ( ) )
+                .name ( model.getName ( ) )
+                .fullName ( model.getFullName ( ) )
+                .vehicleType ( vehicleType.getName ( ) )
+                .vehicleTypeId ( model.getVehicleTypeId ( ) )
+                .makerName ( make.getName ( ) )
+                .makeId ( model.getMakeId ( ) )
+                .images ( model.getImages ( ) )
                 .build ( );
     }
 
@@ -64,6 +89,7 @@ public class ModelService {
      * @return GenericResponse containing a list of ModelResponse
      * @throws NotFoundException if no models are found
      */
+    @Transactional(readOnly = true)
     public GenericResponse getAllModels() throws NotFoundException {
         List<Model> models = modelRepository.findAll ( );
         List<ModelResponse> responseBody = new ArrayList<> ( );
@@ -74,15 +100,7 @@ public class ModelService {
             Make make = makeRepository.findById ( model.getMakeId ( ) )
                     .orElseThrow ( () -> new NotFoundException (MAKE_NOT_FOUND) );
 
-            responseBody.add ( ModelResponse.builder ( )
-                    .id ( model.getId ( ) )
-                    .name ( model.getName ( ) )
-                    .vehicleType ( vehicleType.getName ( ) )
-                    .vehicleTypeId ( model.getVehicleTypeId ( ) )
-                    .makerName ( make.getName ( ) )
-                    .makeId ( model.getMakeId ( ) )
-                    .fullName ( model.getFullName ( ) )
-                    .build ( ) );
+            responseBody.add ( buildModelResponse ( model, vehicleType, make ) );
         }
 
         return GenericResponse.builder ( )
@@ -99,8 +117,9 @@ public class ModelService {
      * @param modelRequestList
      * @return GenericResponse containing the created models
      */
+    @Transactional
     public GenericResponse createModel(List<ModelRequest> modelRequestList) {
-        List<Model> modelList = new ArrayList<> ( );
+        List<ModelResponse> responseBody = new ArrayList<> ( );
 
         for (ModelRequest modelRequest : modelRequestList) {
             log.info ( "Validating model input" );
@@ -109,11 +128,16 @@ public class ModelService {
             partsDataValidator.validateMakeId ( modelRequest.getMakeId ( ) );
             Model model = modelRepository.save ( prepareModel ( modelRequest ) );
             log.info ( "Model created - {}", modelRequest );
-            modelList.add ( model );
+
+            VehicleType vehicleType = vehicleTypeRepository.findById ( model.getVehicleTypeId ( ) )
+                    .orElseThrow ( () -> new NotFoundException (VEHICLE_TYPE_NOT_FOUND) );
+            Make make = makeRepository.findById ( model.getMakeId ( ) )
+                    .orElseThrow ( () -> new NotFoundException (MAKE_NOT_FOUND) );
+            responseBody.add ( buildModelResponse ( model, vehicleType, make ) );
         }
 
         return GenericResponse.builder ( )
-                .body ( modelList )
+                .body ( responseBody )
                 .code ( "201" )
                 .message ( "Successfully Created Model(s)" )
                 .status (SUCCESS)
@@ -127,6 +151,7 @@ public class ModelService {
      * @return GenericResponse containing the ModelResponse
      * @throws NotFoundException if the model or related entities are not found
      */
+    @Transactional(readOnly = true)
     public GenericResponse getModelById(String id) throws NotFoundException {
         log.info (VALIDATING_MODEL_ID);
         partsDataValidator.validateModelId ( id );
@@ -138,15 +163,7 @@ public class ModelService {
         Make make = makeRepository.findById ( model.getMakeId ( ) )
                 .orElseThrow ( () -> new NotFoundException (MAKE_NOT_FOUND) );
 
-        ModelResponse response = ModelResponse.builder ( )
-                .id ( model.getId ( ) )
-                .name ( model.getName ( ) )
-                .vehicleType ( vehicleType.getName ( ) )
-                .vehicleTypeId ( model.getVehicleTypeId ( ) )
-                .makerName ( make.getName ( ) )
-                .makeId ( model.getMakeId ( ) )
-                .fullName ( model.getFullName ( ) )
-                .build ( );
+        ModelResponse response = buildModelResponse ( model, vehicleType, make );
 
         return GenericResponse.builder ( )
                 .body ( List.of ( response ) )
@@ -163,6 +180,7 @@ public class ModelService {
      * @return GenericResponse containing the model
      * @throws NotFoundException
      */
+    @Transactional(readOnly = true)
     public GenericResponse getModelByName(String name) throws NotFoundException {
         log.info ( "Validating model name" );
         partsDataValidator.validateModelName ( name );
@@ -172,8 +190,13 @@ public class ModelService {
             throw new NotFoundException ( "Model not found with name: " + name );
         }
 
+        VehicleType vehicleType = vehicleTypeRepository.findById ( model.getVehicleTypeId ( ) )
+                .orElseThrow ( () -> new NotFoundException (VEHICLE_TYPE_NOT_FOUND) );
+        Make make = makeRepository.findById ( model.getMakeId ( ) )
+                .orElseThrow ( () -> new NotFoundException (MAKE_NOT_FOUND) );
+
         return GenericResponse.builder ( )
-                .body ( model )
+                .body ( buildModelResponse ( model, vehicleType, make ) )
                 .code ( "200" )
                 .message ( "Successfully Retrieved " + name + MODEL )
                 .status (SUCCESS)
@@ -187,6 +210,7 @@ public class ModelService {
      * @return GenericResponse containing the update status
      * @throws NotFoundException
      */
+    @Transactional
     public GenericResponse updateModel(ModelRequest request) throws NotFoundException {
         log.info (VALIDATING_MODEL_ID);
         partsDataValidator.validateModelId ( request.getId ( ) );
@@ -194,10 +218,23 @@ public class ModelService {
         Model model = modelRepository.findById ( request.getId ( ) )
                 .orElseThrow ( () -> new NotFoundException ( MODEL_NOT_FOUND_WITH_ID + request.getId ( ) ) );
 
-        model.setName ( request.getName ( ) );
-        model.setFullName ( request.getFullName ( ) );
-        model.setMakeId ( request.getMakeId ( ) );
-        model.setVehicleTypeId ( request.getVehicleTypeId ( ) );
+        if ( request.getName ( ) != null ) {
+            model.setName ( request.getName ( ) );
+        }
+        if ( request.getFullName ( ) != null ) {
+            model.setFullName ( request.getFullName ( ) );
+        }
+        if ( request.getMakeId ( ) != null ) {
+            model.setMakeId ( request.getMakeId ( ) );
+        }
+        if ( request.getVehicleTypeId ( ) != null ) {
+            model.setVehicleTypeId ( request.getVehicleTypeId ( ) );
+        }
+        if ( request.getImageIds ( ) != null && ! request.getImageIds ( ).isEmpty ( ) ) {
+            List<MediaFile> images = takeOutMediaFileFromRequestImageIds ( request.getImageIds ( ) );
+            model.getImages ( ).clear ( );
+            model.getImages ( ).addAll ( images );
+        }
 
         modelRepository.save ( model );
 
@@ -209,6 +246,15 @@ public class ModelService {
                 .build ( );
     }
 
+    private List<MediaFile> takeOutMediaFileFromRequestImageIds(List<Long> imageIds) {
+        List<MediaFile> mediaFiles = new ArrayList<> ( );
+        for (Long imageId : imageIds) {
+            mediaFiles.add ( mediaFileRepository.findById ( imageId )
+                    .orElseThrow ( () -> new ResourceNotFoundException ( "media File not found" ) ) );
+        }
+        return mediaFiles;
+    }
+
     /**
      * Deletes a model by its ID and prepares a response.
      *
@@ -216,6 +262,7 @@ public class ModelService {
      * @return GenericResponse containing the deletion status
      * @throws NotFoundException
      */
+    @Transactional
     public GenericResponse deleteModelById(String id) throws NotFoundException {
         log.info (VALIDATING_MODEL_ID);
         partsDataValidator.validateModelId ( id );
@@ -240,6 +287,7 @@ public class ModelService {
      * @return GenericResponse containing the list of models
      * @throws NotFoundException
      */
+    @Transactional(readOnly = true)
     public GenericResponse getModelsByMakeId(String makeId) throws NotFoundException {
         List<Model> models = modelRepository.findByMakeId ( makeId );
         List<ModelResponse> responseBody = new ArrayList<> ( );
@@ -250,15 +298,7 @@ public class ModelService {
             Make make = makeRepository.findById ( model.getMakeId ( ) )
                     .orElseThrow ( () -> new NotFoundException (MAKE_NOT_FOUND) );
 
-            responseBody.add ( ModelResponse.builder ( )
-                    .id ( model.getId ( ) )
-                    .name ( model.getName ( ) )
-                    .fullName ( model.getFullName ( ) )
-                    .vehicleType ( vehicleType.getName ( ) )
-                    .vehicleTypeId ( model.getVehicleTypeId ( ) )
-                    .makerName ( make.getName ( ) )
-                    .makeId ( model.getMakeId ( ) )
-                    .build ( ) );
+            responseBody.add ( buildModelResponse ( model, vehicleType, make ) );
         }
 
         return GenericResponse.builder ( )
@@ -276,6 +316,7 @@ public class ModelService {
      * @return GenericResponse containing the list of models
      * @throws NotFoundException
      */
+    @Transactional(readOnly = true)
     public GenericResponse getModelsByVehicleTypeId(String vehicleTypeId) throws NotFoundException {
         List<Model> models = modelRepository.findByVehicleTypeId ( vehicleTypeId );
         List<ModelResponse> responseBody = new ArrayList<> ( );
@@ -286,15 +327,7 @@ public class ModelService {
             Make make = makeRepository.findById ( model.getMakeId ( ) )
                     .orElseThrow ( () -> new NotFoundException (MAKE_NOT_FOUND) );
 
-            responseBody.add ( ModelResponse.builder ( )
-                    .id ( model.getId ( ) )
-                    .name ( model.getName ( ) )
-                    .fullName ( model.getFullName ( ) )
-                    .vehicleType ( vehicleType.getName ( ) )
-                    .vehicleTypeId ( model.getVehicleTypeId ( ) )
-                    .makerName ( make.getName ( ) )
-                    .makeId ( model.getMakeId ( ) )
-                    .build ( ) );
+            responseBody.add ( buildModelResponse ( model, vehicleType, make ) );
         }
 
         return GenericResponse.builder ( )
@@ -305,4 +338,3 @@ public class ModelService {
                 .build ( );
     }
 }
-

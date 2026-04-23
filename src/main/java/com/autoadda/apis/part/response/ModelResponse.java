@@ -1,6 +1,10 @@
 package com.autoadda.apis.part.response;
 
+import com.autoadda.apis.part.entity.MediaFile;
 import lombok.*;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Builder
 @NoArgsConstructor
@@ -16,4 +20,6 @@ public class ModelResponse {
     private String vehicleType;
     private String makeId;
     private String makerName;
+    @Builder.Default
+    private List<MediaFile> images = new ArrayList<> ( );
 }
