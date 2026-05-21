@@ -20,8 +20,6 @@ public class OpenAPIConfig {
     @Value("${parts.service.base.prod.url}")
     private String prodUrl;
 
-    @Value("${server.servlet.contextPath:/}")
-    private String contextPath;
 
     @Bean
     public OpenAPI myOpenAPI() {
