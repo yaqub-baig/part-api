@@ -44,6 +44,14 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<GenericResponse> handleDataIntegrityViolation(DataIntegrityViolationException ex) {
+        String rootMessage = ex.getMostSpecificCause ( ).getMessage ( );
+        if ( rootMessage != null ) {
+            java.util.regex.Matcher m = java.util.regex.Pattern.compile ( "Data too long for column '([^']+)'" ).matcher ( rootMessage );
+            if ( m.find ( ) ) {
+                log.warn ( "Value too long for column {}", m.group ( 1 ) );
+                return buildResponse (  HttpStatus.BAD_REQUEST, "Value too long for field '" + m.group ( 1 ) + "'" );
+            }
+        }
         log.error ( "Data integrity violation", ex );
         return buildResponse (  HttpStatus.CONFLICT, ErrorMessage.ERROR_DATA_INTEGRITY );
     }
@@ -119,6 +127,18 @@ public class GlobalExceptionHandler {
     public ResponseEntity<GenericResponse> handleMemberNotFound(MemberNotFoundException ex) {
         log.warn ( "Member not found", ex );
         return buildResponse (  HttpStatus.NOT_FOUND, ErrorMessage.ERROR_NOT_FOUND );
+    }
+
+    @ExceptionHandler(PaymentGatewayException.class)
+    public ResponseEntity<GenericResponse> handlePaymentGateway(PaymentGatewayException ex) {
+        log.error ( "Payment gateway error: {}", ex.getMessage ( ), ex );
+        return buildResponse (  HttpStatus.BAD_GATEWAY, ex.getMessage ( ) );
+    }
+
+    @ExceptionHandler(ValidationException.class)
+    public ResponseEntity<GenericResponse> handleValidationException(ValidationException ex) {
+        log.warn ( "Validation error: {}", ex.getMessage ( ) );
+        return buildResponse (  HttpStatus.BAD_REQUEST, ex.getMessage ( ) );
     }
 
     @ExceptionHandler(ConflictException.class)

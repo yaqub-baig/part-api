@@ -15,11 +15,11 @@ public class ShoppingCartItem {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @ManyToOne
+    @ManyToOne(optional = false)
     private InventoryPart part;
 
     private Integer quantity;
 
-    @ManyToOne
+    @ManyToOne(optional = false)
     private ShoppingCart cart;
 }

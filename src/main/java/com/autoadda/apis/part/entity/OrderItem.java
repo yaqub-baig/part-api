@@ -20,6 +20,9 @@ public class OrderItem {
 
     private int quantity;
 
+    /** Price per unit at the moment the order was placed (inventory price may change later). */
+    private Double unitPrice;
+
     @ManyToOne
     private Order order;
 }

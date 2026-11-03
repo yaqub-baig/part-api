@@ -23,7 +23,10 @@ public class Product {
     @Column(name = "name")
     private String name;
 
-    @Column(name = "description")
+    // TEXT (up to 64 KB): product descriptions regularly exceed the default VARCHAR(255).
+    // ddl-auto=update does not widen existing columns, so existing DBs need:
+    //   ALTER TABLE product MODIFY description TEXT;
+    @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
     @Column(name = "part_number", unique = true)
