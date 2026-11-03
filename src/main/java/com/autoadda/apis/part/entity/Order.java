@@ -1,5 +1,7 @@
 package com.autoadda.apis.part.entity;
 
+import com.autoadda.apis.part.util.PaymentMethod;
+import com.autoadda.apis.part.util.PaymentStatus;
 import com.autoadda.apis.part.util.Status;
 import lombok.*;
 
@@ -28,6 +30,32 @@ public class Order {
 
     private LocalDateTime orderDate;
 
+    /** Sum of (unitPrice * quantity) across all items, captured at order time. */
+    private Double totalAmount;
+
     @Enumerated(EnumType.STRING)
-    private Status status; // e.g., CREATED, SHIPPED, DELIVERED
+    private Status status; // PENDING_PAYMENT -> CONFIRMED -> SHIPPED -> DELIVERED, or CANCELLED / PENDING_REFUND
+
+    private LocalDateTime cancelledAt;
+
+    // ---- payment ----
+
+    @Enumerated(EnumType.STRING)
+    private PaymentMethod paymentMethod;
+
+    @Enumerated(EnumType.STRING)
+    private PaymentStatus paymentStatus;
+
+    /** Our reference for the current gateway attempt (a new one per retry). */
+    @Column(unique = true)
+    private String gatewayOrderReference;
+
+    private String gatewayTransactionId;
+
+    private LocalDateTime paymentInitiatedAt;
+
+    private LocalDateTime paymentCompletedAt;
+
+    /** ONLINE orders: stock is held until this time; after it the order is cancelled if still unpaid. */
+    private LocalDateTime paymentExpiresAt;
 }
