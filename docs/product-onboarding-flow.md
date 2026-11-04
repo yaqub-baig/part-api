@@ -63,10 +63,10 @@ ProductController->>ProductService: createProduct(List<ProductRequest>)
 
 loop For each ProductRequest
     Note over ProductService: Validate product data
-    ProductService->>ProductService: validateProductName(name)
-    ProductService->>ProductService: isProductAlreadyExists(name)
+    Note over ProductService: Duplicates are detected by part number, not name
+    ProductService->>ProductService: ensurePartNumberAvailable(partNumber)
 
-    alt Product Already Exists
+    alt Part number already used (or repeated in the same request)
         ProductService->>ProductController: AlreadyExistException
         ProductController->>Supplier: 409 Conflict
     end

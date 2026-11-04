@@ -8,7 +8,8 @@ import java.util.List;
 
 public interface ProductRepository extends JpaRepository<Product, String>, JpaSpecificationExecutor<Product> {
 
-    Product findByName(String name);
+    /** Names are not unique (same part name for different vehicles); returns the first match. */
+    Product findFirstByName(String name);
 
     List<Product> findByNameContaining(String name);
 

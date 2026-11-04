@@ -21,7 +21,9 @@ import org.springframework.stereotype.Service;
 
 import jakarta.transaction.Transactional;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Slf4j
 @Service
@@ -143,7 +145,7 @@ public class ProductService {
     public GenericResponse getProductsByName(String name) throws NotFoundException {
         log.info(PERFORM_PRODUCT_INPUT_VALIDATION);
         partsDataValidator.validateProductName(name);
-        Product product = productRepository.findByName(name);
+        Product product = productRepository.findFirstByName(name);
         ProductResponse build = buildProductResponse(product, true);
         return GenericResponse.builder()
                 .body(build)
@@ -176,10 +178,16 @@ public class ProductService {
     @Transactional
     public GenericResponse createProduct(List<ProductRequest> productRequestList) throws AlreadyExistException {
         List<Product> productList = new ArrayList<>();
+        Set<String> partNumbersInRequest = new HashSet<>();
         for (ProductRequest productRequest : productRequestList) {
             log.info(PERFORM_PRODUCT_INPUT_VALIDATION);
             partsDataValidator.validateManufacturerId(productRequest.getManufacturerId());
-            partsDataValidator.isProductAlreadyExists(productRequest.getName());
+            // Duplicates are detected by part number, not name: "Brake Pad" can exist for many vehicles.
+            String partNumber = productRequest.getPartNumber();
+            if (partNumber != null && !partNumber.isBlank() && !partNumbersInRequest.add(partNumber.trim())) {
+                throw new AlreadyExistException("Part number '" + partNumber.trim() + "' appears more than once in the request");
+            }
+            partsDataValidator.ensurePartNumberAvailable(partNumber, null);
             partsDataValidator.validateCategoryId(productRequest.getCategoryId());
             Product product = productRepository.save(prepareProduct(productRequest));
             log.info("Product created - " + productRequest.toString());
@@ -217,6 +225,7 @@ public class ProductService {
         partsDataValidator.validateProductId(request.getId());
         partsDataValidator.validateManufacturerId(request.getManufacturerId());
         partsDataValidator.validateCategoryId(request.getCategoryId());
+        partsDataValidator.ensurePartNumberAvailable(request.getPartNumber(), request.getId());
         List<MediaFile> images = takeOutMediaFileFromRequestImageIds(request.getImageIds());
         Product product = productRepository.findById(request.getId()).orElseThrow(() -> new ResourceNotFoundException("product repository "));
         if (product != null) {

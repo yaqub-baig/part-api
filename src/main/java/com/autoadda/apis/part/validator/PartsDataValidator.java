@@ -34,9 +34,20 @@ public class PartsDataValidator {
     }
 
     public void isPartNumberAlreadyExist(String partNumber) {
-        Product byPartNumber = productRepository.findByPartNumber ( partNumber );
-        if ( null != byPartNumber ) {
-            throw new AlreadyExistException ( "partNumber already exist.." );
+        ensurePartNumberAvailable ( partNumber, null );
+    }
+
+    /**
+     * A product is identified by its part number (unique in the DB); names may repeat across makes/models.
+     * Throws if another product (other than {@code currentProductId}) already uses this part number.
+     */
+    public void ensurePartNumberAvailable(String partNumber, String currentProductId) {
+        if ( partNumber == null || partNumber.isBlank ( ) ) {
+            return;
+        }
+        Product existing = productRepository.findByPartNumber ( partNumber.trim ( ) );
+        if ( existing != null && !existing.getId ( ).equals ( currentProductId ) ) {
+            throw new AlreadyExistException ( "Product with part number '" + partNumber.trim ( ) + "' already exists" );
         }
     }
 
@@ -202,18 +213,10 @@ public class PartsDataValidator {
     }
 
     public void validateProductName(String name) throws NotFoundException {
-        Product product = productRepository.findByName ( name );
+        Product product = productRepository.findFirstByName ( name );
 
         if ( null == product ) {
             throw new NotFoundException ( "Product not found" );
-        }
-    }
-
-    public void isProductAlreadyExists(String name) throws AlreadyExistException {
-        Product product = productRepository.findByName ( name );
-
-        if ( null != product ) {
-            throw new AlreadyExistException ( "Product already exist.." );
         }
     }
 
