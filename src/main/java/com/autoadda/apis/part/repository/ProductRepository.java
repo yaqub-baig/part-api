@@ -3,6 +3,8 @@ package com.autoadda.apis.part.repository;
 import com.autoadda.apis.part.entity.Product;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 
@@ -25,4 +27,8 @@ public interface ProductRepository extends JpaRepository<Product, String>, JpaSp
     List<Product> findByManufacturerId(String manufacturerId);
 
     Product findByPartNumber(String partNumber);
+
+    /** Lightweight lookup (ids only, uses the unique index) for part-number availability checks. */
+    @Query("SELECT p.id FROM Product p WHERE p.partNumber = :partNumber")
+    List<String> findIdsByPartNumber(@Param("partNumber") String partNumber);
 }

@@ -42,13 +42,22 @@ public class PartsDataValidator {
      * Throws if another product (other than {@code currentProductId}) already uses this part number.
      */
     public void ensurePartNumberAvailable(String partNumber, String currentProductId) {
-        if ( partNumber == null || partNumber.isBlank ( ) ) {
-            return;
-        }
-        Product existing = productRepository.findByPartNumber ( partNumber.trim ( ) );
-        if ( existing != null && !existing.getId ( ).equals ( currentProductId ) ) {
+        if ( findProductUsingPartNumber ( partNumber, currentProductId ).isPresent ( ) ) {
             throw new AlreadyExistException ( "Product with part number '" + partNumber.trim ( ) + "' already exists" );
         }
+    }
+
+    /**
+     * Id of a product (other than {@code excludeProductId}) that already uses this part number.
+     * Shared by the save-time check and the live availability API so both always agree.
+     * Comparison follows the column collation (case-insensitive on default MySQL), same as the unique index.
+     */
+    public Optional<String> findProductUsingPartNumber(String partNumber, String excludeProductId) {
+        if ( partNumber == null || partNumber.isBlank ( ) ) {
+            return Optional.empty ( );
+        }
+        return productRepository.findIdsByPartNumber ( partNumber.trim ( ) ).stream ( )
+                .filter ( id -> !id.equals ( excludeProductId ) ).findFirst ( );
     }
 
     public void validateCategoryId(String id) throws NotFoundException {
