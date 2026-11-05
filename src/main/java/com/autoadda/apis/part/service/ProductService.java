@@ -6,12 +6,14 @@ import com.autoadda.apis.part.entity.ProductAttribute;
 import com.autoadda.apis.part.exception.AlreadyExistException;
 import com.autoadda.apis.part.exception.NotFoundException;
 import com.autoadda.apis.part.exception.ResourceNotFoundException;
+import com.autoadda.apis.part.exception.ValidationException;
 import com.autoadda.apis.part.repository.MediaFileRepository;
 import com.autoadda.apis.part.repository.ProductAttributeRepository;
 import com.autoadda.apis.part.repository.ProductRepository;
 import com.autoadda.apis.part.request.ProductRequest;
 import com.autoadda.apis.part.response.GenericResponse;
 import com.autoadda.apis.part.response.ProductAttributeResponse;
+import com.autoadda.apis.part.response.PartNumberAvailabilityResponse;
 import com.autoadda.apis.part.response.ProductResponse;
 import com.autoadda.apis.part.util.GUIDGenerator;
 import com.autoadda.apis.part.validator.PartsDataValidator;
@@ -35,6 +37,8 @@ public class ProductService {
     public static final String SUCCESSFULLY_RETRIVED = "successfully Retrived ";
     public static final String SUCCESS1 = "successfully Retrieved";
     public static final String PERFORM_PRODUCT_INPUT_VALIDATION = "perform Product input validation";
+    /** Matches the product.part_number column (VARCHAR(255)). */
+    public static final int PART_NUMBER_MAX_LENGTH = 255;
     private final ProductRepository productRepository;
     private final PartsDataValidator partsDataValidator;
     private final ProductAttributeRepository productAttributeRepository;
@@ -170,6 +174,30 @@ public class ProductService {
                 .message(SUCCESSFULLY_RETRIVED + id + PRODUCT)
                 .status(SUCCESS)
                 .build();
+    }
+
+    /**
+     * Live check used by the product form while the user types a part number, so a duplicate is reported
+     * before submit. Not cached on purpose: it is a single indexed lookup, and a stale "available" answer
+     * would defeat the check. Pass {@code excludeProductId} when editing so the product's own number is OK.
+     */
+    public GenericResponse checkPartNumberAvailability(String partNumber, String excludeProductId) {
+        if (partNumber == null || partNumber.isBlank()) {
+            throw new ValidationException("partNumber is required");
+        }
+        String trimmed = partNumber.trim();
+        PartNumberAvailabilityResponse.PartNumberAvailabilityResponseBuilder body =
+                PartNumberAvailabilityResponse.builder().partNumber(trimmed);
+
+        if (trimmed.length() > PART_NUMBER_MAX_LENGTH) {
+            body.available(false).message("Part number must be at most " + PART_NUMBER_MAX_LENGTH + " characters");
+        } else {
+            body.available(true).message("Part number is available");
+            partsDataValidator.findProductUsingPartNumber(trimmed, excludeProductId).ifPresent(existingId -> body
+                    .available(false).existingProductId(existingId)
+                    .message("Product with part number '" + trimmed + "' already exists"));
+        }
+        return GenericResponse.builder().body(body.build()).code("200").message("Part number checked").status(SUCCESS).build();
     }
 
     /**

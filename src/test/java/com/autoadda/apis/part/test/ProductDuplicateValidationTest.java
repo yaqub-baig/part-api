@@ -8,13 +8,14 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.List;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.autoadda.apis.part.entity.Product;
 import com.autoadda.apis.part.exception.AlreadyExistException;
 import com.autoadda.apis.part.repository.ProductRepository;
 import com.autoadda.apis.part.validator.PartsDataValidator;
@@ -27,19 +28,15 @@ class ProductDuplicateValidationTest {
 	@InjectMocks
 	private PartsDataValidator validator;
 
-	private Product product(String id, String partNumber) {
-		return Product.builder().id(id).name("Brake Pad").partNumber(partNumber).build();
-	}
-
 	@Test
-	void newPartNumberIsAllowedEvenIfNameExists() {
-		when(productRepository.findByPartNumber("BP-200")).thenReturn(null);
+	void newPartNumberIsAllowed() {
+		when(productRepository.findIdsByPartNumber("BP-200")).thenReturn(List.of());
 		assertDoesNotThrow(() -> validator.ensurePartNumberAvailable("BP-200", null));
 	}
 
 	@Test
 	void existingPartNumberIsRejectedOnCreate() {
-		when(productRepository.findByPartNumber("BP-100")).thenReturn(product("p1", "BP-100"));
+		when(productRepository.findIdsByPartNumber("BP-100")).thenReturn(List.of("p1"));
 		AlreadyExistException ex = assertThrows(AlreadyExistException.class,
 				() -> validator.ensurePartNumberAvailable("BP-100", null));
 		assertEquals("Product with part number 'BP-100' already exists", ex.getMessage());
@@ -47,19 +44,19 @@ class ProductDuplicateValidationTest {
 
 	@Test
 	void partNumberIsTrimmedBeforeLookup() {
-		when(productRepository.findByPartNumber("BP-100")).thenReturn(product("p1", "BP-100"));
+		when(productRepository.findIdsByPartNumber("BP-100")).thenReturn(List.of("p1"));
 		assertThrows(AlreadyExistException.class, () -> validator.ensurePartNumberAvailable("  BP-100 ", null));
 	}
 
 	@Test
 	void updateKeepingOwnPartNumberIsAllowed() {
-		when(productRepository.findByPartNumber("BP-100")).thenReturn(product("p1", "BP-100"));
+		when(productRepository.findIdsByPartNumber("BP-100")).thenReturn(List.of("p1"));
 		assertDoesNotThrow(() -> validator.ensurePartNumberAvailable("BP-100", "p1"));
 	}
 
 	@Test
 	void updateToAnotherProductsPartNumberIsRejected() {
-		when(productRepository.findByPartNumber("BP-100")).thenReturn(product("p1", "BP-100"));
+		when(productRepository.findIdsByPartNumber("BP-100")).thenReturn(List.of("p1"));
 		assertThrows(AlreadyExistException.class, () -> validator.ensurePartNumberAvailable("BP-100", "p2"));
 	}
 
@@ -67,6 +64,6 @@ class ProductDuplicateValidationTest {
 	void blankPartNumberSkipsLookup() {
 		assertDoesNotThrow(() -> validator.ensurePartNumberAvailable(null, null));
 		assertDoesNotThrow(() -> validator.ensurePartNumberAvailable("  ", null));
-		verify(productRepository, never()).findByPartNumber(any());
+		verify(productRepository, never()).findIdsByPartNumber(any());
 	}
 }

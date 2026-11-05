@@ -42,6 +42,19 @@ public class ProductController {
         return productService.getProductsById ( id );
     }
 
+    @Operation(summary = "Check if a part number is free",
+            description = "Call while the user types a part number (debounced). body.available=false means saving "
+                    + "would be rejected. When editing, pass excludeProductId so the product's own number counts as available.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Checked; see body.available", content = {
+                    @Content(mediaType = "application/json", schema = @Schema(implementation = GenericResponse.class))}),
+            @ApiResponse(responseCode = "400", description = "partNumber missing or blank", content = @Content)})
+    @GetMapping("/part-number/check")
+    public GenericResponse checkPartNumber(@RequestParam String partNumber,
+                                           @RequestParam(required = false) String excludeProductId) {
+        return productService.checkPartNumberAvailability ( partNumber, excludeProductId );
+    }
+
     @Operation(summary = "Creating a Product with basic details")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "Successfull sign up process with return success message and registered product details", content = {
