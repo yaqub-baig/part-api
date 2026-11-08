@@ -1,10 +1,12 @@
 package com.autoadda.apis.part.request;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import com.autoadda.apis.part.util.ProductCondition;
 import lombok.*;
 
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import java.util.List;
 
 @Getter
 @Setter
@@ -43,6 +45,11 @@ public class ProductSearchRequest {
 
     @Schema(description = "Vehicle model", example = "Civic")
     private String model;
+
+    // Part condition filter
+    @Schema(description = "Only products that have an active, in-stock listing in one of these conditions. "
+            + "Empty or missing means any condition.", example = "[\"GENUINE\", \"AFTER_MARKET\"]")
+    private List<ProductCondition> conditions;
 
     // Supplier availability filters
     @Schema(description = "Minimum number of suppliers that must have the product in stock", example = "1")

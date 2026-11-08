@@ -12,6 +12,7 @@ import com.autoadda.apis.part.repository.MediaFileRepository;
 import com.autoadda.apis.part.repository.SupplierRepository;
 import com.autoadda.apis.part.request.SupplierRequest;
 import com.autoadda.apis.part.response.SupplierAvailabilityResponse;
+import com.autoadda.apis.part.util.ProductCondition;
 import com.autoadda.apis.part.util.Status;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,6 +21,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 @Slf4j
@@ -268,9 +270,19 @@ public class SupplierService {
      * @return list of suppliers with availability information
      */
     public List<SupplierAvailabilityResponse> getSuppliersByProductId(String productId) {
+        return getSuppliersByProductId(productId, null);
+    }
+
+    /**
+     * Same as {@link #getSuppliersByProductId(String)}, limited to listings in the given conditions.
+     * Null or empty conditions means any condition.
+     */
+    public List<SupplierAvailabilityResponse> getSuppliersByProductId(String productId, Collection<ProductCondition> conditions) {
         // Fetch all active inventory parts for this product with stock available
-        List<InventoryPart> inventoryParts = inventoryPartRepository
-                .findByProductIdAndIsActiveAndQuantityInStockGreaterThan(productId, true, 0);
+        List<InventoryPart> inventoryParts = (conditions == null || conditions.isEmpty())
+                ? inventoryPartRepository.findByProductIdAndIsActiveAndQuantityInStockGreaterThan(productId, true, 0)
+                : inventoryPartRepository.findByProductIdAndIsActiveAndQuantityInStockGreaterThanAndProductConditionIn(
+                        productId, true, 0, conditions);
 
         // Map each inventory part to a SupplierAvailabilityResponse
         return inventoryParts.stream()

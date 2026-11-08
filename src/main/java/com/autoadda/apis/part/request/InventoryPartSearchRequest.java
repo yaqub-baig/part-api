@@ -19,7 +19,7 @@ public class InventoryPartSearchRequest {
 
     // Location and condition filters
     private String location; // Search by warehouse/shelf location
-    private ProductCondition productCondition; // Filter by NEW, USED, REFURBISHED
+    private ProductCondition productCondition; // Filter by GENUINE, USED, AFTER_MARKET
     private String supplierId; // Filter by specific supplier
 
     // Price and quantity filters
