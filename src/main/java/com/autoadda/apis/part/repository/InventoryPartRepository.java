@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -49,6 +50,13 @@ public interface InventoryPartRepository extends JpaRepository<InventoryPart, In
 
     // Get all active inventory parts for a product with stock available
     List<InventoryPart> findByProductIdAndIsActiveAndQuantityInStockGreaterThan(String productId, Boolean isActive, Integer minStock);
+
+    // Same as above, limited to the given conditions (product search condition filter)
+    Long countByProductIdAndIsActiveAndQuantityInStockGreaterThanAndProductConditionIn(
+            String productId, Boolean isActive, Integer minStock, Collection<ProductCondition> conditions);
+
+    List<InventoryPart> findByProductIdAndIsActiveAndQuantityInStockGreaterThanAndProductConditionIn(
+            String productId, Boolean isActive, Integer minStock, Collection<ProductCondition> conditions);
 
     // Get distinct product IDs with available inventory
     @Query("SELECT DISTINCT ip.productId FROM InventoryPart ip WHERE ip.isActive = true AND ip.quantityInStock > 0")

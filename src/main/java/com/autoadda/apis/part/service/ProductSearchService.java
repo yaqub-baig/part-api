@@ -10,6 +10,7 @@ import com.autoadda.apis.part.response.ProductAttributeResponse;
 import com.autoadda.apis.part.response.ProductResponse;
 import com.autoadda.apis.part.response.SupplierAvailabilityResponse;
 import com.autoadda.apis.part.specification.ProductSpecification;
+import com.autoadda.apis.part.util.ProductCondition;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -21,6 +22,7 @@ import org.springframework.stereotype.Service;
 
 import jakarta.transaction.Transactional;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -51,6 +53,15 @@ public class ProductSearchService {
      * Helper method to enrich product responses with supplier counts and optionally supplier details
      */
     private List<ProductResponse> enrichProductsWithSupplierCounts(List<Product> products, boolean includeAttributes, boolean includeSuppliers) {
+        return enrichProductsWithSupplierCounts(products, includeAttributes, includeSuppliers, null);
+    }
+
+    /**
+     * Enrich products; when conditions are given, supplier counts and supplier details only include
+     * listings in those conditions.
+     */
+    private List<ProductResponse> enrichProductsWithSupplierCounts(List<Product> products, boolean includeAttributes,
+                                                                   boolean includeSuppliers, Collection<ProductCondition> conditions) {
         // Get all product IDs
         List<String> productIds = products.stream()
                 .map(Product::getId)
@@ -60,12 +71,12 @@ public class ProductSearchService {
         Map<String, Long> supplierCounts = productIds.stream()
                 .collect(Collectors.toMap(
                         productId -> productId,
-                        productId -> inventoryPartRepository.countByProductIdAndIsActiveAndQuantityInStockGreaterThan(productId, true, 0)
+                        productId -> countAvailableListings(productId, conditions)
                 ));
 
         // Build responses with supplier counts
         return products.stream()
-                .map(product -> buildProductResponseWithSupplierCount(product, supplierCounts.get(product.getId()), includeAttributes, includeSuppliers))
+                .map(product -> buildProductResponseWithSupplierCount(product, supplierCounts.get(product.getId()), includeAttributes, includeSuppliers, conditions))
                 .toList();
     }
 
@@ -80,6 +91,11 @@ public class ProductSearchService {
      * Build a ProductResponse with supplier count and optionally supplier details
      */
     private ProductResponse buildProductResponseWithSupplierCount(Product product, Long supplierCount, boolean includeAttributes, boolean includeSuppliers) {
+        return buildProductResponseWithSupplierCount(product, supplierCount, includeAttributes, includeSuppliers, null);
+    }
+
+    private ProductResponse buildProductResponseWithSupplierCount(Product product, Long supplierCount, boolean includeAttributes,
+                                                                  boolean includeSuppliers, Collection<ProductCondition> conditions) {
         String attributeUrl = "http://localhost:8060/api/v1/productattributes/productid/" + product.getId();
 
         ProductResponse.ProductResponseBuilder builder = ProductResponse.builder()
@@ -106,11 +122,26 @@ public class ProductSearchService {
         }
 
         if (includeSuppliers) {
-            List<SupplierAvailabilityResponse> suppliers = supplierService.getSuppliersByProductId(product.getId());
+            List<SupplierAvailabilityResponse> suppliers = supplierService.getSuppliersByProductId(product.getId(), conditions);
             builder.suppliers(suppliers);
         }
 
         return builder.build();
+    }
+
+    private static boolean hasConditions(Collection<ProductCondition> conditions) {
+        return conditions != null && !conditions.isEmpty();
+    }
+
+    /**
+     * Number of active, in-stock listings for a product, optionally limited to the given conditions.
+     */
+    private long countAvailableListings(String productId, Collection<ProductCondition> conditions) {
+        Long count = hasConditions(conditions)
+                ? inventoryPartRepository.countByProductIdAndIsActiveAndQuantityInStockGreaterThanAndProductConditionIn(
+                        productId, true, 0, conditions)
+                : inventoryPartRepository.countByProductIdAndIsActiveAndQuantityInStockGreaterThan(productId, true, 0);
+        return count != null ? count : 0L;
     }
 
     /**
@@ -224,7 +255,7 @@ public class ProductSearchService {
         List<Product> products = productRepository.findAll(spec, sort);
 
         // Step 4: Enrich with supplier counts
-        List<ProductResponse> enrichedProducts = enrichProductsWithSupplierCounts(products, false);
+        List<ProductResponse> enrichedProducts = enrichProductsWithSupplierCounts(products, false, false, request.getConditions());
 
         // Step 5: Apply supplier count filters if specified
         if (request.getInStockOnly() != null && request.getInStockOnly()) {
@@ -372,7 +403,7 @@ public class ProductSearchService {
         List<Product> products = productRepository.findAll(spec, sort);
 
         // Step 4: Enrich with supplier counts and optionally supplier details
-        List<ProductResponse> enrichedProducts = enrichProductsWithSupplierCounts(products, false, includeSuppliers);
+        List<ProductResponse> enrichedProducts = enrichProductsWithSupplierCounts(products, false, includeSuppliers, request.getConditions());
 
         // Step 3: Apply supplier count filters if specified
         if (request.getInStockOnly() != null && request.getInStockOnly()) {
@@ -432,7 +463,7 @@ public class ProductSearchService {
 
         // Convert to ProductResponse (supplier count already in entity)
         List<ProductResponse> responses = productPage.getContent().stream()
-                .map(product -> buildProductResponse(product, includeSuppliers))
+                .map(product -> buildProductResponse(product, includeSuppliers, searchRequest.getConditions()))
                 .toList();
 
         // Apply supplier filters if specified
@@ -508,7 +539,7 @@ public class ProductSearchService {
     /**
      * Build ProductResponse from Product entity using pre-computed supplier count
      */
-    private ProductResponse buildProductResponse(Product product, boolean includeSuppliers) {
+    private ProductResponse buildProductResponse(Product product, boolean includeSuppliers, Collection<ProductCondition> conditions) {
         String attributeUrl = "http://localhost:8060/api/v1/productattributes/productid/" + product.getId();
 
         ProductResponse.ProductResponseBuilder builder = ProductResponse.builder()
@@ -525,15 +556,17 @@ public class ProductSearchService {
                 .manufacturerId(product.getManufacturerId())
                 .attributeUrl(attributeUrl)
                 .images(product.getImages())
-                // Use pre-computed supplier count from database
-                .availableSupplierCount(product.getSupplierCount() != null
-                        ? product.getSupplierCount().longValue()
-                        : 0L);
+                // Pre-computed supplier count covers every condition; with a condition filter, count only matching listings
+                .availableSupplierCount(hasConditions(conditions)
+                        ? countAvailableListings(product.getId(), conditions)
+                        : product.getSupplierCount() != null
+                                ? product.getSupplierCount().longValue()
+                                : 0L);
 
         // Include detailed suppliers if requested
         if (includeSuppliers) {
             List<SupplierAvailabilityResponse> suppliers =
-                    supplierService.getSuppliersByProductId(product.getId());
+                    supplierService.getSuppliersByProductId(product.getId(), conditions);
             builder.suppliers(suppliers);
         }
 

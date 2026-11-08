@@ -1,12 +1,15 @@
 package com.autoadda.apis.part.specification;
 
+import com.autoadda.apis.part.entity.InventoryPart;
 import com.autoadda.apis.part.entity.Product;
 import com.autoadda.apis.part.request.ProductSearchRequest;
 import org.springframework.data.jpa.domain.Specification;
 
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Root;
+import jakarta.persistence.criteria.Subquery;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -45,6 +48,7 @@ public class ProductSpecification {
             // Add all filter predicates
             addPartialMatchFilters(request, root, criteriaBuilder, predicates);
             addExactMatchFilters(request, root, criteriaBuilder, predicates);
+            addConditionFilter(request, root, query, criteriaBuilder, predicates);
 
             // Combine all predicates with AND
             return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
@@ -104,6 +108,34 @@ public class ProductSpecification {
                 request.getYear().toString()
             ));
         }
+    }
+
+    /**
+     * Part condition lives on InventoryPart (each shop's listing), not on Product.
+     * Keep only products that have at least one active, in-stock listing in one of the requested conditions:
+     * EXISTS (SELECT 1 FROM InventoryPart ip WHERE ip.productId = p.id AND ip.isActive = true
+     *         AND ip.quantityInStock > 0 AND ip.productCondition IN (:conditions))
+     * Done in the query (not after loading) so pagination totals stay correct.
+     */
+    private static void addConditionFilter(
+            ProductSearchRequest request,
+            Root<Product> root,
+            CriteriaQuery<?> query,
+            CriteriaBuilder criteriaBuilder,
+            List<Predicate> predicates) {
+
+        if (request.getConditions() == null || request.getConditions().isEmpty() || query == null) {
+            return;
+        }
+        Subquery<Integer> listing = query.subquery(Integer.class);
+        Root<InventoryPart> ip = listing.from(InventoryPart.class);
+        listing.select(ip.get("id")).where(
+                criteriaBuilder.equal(ip.get("productId"), root.get("id")),
+                criteriaBuilder.isTrue(ip.get("isActive")),
+                criteriaBuilder.greaterThan(ip.get("quantityInStock"), 0),
+                ip.get("productCondition").in(request.getConditions())
+        );
+        predicates.add(criteriaBuilder.exists(listing));
     }
 
     /**
