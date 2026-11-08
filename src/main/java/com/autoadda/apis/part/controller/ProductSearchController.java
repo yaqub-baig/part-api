@@ -1,5 +1,7 @@
 package com.autoadda.apis.part.controller;
 
+import com.autoadda.apis.part.exception.ValidationException;
+
 import com.autoadda.apis.part.request.ProductSearchRequest;
 import com.autoadda.apis.part.response.PagedResponse;
 import com.autoadda.apis.part.response.ProductResponse;
@@ -80,14 +82,25 @@ public class ProductSearchController {
     })
     @GetMapping("/by-vehicle")
     public ResponseEntity<List<ProductResponse>> searchByVehicle(
-            @Parameter(description = "Vehicle year", required = true) @RequestParam Integer year,
-            @Parameter(description = "Vehicle make", required = true) @RequestParam String make,
-            @Parameter(description = "Vehicle model", required = true) @RequestParam String model,
+            @Parameter(description = "Vehicle model year") @RequestParam(required = false) Integer year,
+            @Parameter(description = "Make id (preferred over make name)") @RequestParam(required = false) String makeId,
+            @Parameter(description = "Make name") @RequestParam(required = false) String make,
+            @Parameter(description = "Model id (preferred over model name)") @RequestParam(required = false) String modelId,
+            @Parameter(description = "Model name") @RequestParam(required = false) String model,
             @Parameter(description = "Include detailed supplier list with pricing and inventory", required = false)
             @RequestParam(defaultValue = "false") boolean includeSuppliers) {
-        log.info("Searching products by vehicle: {}/{}/{} (includeSuppliers: {})", year, make, model, includeSuppliers);
-        List<ProductResponse> products = productSearchService.searchProductsByYearMakeModel(year, make, model, includeSuppliers);
-        return ResponseEntity.ok(products);
+        if (year == null && isBlank(makeId) && isBlank(make) && isBlank(modelId) && isBlank(model)) {
+            throw new ValidationException("Give at least one of year, makeId, make, modelId or model");
+        }
+        log.info("Searching products by vehicle: year={} makeId={} make={} modelId={} model={} (includeSuppliers: {})",
+                year, makeId, make, modelId, model, includeSuppliers);
+        ProductSearchRequest vehicle = ProductSearchRequest.builder()
+                .year(year).makeId(makeId).make(make).modelId(modelId).model(model).build();
+        return ResponseEntity.ok(productSearchService.searchProductsByVehicle(vehicle, includeSuppliers));
+    }
+
+    private static boolean isBlank(String value) {
+        return value == null || value.isBlank();
     }
 
     @Operation(summary = "Search products by category with supplier count",

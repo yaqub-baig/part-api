@@ -4,6 +4,7 @@ import com.autoadda.apis.part.request.ProductListPayload;
 import com.autoadda.apis.part.request.ProductRequest;
 import com.autoadda.apis.part.response.GenericResponse;
 import com.autoadda.apis.part.service.ProductService;
+import com.autoadda.apis.part.service.VehicleDataBackfillService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -20,6 +21,20 @@ import org.springframework.web.bind.annotation.*;
 public class ProductController {
 
     private final ProductService productService;
+    private final VehicleDataBackfillService vehicleDataBackfillService;
+
+    @Operation(summary = "Convert existing products' make/model/year text to ids",
+            description = "One-time migration. dryRun=true (default) changes nothing and reports what would be "
+                    + "converted and which values don't match a make or model. Already converted products are skipped.")
+    @PostMapping("/vehicle-data/backfill")
+    public GenericResponse backfillVehicleData(@RequestParam(defaultValue = "true") boolean dryRun) {
+        return GenericResponse.builder()
+                .status("success")
+                .code("200")
+                .message(dryRun ? "Dry run: nothing was changed" : "Vehicle data converted")
+                .body(vehicleDataBackfillService.backfill(dryRun))
+                .build();
+    }
 
 
     @Operation(summary = "Retrieving All Top Level Products")

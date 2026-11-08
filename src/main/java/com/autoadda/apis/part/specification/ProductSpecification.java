@@ -8,10 +8,12 @@ import org.springframework.data.jpa.domain.Specification;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.Root;
 import jakarta.persistence.criteria.Subquery;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 /**
  * JPA Specification for dynamic Product queries
@@ -26,9 +28,9 @@ public class ProductSpecification {
     private static final String FIELD_TAG = "tag";
     private static final String FIELD_CATEGORY_ID = "categoryId";
     private static final String FIELD_MANUFACTURER_ID = "manufacturerId";
-    private static final String FIELD_YEAR = "year";
-    private static final String FIELD_MAKE = "make";
-    private static final String FIELD_MODEL = "model";
+    private static final String FIELD_MAKE_ID = "makeId";
+    private static final String FIELD_MODEL_IDS = "modelIds";
+    private static final String FIELD_YEARS = "years";
 
     // Private constructor to prevent instantiation
     private ProductSpecification() {
@@ -42,12 +44,21 @@ public class ProductSpecification {
      * @return Specification that can be used with JpaSpecificationExecutor
      */
     public static Specification<Product> bySearchRequest(ProductSearchRequest request) {
+        return bySearchRequest(request, VehicleFilter.fromIds(request));
+    }
+
+    /**
+     * Same as {@link #bySearchRequest(ProductSearchRequest)}, with the vehicle part already resolved to ids
+     * (make / model names are looked up by VehicleFitResolver before building the query).
+     */
+    public static Specification<Product> bySearchRequest(ProductSearchRequest request, VehicleFilter vehicle) {
         return (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
 
             // Add all filter predicates
             addPartialMatchFilters(request, root, criteriaBuilder, predicates);
             addExactMatchFilters(request, root, criteriaBuilder, predicates);
+            addVehicleFilter(vehicle, root, criteriaBuilder, predicates);
             addConditionFilter(request, root, query, criteriaBuilder, predicates);
             addSupplierCountFilters(request, root, query, criteriaBuilder, predicates);
 
@@ -96,18 +107,34 @@ public class ProductSpecification {
         // Manufacturer filter (exact match)
         addEqualFilter(request.getManufacturerId(), FIELD_MANUFACTURER_ID, root, criteriaBuilder, predicates);
 
-        // Make filter (exact match)
-        addEqualFilter(request.getMake(), FIELD_MAKE, root, criteriaBuilder, predicates);
+    }
 
-        // Model filter (exact match)
-        addEqualFilter(request.getModel(), FIELD_MODEL, root, criteriaBuilder, predicates);
+    /**
+     * Vehicle fit: make id equal, one of the model ids in product_model, the year in product_year.
+     * "member of" becomes an EXISTS-style subquery, so a product is returned once and paging stays correct.
+     */
+    private static void addVehicleFilter(
+            VehicleFilter vehicle,
+            Root<Product> root,
+            CriteriaBuilder criteriaBuilder,
+            List<Predicate> predicates) {
 
-        // Year filter (exact match, convert to string)
-        if (request.getYear() != null) {
-            predicates.add(criteriaBuilder.equal(
-                root.get(FIELD_YEAR),
-                request.getYear().toString()
-            ));
+        if (vehicle == null) {
+            return;
+        }
+        if (vehicle.makeId() != null) {
+            predicates.add(criteriaBuilder.equal(root.get(FIELD_MAKE_ID), vehicle.makeId()));
+        }
+        if (!vehicle.modelIds().isEmpty()) {
+            Expression<Set<String>> modelIds = root.get(FIELD_MODEL_IDS);
+            predicates.add(criteriaBuilder.or(vehicle.modelIds().stream()
+                    .sorted()
+                    .map(modelId -> criteriaBuilder.isMember(modelId, modelIds))
+                    .toArray(Predicate[]::new)));
+        }
+        if (vehicle.year() != null) {
+            Expression<Set<Integer>> years = root.get(FIELD_YEARS);
+            predicates.add(criteriaBuilder.isMember(vehicle.year(), years));
         }
     }
 

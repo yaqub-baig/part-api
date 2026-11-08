@@ -10,6 +10,7 @@ import com.autoadda.apis.part.response.ProductAttributeResponse;
 import com.autoadda.apis.part.response.ProductResponse;
 import com.autoadda.apis.part.response.SupplierAvailabilityResponse;
 import com.autoadda.apis.part.specification.ProductSpecification;
+import com.autoadda.apis.part.specification.VehicleFilter;
 import com.autoadda.apis.part.util.ProductCondition;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -41,6 +43,14 @@ public class ProductSearchService {
     private final InventoryPartRepository inventoryPartRepository;
     private final ProductAttributeService productAttributeService;
     private final SupplierService supplierService;
+    private final VehicleFitResolver vehicleFitResolver;
+
+    /** Vehicle filter with make/model names resolved to ids; empty when a name matches nothing. */
+    private Optional<VehicleFilter> vehicleFilter(ProductSearchRequest request) {
+        return VehicleFitResolver.hasVehicleNames(request)
+                ? vehicleFitResolver.searchFilter(request)
+                : Optional.of(VehicleFilter.fromIds(request));
+    }
 
     /**
      * Helper method to enrich product responses with supplier counts
@@ -109,6 +119,7 @@ public class ProductSearchService {
                 .year(product.getYear())
                 .tag(product.getTag())
                 .model(product.getModel())
+                .vehicleFit(product)
                 .otherNames(product.getOtherNames())
                 .attributeUrl(attributeUrl)
                 .images(product.getImages())
@@ -166,15 +177,6 @@ public class ProductSearchService {
                 product.getId(), true, 0
         );
         return buildProductResponseWithSupplierCount(product, supplierCount, false);
-    }
-
-    /**
-     * Search products by year, make, and model with supplier availability
-     */
-    @Transactional
-    public List<ProductResponse> searchProductsByYearMakeModel(Integer year, String make, String model) {
-        List<Product> products = productRepository.findByYearAndMakeAndModel(year != null ? year.toString() : null, make, model);
-        return enrichProductsWithSupplierCounts(products, false);
     }
 
     /**
@@ -245,8 +247,13 @@ public class ProductSearchService {
     public List<ProductResponse> advancedSearch(ProductSearchRequest request) {
         log.info("Performing advanced product search with request: {}", request);
 
-        // Step 1: Build specification from request
-        Specification<Product> spec = ProductSpecification.bySearchRequest(request);
+        // Step 1: Build specification from request (make/model names resolved to ids first)
+        Optional<VehicleFilter> vehicle = vehicleFilter(request);
+        if (vehicle.isEmpty()) {
+            log.info("Advanced search: make/model name matched nothing, returning no products");
+            return List.of();
+        }
+        Specification<Product> spec = ProductSpecification.bySearchRequest(request, vehicle.get());
 
         // Step 2: Build sort
         Sort sort = buildSort(request.getSortBy(), request.getSortDirection());
@@ -300,11 +307,17 @@ public class ProductSearchService {
     }
 
     /**
-     * Search products by year, make, and model with supplier availability (with optional supplier details)
+     * Products that fit a vehicle: any combination of make, model (ids or names) and year.
+     * Uses the same filter as the advanced search; unknown names give no results.
      */
     @Transactional
-    public List<ProductResponse> searchProductsByYearMakeModel(Integer year, String make, String model, boolean includeSuppliers) {
-        List<Product> products = productRepository.findByYearAndMakeAndModel(year != null ? year.toString() : null, make, model);
+    public List<ProductResponse> searchProductsByVehicle(ProductSearchRequest vehicle, boolean includeSuppliers) {
+        Optional<VehicleFilter> filter = vehicleFilter(vehicle);
+        if (filter.isEmpty()) {
+            return List.of();
+        }
+        List<Product> products = productRepository.findAll(
+                ProductSpecification.bySearchRequest(vehicle, filter.get()), Sort.by("id"));
         return enrichProductsWithSupplierCounts(products, false, includeSuppliers);
     }
 
@@ -376,8 +389,13 @@ public class ProductSearchService {
     public List<ProductResponse> advancedSearch(ProductSearchRequest request, boolean includeSuppliers) {
         log.info("Performing advanced product search with request: {}", request);
 
-        // Step 1: Build specification from request
-        Specification<Product> spec = ProductSpecification.bySearchRequest(request);
+        // Step 1: Build specification from request (make/model names resolved to ids first)
+        Optional<VehicleFilter> vehicle = vehicleFilter(request);
+        if (vehicle.isEmpty()) {
+            log.info("Advanced search: make/model name matched nothing, returning no products");
+            return List.of();
+        }
+        Specification<Product> spec = ProductSpecification.bySearchRequest(request, vehicle.get());
 
         // Step 2: Build sort
         Sort sort = buildSort(request.getSortBy(), request.getSortDirection());
@@ -418,11 +436,19 @@ public class ProductSearchService {
         log.info("Advanced paginated product search: page={}, size={}, filters={}",
                 searchRequest.getPage(), searchRequest.getSize(), searchRequest);
 
-        // Build specification from request
-        Specification<Product> spec = ProductSpecification.bySearchRequest(searchRequest);
-
         // Build Pageable with sorting
         Pageable pageable = buildPageable(searchRequest);
+
+        // Build specification from request (make/model names resolved to ids first)
+        Optional<VehicleFilter> vehicle = vehicleFilter(searchRequest);
+        if (vehicle.isEmpty()) {
+            log.info("Paginated search: make/model name matched nothing, returning an empty page");
+            return PagedResponse.<ProductResponse>builder()
+                    .content(List.of()).page(pageable.getPageNumber()).size(pageable.getPageSize())
+                    .totalElements(0L).totalPages(0).first(true).last(true)
+                    .numberOfElements(0).empty(true).build();
+        }
+        Specification<Product> spec = ProductSpecification.bySearchRequest(searchRequest, vehicle.get());
 
         // Execute paginated query with specification
         Page<Product> productPage = productRepository.findAll(spec, pageable);
@@ -514,6 +540,7 @@ public class ProductSearchService {
                 .year(product.getYear())
                 .make(product.getMake())
                 .model(product.getModel())
+                .vehicleFit(product)
                 .tag(product.getTag())
                 .otherNames(product.getOtherNames())
                 .categoryId(product.getCategoryId())
