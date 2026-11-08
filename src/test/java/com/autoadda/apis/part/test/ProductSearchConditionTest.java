@@ -71,8 +71,8 @@ class ProductSearchConditionTest {
 				.conditions(GENUINE_OR_AFTERMARKET).page(0).size(10).build();
 		when(productRepository.findAll(any(Specification.class), any(Pageable.class)))
 				.thenReturn(new PageImpl<>(List.of(product("p1", 5))));
-		when(inventoryPartRepository.countByProductIdAndIsActiveAndQuantityInStockGreaterThanAndProductConditionIn(
-				"p1", true, 0, GENUINE_OR_AFTERMARKET)).thenReturn(2L);
+		when(inventoryPartRepository.countAvailableListingsByProductIdsAndConditions(List.of("p1"), GENUINE_OR_AFTERMARKET))
+				.thenReturn(List.<Object[]>of(new Object[] { "p1", 2L }));
 
 		PagedResponse<ProductResponse> result = service.advancedSearchPaginated(request, true);
 
@@ -83,16 +83,42 @@ class ProductSearchConditionTest {
 
 	@Test
 	@SuppressWarnings("unchecked")
-	void paginatedSearchWithoutConditionsKeepsPrecomputedCount() {
-		ProductSearchRequest request = ProductSearchRequest.builder().page(0).size(10).build();
+	void paginatedSearchShowsLiveCountNotStalePrecomputedOne() {
+		ProductSearchRequest request = ProductSearchRequest.builder().inStockOnly(true).page(0).size(10).build();
+		// p1's stored supplierCount (5) is stale; p2 has no in-stock listings left (no row from the count query)
 		when(productRepository.findAll(any(Specification.class), any(Pageable.class)))
-				.thenReturn(new PageImpl<>(List.of(product("p1", 5))));
+				.thenReturn(new PageImpl<>(List.of(product("p1", 5), product("p2", 1))));
+		when(inventoryPartRepository.countAvailableListingsByProductIds(List.of("p1", "p2")))
+				.thenReturn(List.<Object[]>of(new Object[] { "p1", 3L }));
 
 		PagedResponse<ProductResponse> result = service.advancedSearchPaginated(request, false);
 
-		assertEquals(5L, result.getContent().get(0).getAvailableSupplierCount());
-		verify(inventoryPartRepository, never())
-				.countByProductIdAndIsActiveAndQuantityInStockGreaterThanAndProductConditionIn(anyString(), any(), anyInt(), any());
+		assertEquals(3L, result.getContent().get(0).getAvailableSupplierCount());
+		assertEquals(0L, result.getContent().get(1).getAvailableSupplierCount());
+		// Filtering is the query's job: the page is returned as the DB gave it, not trimmed afterwards
+		assertEquals(2, result.getNumberOfElements());
+		verify(inventoryPartRepository, never()).countAvailableListingsByProductIdsAndConditions(any(), any());
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	void specificationAddsLiveCountFiltersForStockAndSupplierRange() {
+		Root<Product> root = mock(Root.class);
+		CriteriaQuery<Object> query = mock(CriteriaQuery.class);
+		CriteriaBuilder cb = mock(CriteriaBuilder.class);
+		Subquery<Long> count = mock(Subquery.class, RETURNS_DEEP_STUBS);
+		Root<InventoryPart> ip = mock(Root.class);
+		when(query.subquery(Long.class)).thenReturn(count);
+		when(count.from(InventoryPart.class)).thenReturn(ip);
+		when(ip.get(anyString())).thenReturn(mock(Path.class));
+
+		ProductSearchRequest request = ProductSearchRequest.builder()
+				.inStockOnly(true).minSuppliers(2).maxSuppliers(5).build();
+		ProductSpecification.bySearchRequest(request).toPredicate(root, query, cb);
+
+		verify(cb).greaterThan(count, 0L);
+		verify(cb).greaterThanOrEqualTo(count, 2L);
+		verify(cb).lessThanOrEqualTo(count, 5L);
 	}
 
 	@Test

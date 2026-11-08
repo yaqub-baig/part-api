@@ -257,26 +257,9 @@ public class ProductSearchService {
         // Step 4: Enrich with supplier counts
         List<ProductResponse> enrichedProducts = enrichProductsWithSupplierCounts(products, false, false, request.getConditions());
 
-        // Step 5: Apply supplier count filters if specified
-        if (request.getInStockOnly() != null && request.getInStockOnly()) {
-            enrichedProducts = enrichedProducts.stream()
-                    .filter(p -> p.getAvailableSupplierCount() > 0)
-                    .toList();
-        }
+        // inStockOnly / minSuppliers / maxSuppliers are applied in the query (ProductSpecification)
 
-        if (request.getMinSuppliers() != null) {
-            enrichedProducts = enrichedProducts.stream()
-                    .filter(p -> p.getAvailableSupplierCount() >= request.getMinSuppliers())
-                    .toList();
-        }
-
-        if (request.getMaxSuppliers() != null) {
-            enrichedProducts = enrichedProducts.stream()
-                    .filter(p -> p.getAvailableSupplierCount() <= request.getMaxSuppliers())
-                    .toList();
-        }
-
-        // Step 6: Sort by supplier count if requested
+        // Step 5: Sort by supplier count if requested
         if (SUPPLIER_COUNT.equals(request.getSortBy())) {
             enrichedProducts = enrichedProducts.stream()
                     .sorted((p1, p2) -> {
@@ -405,26 +388,9 @@ public class ProductSearchService {
         // Step 4: Enrich with supplier counts and optionally supplier details
         List<ProductResponse> enrichedProducts = enrichProductsWithSupplierCounts(products, false, includeSuppliers, request.getConditions());
 
-        // Step 3: Apply supplier count filters if specified
-        if (request.getInStockOnly() != null && request.getInStockOnly()) {
-            enrichedProducts = enrichedProducts.stream()
-                    .filter(p -> p.getAvailableSupplierCount() > 0)
-                    .toList();
-        }
+        // inStockOnly / minSuppliers / maxSuppliers are applied in the query (ProductSpecification)
 
-        if (request.getMinSuppliers() != null) {
-            enrichedProducts = enrichedProducts.stream()
-                    .filter(p -> p.getAvailableSupplierCount() >= request.getMinSuppliers())
-                    .toList();
-        }
-
-        if (request.getMaxSuppliers() != null) {
-            enrichedProducts = enrichedProducts.stream()
-                    .filter(p -> p.getAvailableSupplierCount() <= request.getMaxSuppliers())
-                    .toList();
-        }
-
-        // Step 4: Sort by supplier count if requested
+        // Step 5: Sort by supplier count if requested
         if (SUPPLIER_COUNT.equals(request.getSortBy())) {
             enrichedProducts = enrichedProducts.stream()
                     .sorted((p1, p2) -> {
@@ -461,17 +427,14 @@ public class ProductSearchService {
         // Execute paginated query with specification
         Page<Product> productPage = productRepository.findAll(spec, pageable);
 
-        // Convert to ProductResponse (supplier count already in entity)
-        List<ProductResponse> responses = productPage.getContent().stream()
-                .map(product -> buildProductResponse(product, includeSuppliers, searchRequest.getConditions()))
-                .toList();
+        // Live supplier counts for this page in one query (same definition the supplier filters use)
+        Map<String, Long> supplierCounts = countAvailableListings(productPage.getContent(), searchRequest.getConditions());
 
-        // Apply supplier filters if specified
-        if (searchRequest.getMinSuppliers() != null ||
-                searchRequest.getMaxSuppliers() != null ||
-                Boolean.TRUE.equals(searchRequest.getInStockOnly())) {
-            responses = filterBySupplierCriteria(responses, searchRequest);
-        }
+        // inStockOnly / minSuppliers / maxSuppliers are applied in the query, so the page is already filtered
+        List<ProductResponse> responses = productPage.getContent().stream()
+                .map(product -> buildProductResponse(product, includeSuppliers, searchRequest.getConditions(),
+                        supplierCounts.getOrDefault(product.getId(), 0L)))
+                .toList();
 
         // Wrap in paginated response
         PagedResponse<ProductResponse> pagedResponse = PagedResponse.<ProductResponse>builder()
@@ -539,7 +502,8 @@ public class ProductSearchService {
     /**
      * Build ProductResponse from Product entity using pre-computed supplier count
      */
-    private ProductResponse buildProductResponse(Product product, boolean includeSuppliers, Collection<ProductCondition> conditions) {
+    private ProductResponse buildProductResponse(Product product, boolean includeSuppliers,
+                                                 Collection<ProductCondition> conditions, long supplierCount) {
         String attributeUrl = "http://localhost:8060/api/v1/productattributes/productid/" + product.getId();
 
         ProductResponse.ProductResponseBuilder builder = ProductResponse.builder()
@@ -556,12 +520,7 @@ public class ProductSearchService {
                 .manufacturerId(product.getManufacturerId())
                 .attributeUrl(attributeUrl)
                 .images(product.getImages())
-                // Pre-computed supplier count covers every condition; with a condition filter, count only matching listings
-                .availableSupplierCount(hasConditions(conditions)
-                        ? countAvailableListings(product.getId(), conditions)
-                        : product.getSupplierCount() != null
-                                ? product.getSupplierCount().longValue()
-                                : 0L);
+                .availableSupplierCount(supplierCount);
 
         // Include detailed suppliers if requested
         if (includeSuppliers) {
@@ -574,25 +533,16 @@ public class ProductSearchService {
     }
 
     /**
-     * Filter products by supplier criteria
+     * Live count of active, in-stock listings per product (limited to conditions, if given), one query per page.
      */
-    private List<ProductResponse> filterBySupplierCriteria(
-            List<ProductResponse> responses,
-            ProductSearchRequest request) {
-
-        return responses.stream()
-                .filter(p -> {
-                    Long count = p.getAvailableSupplierCount();
-
-                    if (request.getMinSuppliers() != null && count < request.getMinSuppliers()) {
-                        return false;
-                    }
-                    if (request.getMaxSuppliers() != null && count > request.getMaxSuppliers()) {
-                        return false;
-                    }
-
-                    return !Boolean.TRUE.equals(request.getInStockOnly()) || count > 0;
-                })
-                .toList();
+    private Map<String, Long> countAvailableListings(List<Product> products, Collection<ProductCondition> conditions) {
+        if (products.isEmpty()) {
+            return Map.of();
+        }
+        List<String> ids = products.stream().map(Product::getId).toList();
+        List<Object[]> rows = hasConditions(conditions)
+                ? inventoryPartRepository.countAvailableListingsByProductIdsAndConditions(ids, conditions)
+                : inventoryPartRepository.countAvailableListingsByProductIds(ids);
+        return rows.stream().collect(Collectors.toMap(r -> (String) r[0], r -> ((Number) r[1]).longValue()));
     }
 }
