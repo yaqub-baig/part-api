@@ -37,13 +37,19 @@ public class ProductSearchRequest {
     private String manufacturerId;
 
     // Vehicle compatibility filters
-    @Schema(description = "Vehicle year", example = "2020")
+    @Schema(description = "Vehicle year: products whose fit includes this year", example = "2020")
     private Integer year;
 
-    @Schema(description = "Vehicle make", example = "Honda")
+    @Schema(description = "Vehicle make id (preferred over make name)", example = "e123566a-77ec-41c7-b508-0c56af9ff4e7")
+    private String makeId;
+
+    @Schema(description = "Vehicle make name; resolved to its id. Unknown name gives no results", example = "Honda")
     private String make;
 
-    @Schema(description = "Vehicle model", example = "Civic")
+    @Schema(description = "Vehicle model id (preferred over model name)")
+    private String modelId;
+
+    @Schema(description = "Vehicle model name; resolved to its id (within the make, if given). Unknown name gives no results", example = "Civic")
     private String model;
 
     // Part condition filter

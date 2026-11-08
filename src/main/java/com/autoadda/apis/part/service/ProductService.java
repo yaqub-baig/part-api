@@ -11,20 +11,25 @@ import com.autoadda.apis.part.repository.MediaFileRepository;
 import com.autoadda.apis.part.repository.ProductAttributeRepository;
 import com.autoadda.apis.part.repository.ProductRepository;
 import com.autoadda.apis.part.request.ProductRequest;
+import com.autoadda.apis.part.request.ProductSearchRequest;
 import com.autoadda.apis.part.response.GenericResponse;
 import com.autoadda.apis.part.response.ProductAttributeResponse;
 import com.autoadda.apis.part.response.PartNumberAvailabilityResponse;
 import com.autoadda.apis.part.response.ProductResponse;
+import com.autoadda.apis.part.specification.ProductSpecification;
+import com.autoadda.apis.part.specification.VehicleFilter;
 import com.autoadda.apis.part.util.GUIDGenerator;
 import com.autoadda.apis.part.validator.PartsDataValidator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import jakarta.transaction.Transactional;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 @Slf4j
@@ -45,6 +50,7 @@ public class ProductService {
     private final ProductAttributeService productAttributeService;
     private final MediaFileRepository mediaFileRepository;
     private final CategoryService categoryService;
+    private final VehicleFitResolver vehicleFitResolver;
 
     /**
      * Prepares a Product entity from the given ProductRequest.
@@ -58,13 +64,11 @@ public class ProductService {
                 .description(request.getDescription())
                 .manufacturerId(request.getManufacturerId())
                 .categoryId(request.getCategoryId())
-                .model(request.getModel())
                 .otherNames(request.getOtherNames())
                 .partNumber(request.getPartNumber())
                 .tag(request.getTag())
-                .year(request.getYear())
-                .make(request.getMake())
                 .build();
+        // make / model / year (ids + text) are set by VehicleFitResolver in createProduct
         if (!request.getImageIds().isEmpty()) {
             allById = mediaFileRepository.findAllById(request.getImageIds());
             build.setImages(allById);
@@ -93,6 +97,7 @@ public class ProductService {
                 .year(product.getYear())
                 .tag(product.getTag())
                 .model(product.getModel())
+                .vehicleFit(product)
                 .otherNames(product.getOtherNames())
                 .attributeUrl(prepareAttributeUrl(product.getId()))
                 .images(product.getImages());
@@ -217,7 +222,11 @@ public class ProductService {
             }
             partsDataValidator.ensurePartNumberAvailable(partNumber, null);
             partsDataValidator.validateCategoryId(productRequest.getCategoryId());
-            Product product = productRepository.save(prepareProduct(productRequest));
+            Product prepared = prepareProduct(productRequest);
+            if (VehicleFitResolver.hasVehicleData(productRequest)) {
+                vehicleFitResolver.apply(vehicleFitResolver.resolve(productRequest, null), prepared);
+            }
+            Product product = productRepository.save(prepared);
             log.info("Product created - " + productRequest.toString());
 
             // Save associated attributes
@@ -257,6 +266,10 @@ public class ProductService {
         List<MediaFile> images = takeOutMediaFileFromRequestImageIds(request.getImageIds());
         Product product = productRepository.findById(request.getId()).orElseThrow(() -> new ResourceNotFoundException("product repository "));
         if (product != null) {
+            // Resolve the vehicle fit against the current values before anything changes (partial update)
+            if (VehicleFitResolver.hasVehicleData(request)) {
+                vehicleFitResolver.apply(vehicleFitResolver.resolve(request, product), product);
+            }
             // Only update fields that are provided (not null)
             updateOnlyRequestedField(request, product, images);
             productRepository.save(product);
@@ -296,15 +309,7 @@ public class ProductService {
         if (request.getCategoryId() != null) {
             product.setCategoryId(request.getCategoryId());
         }
-        if (request.getYear() != null) {
-            product.setYear(request.getYear());
-        }
-        if (request.getMake() != null) {
-            product.setMake(request.getMake());
-        }
-        if (request.getModel() != null) {
-            product.setModel(request.getModel());
-        }
+        // year / make / model are handled by VehicleFitResolver in updateProduct
         if (request.getOtherNames() != null) {
             product.setOtherNames(request.getOtherNames());
         }
@@ -454,7 +459,13 @@ public class ProductService {
      */
     @Transactional
     public GenericResponse searchProductsByYearMakeModel(Integer year, String make, String model) {
-        List<ProductResponse> responseBody = productRepository.findByYearAndMakeAndModel(year != null ? year.toString() : null, make, model).stream()
+        ProductSearchRequest vehicle = ProductSearchRequest.builder().year(year).make(make).model(model).build();
+        Optional<VehicleFilter> filter = VehicleFitResolver.hasVehicleNames(vehicle)
+                ? vehicleFitResolver.searchFilter(vehicle)
+                : Optional.of(VehicleFilter.fromIds(vehicle));
+        List<ProductResponse> responseBody = filter
+                .map(f -> productRepository.findAll(ProductSpecification.bySearchRequest(vehicle, f), Sort.by("id")))
+                .orElse(List.of()).stream()
                 .map(product -> buildProductResponse(product, false))
                 .toList();
 

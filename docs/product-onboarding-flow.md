@@ -165,9 +165,10 @@ class Product {
     +String categoryId (FK)
     +String supplierId (FK)
     +String manufacturerId (FK)
-    +Integer year
-    +String make
-    +String model
+    +String makeId (FK make)
+    +Set~String~ modelIds (product_model)
+    +Set~Integer~ years (product_year)
+    +String make, model, year (display text)
     +String partCondition
     +String imageId
 }
@@ -219,3 +220,29 @@ Category "1" --> "many" CategoryAttribute
 CategoryAttribute "many" --> "1" Attribute
 Product "1" --> "1" InventoryPart : linked via productId
 ```
+## 5. Vehicle fit (make / model / year)
+
+A product fits one make, any number of its models and any number of model years
+(every listed model x every listed year).
+
+| Stored in | Holds | Used for |
+|---|---|---|
+| `product.make_id` | `make.id` | search |
+| `product_model (product_id, model_id)` | one row per `model.id` | search |
+| `product_year (product_id, year)` | one row per year | search |
+| `product.make`, `product.model`, `product.year` | `"Toyota"`, `"Camry, Corolla"`, `"2018, 2019"` | display, old clients |
+
+**Saving** (`POST/PUT /products`): send `makeId`, `modelIds`, `years`, or the legacy text the panel
+sends (`make` name, comma-separated `model` names, comma-separated `year`, ranges like `2018-2022`).
+`VehicleFitResolver` looks names up, checks that every model belongs to the make and that years are
+between 1950 and next year + 5, and rewrites the text columns from the resolved names.
+Unknown make/model, a model of another make, or a bad year: 400 with the offending value.
+On update, parts not sent are kept.
+
+**Searching**: `POST /products/search/paginated` and `/advanced` (`makeId`/`make`, `modelId`/`model`, `year`),
+`GET /products/search/by-vehicle?makeId=&modelId=&year=` (any combination, names also accepted),
+`GET /products/year/{year}/make/{make}/model/{model}`. Names are resolved to ids first; an unknown name
+returns no results. Products without vehicle data are not returned by vehicle searches.
+
+**Existing products**: `POST /products/vehicle-data/backfill?dryRun=true` reports what would convert and
+which values don't match; `dryRun=false` converts the resolvable ones. Already converted products are skipped.
