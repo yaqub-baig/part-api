@@ -5,6 +5,7 @@ import com.autoadda.apis.part.util.ProductCondition;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.Collection;
 import java.util.List;
@@ -57,6 +58,17 @@ public interface InventoryPartRepository extends JpaRepository<InventoryPart, In
 
     List<InventoryPart> findByProductIdAndIsActiveAndQuantityInStockGreaterThanAndProductConditionIn(
             String productId, Boolean isActive, Integer minStock, Collection<ProductCondition> conditions);
+
+    // Live supplier counts for a page of products in one query: rows of [productId, count]
+    @Query("SELECT ip.productId, COUNT(ip) FROM InventoryPart ip WHERE ip.productId IN :productIds "
+            + "AND ip.isActive = true AND ip.quantityInStock > 0 GROUP BY ip.productId")
+    List<Object[]> countAvailableListingsByProductIds(@Param("productIds") Collection<String> productIds);
+
+    @Query("SELECT ip.productId, COUNT(ip) FROM InventoryPart ip WHERE ip.productId IN :productIds "
+            + "AND ip.isActive = true AND ip.quantityInStock > 0 AND ip.productCondition IN :conditions "
+            + "GROUP BY ip.productId")
+    List<Object[]> countAvailableListingsByProductIdsAndConditions(@Param("productIds") Collection<String> productIds,
+                                                                  @Param("conditions") Collection<ProductCondition> conditions);
 
     // Get distinct product IDs with available inventory
     @Query("SELECT DISTINCT ip.productId FROM InventoryPart ip WHERE ip.isActive = true AND ip.quantityInStock > 0")

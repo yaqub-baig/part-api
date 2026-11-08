@@ -49,6 +49,7 @@ public class ProductSpecification {
             addPartialMatchFilters(request, root, criteriaBuilder, predicates);
             addExactMatchFilters(request, root, criteriaBuilder, predicates);
             addConditionFilter(request, root, query, criteriaBuilder, predicates);
+            addSupplierCountFilters(request, root, query, criteriaBuilder, predicates);
 
             // Combine all predicates with AND
             return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
@@ -136,6 +137,61 @@ public class ProductSpecification {
                 ip.get("productCondition").in(request.getConditions())
         );
         predicates.add(criteriaBuilder.exists(listing));
+    }
+
+    /**
+     * inStockOnly / minSuppliers / maxSuppliers, applied in the query so each page is full and
+     * totalElements/totalPages are correct. Uses a live count of active, in-stock listings
+     * (limited to the requested conditions, if any) rather than Product.supplierCount, which is
+     * not refreshed when orders deduct stock.
+     */
+    private static void addSupplierCountFilters(
+            ProductSearchRequest request,
+            Root<Product> root,
+            CriteriaQuery<?> query,
+            CriteriaBuilder criteriaBuilder,
+            List<Predicate> predicates) {
+
+        boolean inStockOnly = Boolean.TRUE.equals(request.getInStockOnly());
+        Integer min = request.getMinSuppliers();
+        Integer max = request.getMaxSuppliers();
+        if ((!inStockOnly && min == null && max == null) || query == null) {
+            return;
+        }
+        if (inStockOnly) {
+            predicates.add(criteriaBuilder.greaterThan(liveListingCount(request, root, query, criteriaBuilder), 0L));
+        }
+        if (min != null) {
+            predicates.add(criteriaBuilder.greaterThanOrEqualTo(
+                    liveListingCount(request, root, query, criteriaBuilder), min.longValue()));
+        }
+        if (max != null) {
+            predicates.add(criteriaBuilder.lessThanOrEqualTo(
+                    liveListingCount(request, root, query, criteriaBuilder), max.longValue()));
+        }
+    }
+
+    /**
+     * (SELECT COUNT(ip) FROM InventoryPart ip WHERE ip.productId = p.id AND ip.isActive = true
+     *  AND ip.quantityInStock > 0 [AND ip.productCondition IN (:conditions)])
+     */
+    private static Subquery<Long> liveListingCount(
+            ProductSearchRequest request,
+            Root<Product> root,
+            CriteriaQuery<?> query,
+            CriteriaBuilder criteriaBuilder) {
+
+        Subquery<Long> count = query.subquery(Long.class);
+        Root<InventoryPart> ip = count.from(InventoryPart.class);
+        List<Predicate> where = new ArrayList<>();
+        where.add(criteriaBuilder.equal(ip.get("productId"), root.get("id")));
+        where.add(criteriaBuilder.isTrue(ip.get("isActive")));
+        where.add(criteriaBuilder.greaterThan(ip.get("quantityInStock"), 0));
+        if (request.getConditions() != null && !request.getConditions().isEmpty()) {
+            where.add(ip.get("productCondition").in(request.getConditions()));
+        }
+        count.select(criteriaBuilder.count(ip)).where(where.toArray(new Predicate[0]));
+        return count;
     }
 
     /**
