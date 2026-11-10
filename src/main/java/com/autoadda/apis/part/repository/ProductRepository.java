@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
 import java.util.List;
 
 public interface ProductRepository extends JpaRepository<Product, String>, JpaSpecificationExecutor<Product> {
@@ -18,6 +19,8 @@ public interface ProductRepository extends JpaRepository<Product, String>, JpaSp
     List<Product> findByOtherNamesContaining(String name);
 
     List<Product> findByCategoryId(String categoryId);
+
+    List<Product> findByCategoryIdIn(Collection<String> categoryIds);
 
     List<Product> findByTagContaining(String tag);
 

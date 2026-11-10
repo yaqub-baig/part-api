@@ -11,6 +11,8 @@ import lombok.*;
 @Data
 public class SupplierAvailabilityResponse {
 
+    /** InventoryPart id of this listing: the partId for POST /cart/{ownerId}/add and buy-now. */
+    private Integer inventoryPartId;
     private String supplierId;
 
     private String supplierName;

@@ -301,6 +301,7 @@ public class SupplierService {
         if (supplier == null) {
             // Return basic info if supplier not found
             return SupplierAvailabilityResponse.builder()
+                    .inventoryPartId(inventoryPart.getId())
                     .supplierId(inventoryPart.getSupplierId())
                     .supplierName("Unknown")
                     .quantityInStock(inventoryPart.getQuantityInStock())
@@ -313,6 +314,7 @@ public class SupplierService {
 
         // Build response with both supplier and inventory information
         return SupplierAvailabilityResponse.builder()
+                .inventoryPartId(inventoryPart.getId())
                 .supplierId(String.valueOf(supplier.getId()))
                 .supplierName(supplier.getName())
                 .supplierBrandName(supplier.getSupplierBrandName())
