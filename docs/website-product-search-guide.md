@@ -6,7 +6,7 @@ Covers every search endpoint in part-api. Backend branch: `feature/vehicle-fit-s
 
 ## 0. Before you start (blocking items)
 
-| # | Item | Status |
+| # | Item | Status |a
 |---|---|---|
 | 1 | Backend `feature/vehicle-fit-search` deployed and the vehicle backfill run (`POST /api/v1/products/vehicle-data/backfill`) | pending |
 | 2 | Gateway: open the read-only search endpoints to visitors (below). Today only `POST .../products/search/paginated` is public, so product pages and vehicle search need a login | **gateway change needed** |
