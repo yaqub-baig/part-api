@@ -61,7 +61,7 @@ class VehicleSearchAndBackfillTest {
 
 	private ProductSearchService searchService() {
 		return new ProductSearchService(productRepository, inventoryPartRepository, productAttributeService,
-				supplierService, vehicleFitResolver);
+				supplierService, vehicleFitResolver, null);
 	}
 
 	// ------------------------------------------------------------ specification

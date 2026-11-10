@@ -12,6 +12,7 @@ import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.Root;
 import jakarta.persistence.criteria.Subquery;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
@@ -52,12 +53,26 @@ public class ProductSpecification {
      * (make / model names are looked up by VehicleFitResolver before building the query).
      */
     public static Specification<Product> bySearchRequest(ProductSearchRequest request, VehicleFilter vehicle) {
+        String categoryId = request.getCategoryId();
+        return bySearchRequest(request, vehicle,
+                categoryId == null || categoryId.isBlank() ? null : Set.of(categoryId.trim()));
+    }
+
+    /**
+     * Same, with the category filter given as a set of ids (the requested category and its subcategories,
+     * see CategoryHierarchy). Null means no category filter.
+     */
+    public static Specification<Product> bySearchRequest(
+            ProductSearchRequest request, VehicleFilter vehicle, Collection<String> categoryIds) {
         return (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
 
             // Add all filter predicates
             addPartialMatchFilters(request, root, criteriaBuilder, predicates);
             addExactMatchFilters(request, root, criteriaBuilder, predicates);
+            if (categoryIds != null) {
+                predicates.add(root.get(FIELD_CATEGORY_ID).in(categoryIds));
+            }
             addVehicleFilter(vehicle, root, criteriaBuilder, predicates);
             addConditionFilter(request, root, query, criteriaBuilder, predicates);
             addSupplierCountFilters(request, root, query, criteriaBuilder, predicates);
@@ -101,8 +116,7 @@ public class ProductSpecification {
         // Part number filter (exact match)
         addEqualFilter(request.getPartNumber(), FIELD_PART_NUMBER, root, criteriaBuilder, predicates);
 
-        // Category filter (exact match)
-        addEqualFilter(request.getCategoryId(), FIELD_CATEGORY_ID, root, criteriaBuilder, predicates);
+        // Category filter: applied in bySearchRequest as categoryId IN (category + subcategories)
 
         // Manufacturer filter (exact match)
         addEqualFilter(request.getManufacturerId(), FIELD_MANUFACTURER_ID, root, criteriaBuilder, predicates);

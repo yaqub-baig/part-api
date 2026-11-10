@@ -27,6 +27,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -44,6 +45,12 @@ public class ProductSearchService {
     private final ProductAttributeService productAttributeService;
     private final SupplierService supplierService;
     private final VehicleFitResolver vehicleFitResolver;
+    private final CategoryHierarchy categoryHierarchy;
+
+    /** The requested category and all its subcategories; null when no category is asked for. */
+    private Set<String> categoryIds(String categoryId) {
+        return categoryId == null || categoryId.isBlank() ? null : categoryHierarchy.withDescendants(categoryId);
+    }
 
     /** Vehicle filter with make/model names resolved to ids; empty when a name matches nothing. */
     private Optional<VehicleFilter> vehicleFilter(ProductSearchRequest request) {
@@ -184,7 +191,7 @@ public class ProductSearchService {
      */
     @Transactional
     public List<ProductResponse> searchProductsByCategory(String categoryId) {
-        List<Product> products = productRepository.findByCategoryId(categoryId);
+        List<Product> products = productRepository.findByCategoryIdIn(categoryHierarchy.withDescendants(categoryId));
         return enrichProductsWithSupplierCounts(products, false);
     }
 
@@ -253,7 +260,7 @@ public class ProductSearchService {
             log.info("Advanced search: make/model name matched nothing, returning no products");
             return List.of();
         }
-        Specification<Product> spec = ProductSpecification.bySearchRequest(request, vehicle.get());
+        Specification<Product> spec = ProductSpecification.bySearchRequest(request, vehicle.get(), categoryIds(request.getCategoryId()));
 
         // Step 2: Build sort
         Sort sort = buildSort(request.getSortBy(), request.getSortDirection());
@@ -326,7 +333,7 @@ public class ProductSearchService {
      */
     @Transactional
     public List<ProductResponse> searchProductsByCategory(String categoryId, boolean includeSuppliers) {
-        List<Product> products = productRepository.findByCategoryId(categoryId);
+        List<Product> products = productRepository.findByCategoryIdIn(categoryHierarchy.withDescendants(categoryId));
         return enrichProductsWithSupplierCounts(products, false, includeSuppliers);
     }
 
@@ -395,7 +402,7 @@ public class ProductSearchService {
             log.info("Advanced search: make/model name matched nothing, returning no products");
             return List.of();
         }
-        Specification<Product> spec = ProductSpecification.bySearchRequest(request, vehicle.get());
+        Specification<Product> spec = ProductSpecification.bySearchRequest(request, vehicle.get(), categoryIds(request.getCategoryId()));
 
         // Step 2: Build sort
         Sort sort = buildSort(request.getSortBy(), request.getSortDirection());
@@ -448,7 +455,7 @@ public class ProductSearchService {
                     .totalElements(0L).totalPages(0).first(true).last(true)
                     .numberOfElements(0).empty(true).build();
         }
-        Specification<Product> spec = ProductSpecification.bySearchRequest(searchRequest, vehicle.get());
+        Specification<Product> spec = ProductSpecification.bySearchRequest(searchRequest, vehicle.get(), categoryIds(searchRequest.getCategoryId()));
 
         // Execute paginated query with specification
         Page<Product> productPage = productRepository.findAll(spec, pageable);
