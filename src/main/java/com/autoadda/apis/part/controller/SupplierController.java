@@ -2,6 +2,8 @@ package com.autoadda.apis.part.controller;
 
 import com.autoadda.apis.part.entity.Supplier;
 import com.autoadda.apis.part.request.SupplierRequest;
+import com.autoadda.apis.part.response.GenericResponse;
+import com.autoadda.apis.part.service.ShopCoverageBackfillService;
 import com.autoadda.apis.part.service.SupplierService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -21,6 +23,20 @@ import java.util.List;
 public class SupplierController {
 
     private final SupplierService supplierService;
+    private final ShopCoverageBackfillService shopCoverageBackfillService;
+
+    @Operation(summary = "Convert existing shops' brands/models text to make and model ids",
+            description = "One-time migration. dryRun=true (default) changes nothing and reports what would be "
+                    + "converted and which names don't match a make or model. Already converted shops are skipped.")
+    @PostMapping("/coverage/backfill")
+    public GenericResponse backfillCoverage(@RequestParam(defaultValue = "true") boolean dryRun) {
+        return GenericResponse.builder()
+                .status("success")
+                .code("200")
+                .message(dryRun ? "Dry run: nothing was changed" : "Shop coverage converted")
+                .body(shopCoverageBackfillService.backfill(dryRun))
+                .build();
+    }
 
     @Operation(summary = "Creating a Supplier with basic details")
     @ApiResponses(value = {
