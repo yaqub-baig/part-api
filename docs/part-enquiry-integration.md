@@ -1,8 +1,9 @@
 # Part enquiries ("Request this part")
 
 Backend branch: `feature/part-enquiries` (builds on `feature/shop-coverage`). All paths are on the part service
-(`/api/v1`). Customers are identified by `vehicleOwnerId` in the path, like the cart. Shop calls need the
-`X-Auto-Adda-Id` header of the shop's owner.
+(`/api/v1`). Every customer and shop call needs the logged-in user's `X-Auto-Adda-Id` header (set by the
+gateway): customer calls answer 403 unless it equals the `vehicleOwnerId` in the path, shop calls unless it is
+the shop's owner.
 
 ## Flow
 1. Customer's search finds nothing (or a product has 0 shops) -> website shows "Request this part" with
@@ -82,7 +83,7 @@ Response fields shared by both views: `id`, `status`, `makeId/makeName`, `modelI
 Customer view adds `quotes[]` and `acceptedQuoteId`; shop view adds `myStatus`, `myQuote`, `vehicleOwnerId`.
 
 ## Errors
-400 bad input (message says which), 403 not the shop's owner, 404 enquiry/quote not found (also for someone
+400 bad input (message says which), 403 the logged-in user isn't that customer / the shop's owner, 404 enquiry/quote not found (also for someone
 else's enquiry), 409 for: no shop covers this vehicle and part, too many open enquiries, enquiry closed or past
 its deadline, quote no longer available, shop already quoted (decline).
 

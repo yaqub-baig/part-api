@@ -18,8 +18,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Part enquiries ("request a part"). Customers are identified by vehicleOwnerId in the path (as in the cart);
- * shops by supplierId in the path, checked against the X-Auto-Adda-Id header (shop owner).
+ * Part enquiries ("request a part"). Customer calls take vehicleOwnerId in the path and require the
+ * X-Auto-Adda-Id header to be that same user; shop calls take supplierId and require the header to be the
+ * shop's owner. Both answer 403 otherwise.
  */
 @RestController
 @RequestMapping("/enquiries")
@@ -45,35 +46,41 @@ public class PartEnquiryController {
 
     @Operation(summary = "Send a part enquiry to the shops covering the vehicle and part")
     @PostMapping("/owner/{vehicleOwnerId}")
-    public ResponseEntity<PartEnquiryResponse> create(@PathVariable Integer vehicleOwnerId,
+    public ResponseEntity<PartEnquiryResponse> create(@RequestHeader(USER_HEADER) String autoAddaId,
+                                                      @PathVariable Integer vehicleOwnerId,
                                                       @RequestBody PartEnquiryRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(partEnquiryService.create(vehicleOwnerId, request));
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(partEnquiryService.create(autoAddaId, vehicleOwnerId, request));
     }
 
     @Operation(summary = "A customer's enquiries, newest first, with their quotes")
     @GetMapping("/owner/{vehicleOwnerId}")
-    public List<PartEnquiryResponse> listForOwner(@PathVariable Integer vehicleOwnerId,
+    public List<PartEnquiryResponse> listForOwner(@RequestHeader(USER_HEADER) String autoAddaId,
+                                                  @PathVariable Integer vehicleOwnerId,
                                                   @RequestParam(required = false) EnquiryStatus status) {
-        return partEnquiryService.listForOwner(vehicleOwnerId, status);
+        return partEnquiryService.listForOwner(autoAddaId, vehicleOwnerId, status);
     }
 
     @Operation(summary = "One enquiry with its quotes (cheapest first)")
     @GetMapping("/owner/{vehicleOwnerId}/{enquiryId}")
-    public PartEnquiryResponse getForOwner(@PathVariable Integer vehicleOwnerId, @PathVariable Integer enquiryId) {
-        return partEnquiryService.getForOwner(vehicleOwnerId, enquiryId);
+    public PartEnquiryResponse getForOwner(@RequestHeader(USER_HEADER) String autoAddaId,
+                                           @PathVariable Integer vehicleOwnerId, @PathVariable Integer enquiryId) {
+        return partEnquiryService.getForOwner(autoAddaId, vehicleOwnerId, enquiryId);
     }
 
     @Operation(summary = "Cancel an open enquiry")
     @PostMapping("/owner/{vehicleOwnerId}/{enquiryId}/cancel")
-    public PartEnquiryResponse cancel(@PathVariable Integer vehicleOwnerId, @PathVariable Integer enquiryId) {
-        return partEnquiryService.cancel(vehicleOwnerId, enquiryId);
+    public PartEnquiryResponse cancel(@RequestHeader(USER_HEADER) String autoAddaId,
+                                      @PathVariable Integer vehicleOwnerId, @PathVariable Integer enquiryId) {
+        return partEnquiryService.cancel(autoAddaId, vehicleOwnerId, enquiryId);
     }
 
     @Operation(summary = "Accept a quote; returns the inventoryPartId to add to the cart")
     @PostMapping("/owner/{vehicleOwnerId}/{enquiryId}/quotes/{quoteId}/accept")
-    public AcceptQuoteResponse accept(@PathVariable Integer vehicleOwnerId, @PathVariable Integer enquiryId,
+    public AcceptQuoteResponse accept(@RequestHeader(USER_HEADER) String autoAddaId,
+                                      @PathVariable Integer vehicleOwnerId, @PathVariable Integer enquiryId,
                                       @PathVariable Integer quoteId) {
-        return partEnquiryService.accept(vehicleOwnerId, enquiryId, quoteId);
+        return partEnquiryService.accept(autoAddaId, vehicleOwnerId, enquiryId, quoteId);
     }
 
     // ---------------------------------------------------------------- shop

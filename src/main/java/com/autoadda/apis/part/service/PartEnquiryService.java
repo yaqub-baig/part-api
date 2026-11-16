@@ -105,7 +105,8 @@ public class PartEnquiryService {
     // ================================================================ customer
 
     @Transactional
-    public PartEnquiryResponse create(Integer vehicleOwnerId, PartEnquiryRequest request) {
+    public PartEnquiryResponse create(String autoAddaId, Integer vehicleOwnerId, PartEnquiryRequest request) {
+        ownCustomer(autoAddaId, vehicleOwnerId);
         PartEnquiry enquiry = validateNewEnquiry(vehicleOwnerId, request);
 
         long open = enquiryRepository.countByVehicleOwnerIdAndStatusIn(vehicleOwnerId, ACTIVE);
@@ -214,7 +215,8 @@ public class PartEnquiryService {
     }
 
     @Transactional
-    public List<PartEnquiryResponse> listForOwner(Integer vehicleOwnerId, EnquiryStatus status) {
+    public List<PartEnquiryResponse> listForOwner(String autoAddaId, Integer vehicleOwnerId, EnquiryStatus status) {
+        ownCustomer(autoAddaId, vehicleOwnerId);
         List<PartEnquiry> enquiries = status == null
                 ? enquiryRepository.findByVehicleOwnerIdOrderByCreatedAtDesc(vehicleOwnerId)
                 : enquiryRepository.findByVehicleOwnerIdAndStatusOrderByCreatedAtDesc(vehicleOwnerId, status);
@@ -226,13 +228,15 @@ public class PartEnquiryService {
     }
 
     @Transactional
-    public PartEnquiryResponse getForOwner(Integer vehicleOwnerId, Integer enquiryId) {
+    public PartEnquiryResponse getForOwner(String autoAddaId, Integer vehicleOwnerId, Integer enquiryId) {
+        ownCustomer(autoAddaId, vehicleOwnerId);
         PartEnquiry enquiry = ownedEnquiry(vehicleOwnerId, enquiryId);
         return customerView(enquiry, quoteRepository.findByEnquiryIdOrderByUnitPriceAsc(enquiryId));
     }
 
     @Transactional
-    public PartEnquiryResponse cancel(Integer vehicleOwnerId, Integer enquiryId) {
+    public PartEnquiryResponse cancel(String autoAddaId, Integer vehicleOwnerId, Integer enquiryId) {
+        ownCustomer(autoAddaId, vehicleOwnerId);
         PartEnquiry enquiry = ownedEnquiry(vehicleOwnerId, enquiryId);
         if (!ACTIVE.contains(enquiry.getStatus())) {
             throw new ConflictException("Enquiry is already " + enquiry.getStatus());
@@ -247,7 +251,8 @@ public class PartEnquiryService {
      * rejects the other quotes and closes the enquiry. The returned inventoryPartId goes into the cart.
      */
     @Transactional
-    public AcceptQuoteResponse accept(Integer vehicleOwnerId, Integer enquiryId, Integer quoteId) {
+    public AcceptQuoteResponse accept(String autoAddaId, Integer vehicleOwnerId, Integer enquiryId, Integer quoteId) {
+        ownCustomer(autoAddaId, vehicleOwnerId);
         PartEnquiry enquiry = enquiryRepository.findByIdForUpdate(enquiryId)
                 .filter(e -> e.getVehicleOwnerId().equals(vehicleOwnerId))
                 .orElseThrow(() -> new ResourceNotFoundException(ENQUIRY_NOT_FOUND));
@@ -439,16 +444,25 @@ public class PartEnquiryService {
         return shopView(enquiry, recipient, null, lookups(List.of(enquiry), List.of()));
     }
 
-    private void ownShop(String autoAddaId, Integer supplierId) {
-        Supplier shop = supplierRepository.findById(supplierId)
-                .orElseThrow(() -> new ResourceNotFoundException("Supplier not found"));
-        Integer caller;
+    /** The logged-in user (X-Auto-Adda-Id) must be the customer in the path. */
+    private static void ownCustomer(String autoAddaId, Integer vehicleOwnerId) {
+        if (!callerId(autoAddaId).equals(vehicleOwnerId)) {
+            throw new ForbiddenException("You can only use your own enquiries");
+        }
+    }
+
+    private static Integer callerId(String autoAddaId) {
         try {
-            caller = Integer.valueOf(autoAddaId.trim());
+            return Integer.valueOf(autoAddaId.trim());
         } catch (RuntimeException e) {
             throw new ForbiddenException("Invalid user id");
         }
-        if (!caller.equals(shop.getSparePartShopOwner())) {
+    }
+
+    private void ownShop(String autoAddaId, Integer supplierId) {
+        Supplier shop = supplierRepository.findById(supplierId)
+                .orElseThrow(() -> new ResourceNotFoundException("Supplier not found"));
+        if (!callerId(autoAddaId).equals(shop.getSparePartShopOwner())) {
             throw new ForbiddenException("You are not the owner of this shop");
         }
     }

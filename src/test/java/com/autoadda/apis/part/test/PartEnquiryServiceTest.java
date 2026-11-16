@@ -94,6 +94,7 @@ class PartEnquiryServiceTest {
 	private PartEnquiryService service;
 
 	private static final Integer OWNER = 42;
+	private static final String CUSTOMER = "42";
 	private static final String SHOP_OWNER = "900";
 	private Supplier shop;
 
@@ -149,7 +150,7 @@ class PartEnquiryServiceTest {
 		when(categoryRepository.existsById("cat-9")).thenReturn(true);
 		when(categoryHierarchy.withAncestors("cat-9")).thenReturn(Set.of("cat-9", "cat-1"));
 
-		PartEnquiryResponse response = service.create(OWNER, PartEnquiryRequest.builder().makeId("mk-1")
+		PartEnquiryResponse response = service.create(CUSTOMER, OWNER, PartEnquiryRequest.builder().makeId("mk-1")
 				.categoryId("cat-9").description("Left headlight").conditions(List.of(ProductCondition.USED)).build());
 
 		assertEquals(EnquiryStatus.OPEN, response.getStatus());
@@ -167,28 +168,41 @@ class PartEnquiryServiceTest {
 	void createWithNoMatchingShopIsRejectedAndNothingSaved() {
 		when(supplierRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(new PageImpl<>(List.of()));
 		assertThrows(ConflictException.class,
-				() -> service.create(OWNER, PartEnquiryRequest.builder().makeId("mk-1").partNumber("123").build()));
+				() -> service.create(CUSTOMER, OWNER, PartEnquiryRequest.builder().makeId("mk-1").partNumber("123").build()));
 		verify(enquiryRepository, never()).save(any());
 	}
 
 	@Test
 	void createNeedsAPartDescriptionAndValidVehicle() {
 		assertThrows(ValidationException.class,
-				() -> service.create(OWNER, PartEnquiryRequest.builder().makeId("mk-1").build()));
+				() -> service.create(CUSTOMER, OWNER, PartEnquiryRequest.builder().makeId("mk-1").build()));
 		assertThrows(ValidationException.class,
-				() -> service.create(OWNER, PartEnquiryRequest.builder().description("x").build()));
+				() -> service.create(CUSTOMER, OWNER, PartEnquiryRequest.builder().description("x").build()));
 		when(modelRepository.findById("md-5")).thenReturn(Optional.of(Model.builder().id("md-5").name("Patrol").makeId("mk-2").build()));
-		assertThrows(ValidationException.class, () -> service.create(OWNER,
+		assertThrows(ValidationException.class, () -> service.create(CUSTOMER, OWNER,
 				PartEnquiryRequest.builder().makeId("mk-1").modelId("md-5").description("x").build()));
 		assertThrows(ValidationException.class,
-				() -> service.create(OWNER, PartEnquiryRequest.builder().makeId("mk-1").year(1900).description("x").build()));
+				() -> service.create(CUSTOMER, OWNER, PartEnquiryRequest.builder().makeId("mk-1").year(1900).description("x").build()));
 	}
 
 	@Test
 	void createIsLimitedToFiveOpenEnquiries() {
 		when(enquiryRepository.countByVehicleOwnerIdAndStatusIn(any(), any())).thenReturn(5L);
 		assertThrows(ConflictException.class,
-				() -> service.create(OWNER, PartEnquiryRequest.builder().makeId("mk-1").description("x").build()));
+				() -> service.create(CUSTOMER, OWNER, PartEnquiryRequest.builder().makeId("mk-1").description("x").build()));
+	}
+
+	@Test
+	void customerCallsRequireTheLoggedInUserToBeThatCustomer() {
+		assertThrows(ForbiddenException.class,
+				() -> service.create("43", OWNER, PartEnquiryRequest.builder().makeId("mk-1").description("x").build()));
+		assertThrows(ForbiddenException.class, () -> service.listForOwner("43", OWNER, null));
+		assertThrows(ForbiddenException.class, () -> service.getForOwner("43", OWNER, 100));
+		assertThrows(ForbiddenException.class, () -> service.cancel("43", OWNER, 100));
+		assertThrows(ForbiddenException.class, () -> service.accept("43", OWNER, 100, 7));
+		assertThrows(ForbiddenException.class, () -> service.cancel("abc", OWNER, 100));
+		verify(enquiryRepository, never()).findById(any());
+		verify(enquiryRepository, never()).findByIdForUpdate(any());
 	}
 
 	// ------------------------------------------------------------ quote
@@ -270,7 +284,7 @@ class PartEnquiryServiceTest {
 			return part;
 		});
 
-		AcceptQuoteResponse response = service.accept(OWNER, 100, 7);
+		AcceptQuoteResponse response = service.accept(CUSTOMER, OWNER, 100, 7);
 
 		assertEquals(555, response.getInventoryPartId());
 		ArgumentCaptor<InventoryPart> listing = ArgumentCaptor.forClass(InventoryPart.class);
@@ -290,16 +304,16 @@ class PartEnquiryServiceTest {
 	void acceptRules() {
 		// someone else's enquiry looks like it doesn't exist
 		when(enquiryRepository.findByIdForUpdate(100)).thenReturn(Optional.of(enquiry(EnquiryStatus.QUOTED, LocalDateTime.now())));
-		assertThrows(ResourceNotFoundException.class, () -> service.accept(99, 100, 7));
+		assertThrows(ResourceNotFoundException.class, () -> service.accept("99", 99, 100, 7));
 
 		// expired quote
 		when(quoteRepository.findByEnquiryIdOrderByUnitPriceAsc(100))
 				.thenReturn(List.of(quote(7, 5, 150.0, QuoteStatus.SENT, LocalDateTime.now().minusMinutes(1))));
-		assertThrows(ConflictException.class, () -> service.accept(OWNER, 100, 7));
+		assertThrows(ConflictException.class, () -> service.accept(CUSTOMER, OWNER, 100, 7));
 
 		// already accepted
 		when(enquiryRepository.findByIdForUpdate(100)).thenReturn(Optional.of(enquiry(EnquiryStatus.ACCEPTED, LocalDateTime.now())));
-		assertThrows(ConflictException.class, () -> service.accept(OWNER, 100, 7));
+		assertThrows(ConflictException.class, () -> service.accept(CUSTOMER, OWNER, 100, 7));
 		verify(inventoryPartRepository, never()).save(any());
 	}
 
