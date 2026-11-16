@@ -1,12 +1,16 @@
 package com.autoadda.apis.part.entity;
 
+import com.autoadda.apis.part.util.ProductCondition;
 import com.autoadda.apis.part.util.Status;
 import lombok.*;
+import org.hibernate.annotations.BatchSize;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Entity
 @Table(name = "supplier")
@@ -47,10 +51,45 @@ public class Supplier {
     private Status accountStatus;
     @Column(name = "created_at")
     private LocalDateTime createdAt;
-    @Column(name = "brands")
+    /** Display text of the makes covered ("Nissan, Toyota"), rewritten from makeIds. */
+    @Column(name = "brands", length = 2000)
     private String brands;
+    /** Display text of the models covered, rewritten from modelIds. */
     @Column(name = "models",length = 2000)
     private String models;
+
+    // Shop coverage, used to route part enquiries. Empty models / categories / conditions mean "all".
+    @ElementCollection
+    @CollectionTable(name = "supplier_make", joinColumns = @JoinColumn(name = "supplier_id"),
+            indexes = @Index(name = "idx_supplier_make_make_id", columnList = "make_id"))
+    @Column(name = "make_id", nullable = false)
+    @BatchSize(size = 50)
+    @Builder.Default
+    private Set<String> makeIds = new HashSet<>();
+
+    @ElementCollection
+    @CollectionTable(name = "supplier_model", joinColumns = @JoinColumn(name = "supplier_id"),
+            indexes = @Index(name = "idx_supplier_model_model_id", columnList = "model_id"))
+    @Column(name = "model_id", nullable = false)
+    @BatchSize(size = 50)
+    @Builder.Default
+    private Set<String> modelIds = new HashSet<>();
+
+    @ElementCollection
+    @CollectionTable(name = "supplier_category", joinColumns = @JoinColumn(name = "supplier_id"),
+            indexes = @Index(name = "idx_supplier_category_category_id", columnList = "category_id"))
+    @Column(name = "category_id", nullable = false)
+    @BatchSize(size = 50)
+    @Builder.Default
+    private Set<String> categoryIds = new HashSet<>();
+
+    @ElementCollection
+    @CollectionTable(name = "supplier_condition", joinColumns = @JoinColumn(name = "supplier_id"))
+    @Enumerated(EnumType.STRING)
+    @Column(name = "product_condition", nullable = false, length = 30)
+    @BatchSize(size = 50)
+    @Builder.Default
+    private Set<ProductCondition> conditions = new HashSet<>();
     @Column(name = "shop_owner_id")
     private Integer sparePartShopOwner;
     @OneToOne

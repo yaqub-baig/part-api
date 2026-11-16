@@ -1,5 +1,7 @@
 package com.autoadda.apis.part.request;
 
+import com.autoadda.apis.part.util.ProductCondition;
+
 import com.autoadda.apis.part.entity.Location;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -26,8 +28,18 @@ public class SupplierRequest {
     private String phoneNumber;
     private String mobileNumber;
     private Location location;
+    /** Legacy: make names, comma separated. Ignored when makeIds is sent. */
     private String brands;
+    /** Legacy: model names (of the chosen makes), comma separated. Ignored when modelIds is sent. */
     private String models;
+    /** Makes the shop covers. On update, null keeps the current ones. */
+    private List<String> makeIds;
+    /** Models covered (each must belong to one of the makes); empty = all models of the makes. */
+    private List<String> modelIds;
+    /** Part categories covered (a parent covers its subcategories); empty = all. */
+    private List<String> categoryIds;
+    /** Part conditions the shop sells; empty = all. */
+    private List<ProductCondition> conditions;
     private String website;
     private String openingHours;
     private String closingHours;

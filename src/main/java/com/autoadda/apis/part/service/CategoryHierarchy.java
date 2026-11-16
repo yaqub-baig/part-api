@@ -39,4 +39,17 @@ public class CategoryHierarchy {
         }
         return ids;
     }
+
+    /**
+     * The category id and the ids of every category above it (parent, grandparent, ...).
+     * Used to match shops: a shop covering "Engine" covers an enquiry for its subcategory "Pistons".
+     */
+    public Set<String> withAncestors(String categoryId) {
+        Set<String> ids = new LinkedHashSet<>();
+        String current = categoryId.trim();
+        while (current != null && !current.isBlank() && ids.add(current)) {
+            current = categoryRepository.findById(current).map(Category::getParentCategoryId).orElse(null);
+        }
+        return ids;
+    }
 }

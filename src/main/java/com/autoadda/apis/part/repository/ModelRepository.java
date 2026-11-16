@@ -21,4 +21,7 @@ public interface ModelRepository extends JpaRepository<Model, String> {
 
     /** Every model with this name, across makes (model names are not unique). */
     List<Model> findAllByName(String name);
+
+    /** Models of any of these makes with any of these names. */
+    List<Model> findByMakeIdInAndNameIn(Collection<String> makeIds, Collection<String> names);
 }

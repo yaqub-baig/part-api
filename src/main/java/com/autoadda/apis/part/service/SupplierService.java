@@ -35,10 +35,14 @@ public class SupplierService {
     private final LocationService locationService;
     private final InventoryPartRepository inventoryPartRepository;
     private final MediaFileCleanupService mediaFileCleanupService;
+    private final ShopCoverageResolver shopCoverageResolver;
 
     public ResponseEntity<Supplier> createSupplier(SupplierRequest request, String autoAddaId) {
         Supplier supplier = prepareSupplier ( request );
         validTradingLicense ( request );
+        if ( ShopCoverageResolver.hasCoverageData ( request ) ) {
+            shopCoverageResolver.apply ( shopCoverageResolver.resolve ( request, null ), supplier );
+        }
         supplier.setShopLogo ( mediaFileRepository.findById ( request.getShopLogoId ( ) ).orElseThrow ( () -> new ResourceNotFoundException ( "Shop logo not found" ) ) );
         supplier.setShopImages ( mediaFileRepository.findAllById ( request.getShopImageIds ( ) ) );
         supplier.setTradeLicenseAttachment ( mediaFileRepository.findAllById ( request.getTradeLicenseIds ( ) ) );
@@ -125,7 +129,14 @@ public class SupplierService {
                 .orElseThrow ( () -> new ResourceNotFoundException ( "Supplier not found with id: " + id ) );
 
 
-        updateSupplierDetails(request, existing);
+        // Resolve the coverage before touching anything else, so a bad make / model fails the update cleanly
+        if ( ShopCoverageResolver.hasCoverageData ( request ) ) {
+            ShopCoverageResolver.ShopCoverage coverage = shopCoverageResolver.resolve ( request, existing );
+            updateSupplierDetails ( request, existing );
+            shopCoverageResolver.apply ( coverage, existing );
+        } else {
+            updateSupplierDetails ( request, existing );
+        }
 
         List<Long> filesToCleanup = new ArrayList<> ( );
 
@@ -214,12 +225,7 @@ public class SupplierService {
             Location location = locationService.updateLocation ( existingGarageLocation.getId ( ), request.getLocation ( ) );
             existing.setLocation ( location );
         }
-        if ( request.getBrands ( ) != null ) {
-            existing.setBrands ( request.getBrands ( ) );
-        }
-        if ( request.getModels ( ) != null ) {
-            existing.setModels ( request.getModels ( ) );
-        }
+        // brands / models text is written by ShopCoverageResolver.apply together with the ids
         if ( request.getSupplierArabicName ( ) != null ) {
             existing.setSupplierArabicName ( request.getSupplierArabicName ( ) );
         }
