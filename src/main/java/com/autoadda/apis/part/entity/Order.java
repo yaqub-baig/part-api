@@ -1,5 +1,6 @@
 package com.autoadda.apis.part.entity;
 
+import com.autoadda.apis.part.util.BuyerType;
 import com.autoadda.apis.part.util.PaymentMethod;
 import com.autoadda.apis.part.util.PaymentStatus;
 import com.autoadda.apis.part.util.Status;
@@ -22,7 +23,25 @@ public class Order {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
+    /** Set for customer orders. */
     private Integer vehicleOwnerId;
+
+    /** CUSTOMER or GARAGE; null on old rows = CUSTOMER. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "buyer_type", length = 20)
+    private BuyerType buyerType;
+    /** Garage orders: the garage (the buyer), who placed it (audit) and where to deliver. */
+    @Column(name = "garage_id")
+    private Integer garageId;
+    @Column(name = "placed_by_user_id")
+    private Integer placedByUserId;
+    @Embedded
+    private GarageSnapshot garage;
+    @Column(name = "notes", length = 1000)
+    private String notes;
+    /** Paid online, then lines rejected by a shop: amount to refund to the buyer. */
+    @Column(name = "refund_amount")
+    private Double refundAmount;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL)
     @Builder.Default

@@ -17,6 +17,17 @@ import java.util.List;
 public class OrderResponse {
     private Integer orderId;
     private Integer vehicleOwnerId;
+    /** CUSTOMER or GARAGE. */
+    private com.autoadda.apis.part.util.BuyerType buyerType;
+    /** Garage orders: the buyer and the delivery address. */
+    private Integer garageId;
+    private String garageName;
+    private String garagePhone;
+    private String garageAddress;
+    private String garageMapLink;
+    private String notes;
+    /** Paid online and then lines rejected by a shop: amount to refund. */
+    private Double refundAmount;
     private Status status;
     private LocalDateTime orderDate;
     private LocalDateTime cancelledAt;
