@@ -223,6 +223,10 @@ Cache dropdown data for the session; it changes rarely.
 ## 8. From search to cart (login required)
 
 `ownerId` is the logged-in vehicle owner's id. `partId` is the offer's **`inventoryPartId`**.
+Every cart and order call needs the `X-Auto-Adda-Id` header (set by the gateway for the logged-in user):
+it must equal `ownerId`, otherwise **403**. Order-by-id calls (`GET /orders/{orderId}`, `/pay`, `/cancel`,
+`GET /payments/orders/{orderId}/status`) answer **404** for someone else's order; their old `vehicleOwnerId`
+query parameter is no longer used.
 
 | Action | Call |
 |---|---|

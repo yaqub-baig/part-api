@@ -115,8 +115,10 @@ public class OrderService {
     }
 
     @Transactional(readOnly = true)
-    public OrderResponse getOrder(Integer orderId) {
-        return toResponse ( loadOrder ( orderId ) );
+    public OrderResponse getOrder(Integer orderId, Integer vehicleOwnerId) {
+        Order order = loadOrder ( orderId );
+        checkOwner ( order, vehicleOwnerId );
+        return toResponse ( order );
     }
 
     @Transactional(readOnly = true)
@@ -244,8 +246,9 @@ public class OrderService {
         return orderRepo.findByIdForUpdate ( orderId ).orElseThrow ( () -> new ResourceNotFoundException ( "Order not found: " + orderId ) );
     }
 
+    /** Someone else's order answers 404, so order ids can't be probed. */
     private static void checkOwner(Order order, Integer vehicleOwnerId) {
-        if ( vehicleOwnerId != null && !vehicleOwnerId.equals ( order.getVehicleOwnerId ( ) ) ) {
+        if ( vehicleOwnerId == null || !vehicleOwnerId.equals ( order.getVehicleOwnerId ( ) ) ) {
             throw new ResourceNotFoundException ( "Order not found: " + order.getId ( ) );
         }
     }

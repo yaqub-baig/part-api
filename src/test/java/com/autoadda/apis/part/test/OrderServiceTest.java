@@ -27,6 +27,7 @@ import com.autoadda.apis.part.entity.OrderItem;
 import com.autoadda.apis.part.entity.ShoppingCart;
 import com.autoadda.apis.part.entity.ShoppingCartItem;
 import com.autoadda.apis.part.exception.ConflictException;
+import com.autoadda.apis.part.exception.ResourceNotFoundException;
 import com.autoadda.apis.part.exception.PaymentGatewayException;
 import com.autoadda.apis.part.repository.InventoryPartRepository;
 import com.autoadda.apis.part.repository.InventoryTransactionRepository;
@@ -188,6 +189,18 @@ class OrderServiceTest {
 		when(orderRepo.save(any())).thenAnswer(i -> i.getArguments()[0]);
 
 		assertEquals(PaymentStatus.REFUND_PENDING, service.cancelOrder(42, 1).getPaymentStatus());
+	}
+
+	@Test
+	void someoneElsesOrderLooksNotFound() {
+		Order order = Order.builder().id(42).vehicleOwnerId(1).status(Status.CONFIRMED).items(List.of()).build();
+		when(orderRepo.findByIdForUpdate(42)).thenReturn(Optional.of(order));
+		when(orderRepo.findById(42)).thenReturn(Optional.of(order));
+		assertThrows(ResourceNotFoundException.class, () -> service.cancelOrder(42, 2));
+		assertThrows(ResourceNotFoundException.class, () -> service.retryPayment(42, 2));
+		assertThrows(ResourceNotFoundException.class, () -> service.getOrder(42, 2));
+		assertThrows(ResourceNotFoundException.class, () -> service.getOrder(42, null));
+		assertEquals(42, service.getOrder(42, 1).getOrderId());
 	}
 
 	@Test

@@ -30,6 +30,7 @@ import com.autoadda.apis.part.response.AcceptQuoteResponse;
 import com.autoadda.apis.part.response.PartEnquiryResponse;
 import com.autoadda.apis.part.response.PartQuoteResponse;
 import com.autoadda.apis.part.specification.ShopMatchSpecification;
+import com.autoadda.apis.part.util.CallerIdentity;
 import com.autoadda.apis.part.util.EnquiryRecipientStatus;
 import com.autoadda.apis.part.util.EnquiryStatus;
 import com.autoadda.apis.part.util.ProductCondition;
@@ -446,23 +447,13 @@ public class PartEnquiryService {
 
     /** The logged-in user (X-Auto-Adda-Id) must be the customer in the path. */
     private static void ownCustomer(String autoAddaId, Integer vehicleOwnerId) {
-        if (!callerId(autoAddaId).equals(vehicleOwnerId)) {
-            throw new ForbiddenException("You can only use your own enquiries");
-        }
-    }
-
-    private static Integer callerId(String autoAddaId) {
-        try {
-            return Integer.valueOf(autoAddaId.trim());
-        } catch (RuntimeException e) {
-            throw new ForbiddenException("Invalid user id");
-        }
+        CallerIdentity.requireSelf(autoAddaId, vehicleOwnerId);
     }
 
     private void ownShop(String autoAddaId, Integer supplierId) {
         Supplier shop = supplierRepository.findById(supplierId)
                 .orElseThrow(() -> new ResourceNotFoundException("Supplier not found"));
-        if (!callerId(autoAddaId).equals(shop.getSparePartShopOwner())) {
+        if (!CallerIdentity.callerId(autoAddaId).equals(shop.getSparePartShopOwner())) {
             throw new ForbiddenException("You are not the owner of this shop");
         }
     }
