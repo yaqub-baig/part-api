@@ -177,6 +177,70 @@ class ShopCoverageTest {
 		assertTrue(ShopCoverageResolver.hasCoverageData(SupplierRequest.builder().conditions(List.of()).build()));
 	}
 
+	// ------------------------------------------------------------ years
+
+	@Test
+	void yearRangeIsSavedAndValidated() {
+		Supplier supplier = shop();
+		resolver.apply(resolver.resolve(SupplierRequest.builder().yearFrom(2010).yearTo(2020).build(), null), supplier);
+		assertEquals(2010, supplier.getYearFrom());
+		assertEquals(2020, supplier.getYearTo());
+
+		ShopCoverage openEnded = resolver.resolve(SupplierRequest.builder().yearFrom(2015).build(), null);
+		assertEquals(2015, openEnded.yearFrom());
+		assertNull(openEnded.yearTo());
+
+		assertThrows(VehicleFitException.class,
+				() -> resolver.resolve(SupplierRequest.builder().yearFrom(2020).yearTo(2010).build(), null));
+		assertThrows(VehicleFitException.class,
+				() -> resolver.resolve(SupplierRequest.builder().yearFrom(1949).build(), null));
+		assertThrows(VehicleFitException.class,
+				() -> resolver.resolve(SupplierRequest.builder().yearTo(java.time.Year.now().getValue() + 6).build(), null));
+	}
+
+	@Test
+	void yearRangeOnUpdateIsKeptReplacedOrCleared() {
+		Supplier existing = shop();
+		existing.setYearFrom(2010);
+		existing.setYearTo(2020);
+
+		ShopCoverage kept = resolver.resolve(SupplierRequest.builder().conditions(List.of()).build(), existing);
+		assertEquals(2010, kept.yearFrom());
+		assertEquals(2020, kept.yearTo());
+
+		ShopCoverage replaced = resolver.resolve(SupplierRequest.builder().yearTo(2022).build(), existing);
+		assertNull(replaced.yearFrom()); // sending either year replaces both
+		assertEquals(2022, replaced.yearTo());
+
+		ShopCoverage cleared = resolver.resolve(SupplierRequest.builder().allYears(true).yearFrom(2000).build(), existing);
+		assertNull(cleared.yearFrom());
+		assertNull(cleared.yearTo());
+		assertTrue(ShopCoverageResolver.hasCoverageData(SupplierRequest.builder().allYears(true).build()));
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	void matchingChecksTheYearAgainstTheShopsRangeOnlyWhenAYearIsGiven() {
+		jakarta.persistence.criteria.Root<Supplier> root = org.mockito.Mockito.mock(jakarta.persistence.criteria.Root.class);
+		jakarta.persistence.criteria.CriteriaQuery<Object> query = org.mockito.Mockito.mock(jakarta.persistence.criteria.CriteriaQuery.class);
+		jakarta.persistence.criteria.CriteriaBuilder cb = org.mockito.Mockito.mock(jakarta.persistence.criteria.CriteriaBuilder.class);
+		jakarta.persistence.criteria.Path<Object> path = org.mockito.Mockito.mock(jakarta.persistence.criteria.Path.class);
+		when(root.get(org.mockito.ArgumentMatchers.anyString())).thenReturn(path);
+
+		com.autoadda.apis.part.specification.ShopMatchSpecification
+				.covering("mk-1", null, Set.of(), Set.of(), 2019).toPredicate(root, query, cb);
+		verify(cb).lessThanOrEqualTo(org.mockito.ArgumentMatchers.<jakarta.persistence.criteria.Expression<Integer>>any(),
+				org.mockito.ArgumentMatchers.eq(2019));
+		verify(cb).greaterThanOrEqualTo(org.mockito.ArgumentMatchers.<jakarta.persistence.criteria.Expression<Integer>>any(),
+				org.mockito.ArgumentMatchers.eq(2019));
+
+		jakarta.persistence.criteria.CriteriaBuilder cbNoYear = org.mockito.Mockito.mock(jakarta.persistence.criteria.CriteriaBuilder.class);
+		com.autoadda.apis.part.specification.ShopMatchSpecification
+				.covering("mk-1", null, Set.of(), Set.of(), null).toPredicate(root, query, cbNoYear);
+		verify(cbNoYear, never()).lessThanOrEqualTo(org.mockito.ArgumentMatchers.<jakarta.persistence.criteria.Expression<Integer>>any(),
+				org.mockito.ArgumentMatchers.anyInt());
+	}
+
 	// ------------------------------------------------------------ backfill
 
 	@Test

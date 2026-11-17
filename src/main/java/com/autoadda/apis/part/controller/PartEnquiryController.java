@@ -37,9 +37,10 @@ public class PartEnquiryController {
     @GetMapping("/matching-shops/count")
     public Map<String, Long> countMatchingShops(@RequestParam String makeId,
                                                 @RequestParam(required = false) String modelId,
+                                                @RequestParam(required = false) Integer year,
                                                 @RequestParam(required = false) String categoryId,
                                                 @RequestParam(required = false) List<ProductCondition> conditions) {
-        return Map.of("count", partEnquiryService.countMatchingShops(makeId, modelId, categoryId, conditions));
+        return Map.of("count", partEnquiryService.countMatchingShops(makeId, modelId, year, categoryId, conditions));
     }
 
     // ---------------------------------------------------------------- customer

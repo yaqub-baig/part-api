@@ -90,17 +90,18 @@ public class PartEnquiryService {
     // ================================================================ matching
 
     /** How many shops an enquiry with these filters would reach (capped at MAX_RECIPIENTS when sent). */
-    public long countMatchingShops(String makeId, String modelId, String categoryId, Collection<ProductCondition> conditions) {
+    public long countMatchingShops(String makeId, String modelId, Integer year, String categoryId,
+                                   Collection<ProductCondition> conditions) {
         if (isBlank(makeId)) {
             throw new ValidationException("makeId is required");
         }
-        return supplierRepository.count(matching(makeId.trim(), modelId, categoryId, conditions));
+        return supplierRepository.count(matching(makeId.trim(), modelId, year, categoryId, conditions));
     }
 
-    private Specification<Supplier> matching(String makeId, String modelId, String categoryId,
+    private Specification<Supplier> matching(String makeId, String modelId, Integer year, String categoryId,
                                              Collection<ProductCondition> conditions) {
         Set<String> categories = isBlank(categoryId) ? Set.of() : categoryHierarchy.withAncestors(categoryId);
-        return ShopMatchSpecification.covering(makeId, trimToNull(modelId), categories, conditions);
+        return ShopMatchSpecification.covering(makeId, trimToNull(modelId), categories, conditions, year);
     }
 
     // ================================================================ customer
@@ -116,7 +117,8 @@ public class PartEnquiryService {
         }
 
         List<Supplier> shops = supplierRepository.findAll(
-                matching(enquiry.getMakeId(), enquiry.getModelId(), enquiry.getCategoryId(), enquiry.getConditions()),
+                matching(enquiry.getMakeId(), enquiry.getModelId(), enquiry.getYear(), enquiry.getCategoryId(),
+                        enquiry.getConditions()),
                 PageRequest.of(0, MAX_RECIPIENTS, Sort.by("id"))).getContent();
         if (shops.isEmpty()) {
             throw new ConflictException("No shop covers this vehicle and part yet");

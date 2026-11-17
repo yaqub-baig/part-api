@@ -40,6 +40,12 @@ public class SupplierRequest {
     private List<String> categoryIds;
     /** Part conditions the shop sells; empty = all. */
     private List<ProductCondition> conditions;
+    /** First model year covered (inclusive); null = no lower limit. On update, sending either year replaces both. */
+    private Integer yearFrom;
+    /** Last model year covered (inclusive); null = no upper limit. */
+    private Integer yearTo;
+    /** true clears the year range (shop covers all years); yearFrom / yearTo are then ignored. */
+    private Boolean allYears;
     private String website;
     private String openingHours;
     private String closingHours;
