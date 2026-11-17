@@ -17,6 +17,10 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
 
     List<Order> findByVehicleOwnerIdOrderByOrderDateDesc(Integer vehicleOwnerId);
 
+    List<Order> findByGarageIdOrderByOrderDateDesc(Integer garageId);
+
+    List<Order> findByGarageIdAndStatusOrderByOrderDateDesc(Integer garageId, Status status);
+
     /** Row-locked read so webhook, expiry job and user cancel can't change the same order at once. */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT o FROM Order o WHERE o.id = :id")

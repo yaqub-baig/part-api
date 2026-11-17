@@ -21,6 +21,12 @@ public interface PartEnquiryRepository extends JpaRepository<PartEnquiry, Intege
 
     long countByVehicleOwnerIdAndStatusIn(Integer vehicleOwnerId, Collection<EnquiryStatus> statuses);
 
+    List<PartEnquiry> findByGarageIdOrderByCreatedAtDesc(Integer garageId);
+
+    List<PartEnquiry> findByGarageIdAndStatusOrderByCreatedAtDesc(Integer garageId, EnquiryStatus status);
+
+    long countByGarageIdAndStatusIn(Integer garageId, Collection<EnquiryStatus> statuses);
+
     List<PartEnquiry> findByStatusInAndExpiresAtBefore(Collection<EnquiryStatus> statuses, LocalDateTime time);
 
     /** Locks the enquiry row so two quotes can't be accepted at the same time. */

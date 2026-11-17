@@ -5,6 +5,7 @@ import com.autoadda.apis.part.request.PartQuoteRequest;
 import com.autoadda.apis.part.response.AcceptQuoteResponse;
 import com.autoadda.apis.part.response.PartEnquiryResponse;
 import com.autoadda.apis.part.service.PartEnquiryService;
+import com.autoadda.apis.part.util.BuyerType;
 import com.autoadda.apis.part.util.EnquiryRecipientStatus;
 import com.autoadda.apis.part.util.EnquiryStatus;
 import com.autoadda.apis.part.util.ProductCondition;
@@ -86,12 +87,13 @@ public class PartEnquiryController {
 
     // ---------------------------------------------------------------- shop
 
-    @Operation(summary = "Enquiries sent to a shop, newest first (status: NEW, VIEWED, QUOTED, DECLINED)")
+    @Operation(summary = "Enquiries sent to a shop, newest first (status: NEW, VIEWED, QUOTED, DECLINED; buyerType: CUSTOMER, GARAGE)")
     @GetMapping("/supplier/{supplierId}")
     public List<PartEnquiryResponse> listForShop(@RequestHeader(USER_HEADER) String autoAddaId,
                                                  @PathVariable Integer supplierId,
-                                                 @RequestParam(required = false) EnquiryRecipientStatus status) {
-        return partEnquiryService.listForShop(autoAddaId, supplierId, status);
+                                                 @RequestParam(required = false) EnquiryRecipientStatus status,
+                                                 @RequestParam(required = false) BuyerType buyerType) {
+        return partEnquiryService.listForShop(autoAddaId, supplierId, status, buyerType);
     }
 
     @Operation(summary = "One enquiry for a shop (marks it viewed)")

@@ -23,4 +23,9 @@ public class PartEnquiryRequest {
     private String description;
     private List<ProductCondition> conditions;
     private List<Long> imageIds;
+    /**
+     * Garage enquiries only: the garage part request item this is for. Vehicle, part number and description
+     * are filled from it when not sent.
+     */
+    private Integer partRequestItemId;
 }
