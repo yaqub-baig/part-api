@@ -90,6 +90,12 @@ public class Supplier {
     @BatchSize(size = 50)
     @Builder.Default
     private Set<ProductCondition> conditions = new HashSet<>();
+
+    /** Model years covered, inclusive. Null on a side = no limit on that side; both null = all years. */
+    @Column(name = "year_from")
+    private Integer yearFrom;
+    @Column(name = "year_to")
+    private Integer yearTo;
     @Column(name = "shop_owner_id")
     private Integer sparePartShopOwner;
     @OneToOne

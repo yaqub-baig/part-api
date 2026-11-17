@@ -15,14 +15,15 @@ the shop's owner.
    add it to the cart (`POST /cart/{vehicleOwnerId}/add?partId=...&quantity=...`) or buy now. Payment is unchanged.
 
 Matching shops: active, not blocked, cover the make; and cover the model, category (a shop covering a parent
-category matches its subcategories) and condition, or have none of those set. Shops set their coverage at
+category matches its subcategories), condition and the customer's model year (`yearFrom`..`yearTo`), or have
+none of those set. An enquiry without a year isn't filtered by year. Shops set their coverage at
 registration (`docs/shop-coverage-integration.md`).
 
 ## Website / customer app
 
 | Call | Notes |
 |---|---|
-| `GET /enquiries/matching-shops/count?makeId=&modelId=&categoryId=&conditions=USED&conditions=GENUINE` | `{ "count": 12 }`; makeId required |
+| `GET /enquiries/matching-shops/count?makeId=&modelId=&year=&categoryId=&conditions=USED&conditions=GENUINE` | `{ "count": 12 }`; makeId required |
 | `POST /enquiries/owner/{vehicleOwnerId}` | create, 201; body below |
 | `GET /enquiries/owner/{vehicleOwnerId}?status=OPEN` | my enquiries, newest first, with quotes |
 | `GET /enquiries/owner/{vehicleOwnerId}/{enquiryId}` | one enquiry, quotes cheapest first |

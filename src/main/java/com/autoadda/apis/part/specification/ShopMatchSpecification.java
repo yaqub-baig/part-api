@@ -15,7 +15,7 @@ import java.util.Set;
 
 /**
  * Shops whose coverage matches an enquiry: active, not blocked, covers the make, and the model / category /
- * condition (a shop with none of those set covers them all).
+ * condition / model year (a shop with none of those set covers them all).
  */
 public final class ShopMatchSpecification {
 
@@ -31,9 +31,11 @@ public final class ShopMatchSpecification {
      * @param modelId    optional
      * @param categoryIds the enquiry's category and its ancestors; empty = no category given
      * @param conditions conditions the customer accepts; empty = any
+     * @param year       the customer's model year, optional; matched against the shop's yearFrom / yearTo
+     *                   (a shop without a range covers all years)
      */
     public static Specification<Supplier> covering(String makeId, String modelId, Collection<String> categoryIds,
-                                                   Collection<ProductCondition> conditions) {
+                                                   Collection<ProductCondition> conditions, Integer year) {
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
             predicates.add(cb.isTrue(root.get("isActive")));
@@ -54,6 +56,12 @@ public final class ShopMatchSpecification {
             if (conditions != null && !conditions.isEmpty()) {
                 Expression<Set<ProductCondition>> shopConditions = root.get("conditions");
                 predicates.add(anyMemberOrEmpty(cb, shopConditions, conditions));
+            }
+            if (year != null) {
+                predicates.add(cb.or(root.get("yearFrom").isNull(),
+                        cb.lessThanOrEqualTo(root.get("yearFrom"), year)));
+                predicates.add(cb.or(root.get("yearTo").isNull(),
+                        cb.greaterThanOrEqualTo(root.get("yearTo"), year)));
             }
             return cb.and(predicates.toArray(new Predicate[0]));
         };

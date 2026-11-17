@@ -13,6 +13,7 @@ import com.autoadda.apis.part.util.ProductCondition;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.time.Year;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
@@ -48,14 +49,15 @@ public class ShopCoverageResolver {
 
     /** Resolved coverage; lists are sorted by name, never null. */
     public record ShopCoverage(List<Make> makes, List<Model> models, List<Category> categories,
-                               Set<ProductCondition> conditions) {
+                               Set<ProductCondition> conditions, Integer yearFrom, Integer yearTo) {
     }
 
     /** True when the request touches the coverage at all (otherwise it is left as it is). */
     public static boolean hasCoverageData(SupplierRequest request) {
         return request.getMakeIds() != null || request.getBrands() != null
                 || request.getModelIds() != null || request.getModels() != null
-                || request.getCategoryIds() != null || request.getConditions() != null;
+                || request.getCategoryIds() != null || request.getConditions() != null
+                || request.getYearFrom() != null || request.getYearTo() != null || request.getAllYears() != null;
     }
 
     /**
@@ -86,7 +88,8 @@ public class ShopCoverageResolver {
 
         List<Category> categories = resolveCategories(request, existing);
         Set<ProductCondition> conditions = resolveConditions(request, existing);
-        return new ShopCoverage(makes, models, categories, conditions);
+        Integer[] years = resolveYears(request, existing);
+        return new ShopCoverage(makes, models, categories, conditions, years[0], years[1]);
     }
 
     /** Write the coverage into the shop: ids for matching, plus normalised brands / models text for display. */
@@ -97,6 +100,8 @@ public class ShopCoverageResolver {
                 coverage.categories().stream().map(Category::getId).toList());
         replace(supplier.getConditions(), supplier::setConditions, coverage.conditions());
 
+        supplier.setYearFrom(coverage.yearFrom());
+        supplier.setYearTo(coverage.yearTo());
         supplier.setBrands(joinNames(coverage.makes().stream().map(Make::getName).toList()));
         supplier.setModels(joinNames(coverage.models().stream().map(Model::getName).toList()));
     }
@@ -206,6 +211,34 @@ public class ShopCoverageResolver {
             throw new VehicleFitException("conditions", null, "Conditions must not contain empty values");
         }
         return EnumSet.copyOf(conditions);
+    }
+
+    /** {yearFrom, yearTo}: allYears clears, either year sent replaces both, otherwise the shop's current range. */
+    private static Integer[] resolveYears(SupplierRequest request, Supplier existing) {
+        if (Boolean.TRUE.equals(request.getAllYears())) {
+            return new Integer[] {null, null};
+        }
+        if (request.getYearFrom() == null && request.getYearTo() == null) {
+            return existing == null ? new Integer[] {null, null}
+                    : new Integer[] {existing.getYearFrom(), existing.getYearTo()};
+        }
+        Integer from = request.getYearFrom();
+        Integer to = request.getYearTo();
+        checkYear("yearFrom", from);
+        checkYear("yearTo", to);
+        if (from != null && to != null && from > to) {
+            throw new VehicleFitException("yearTo", String.valueOf(to),
+                    "Year range " + from + "-" + to + " ends before it starts");
+        }
+        return new Integer[] {from, to};
+    }
+
+    private static void checkYear(String field, Integer year) {
+        int max = Year.now().getValue() + VehicleFitResolver.YEARS_AHEAD;
+        if (year != null && (year < VehicleFitResolver.MIN_YEAR || year > max)) {
+            throw new VehicleFitException(field, String.valueOf(year),
+                    "Year " + year + " is outside " + VehicleFitResolver.MIN_YEAR + "-" + max);
+        }
     }
 
     // ---------------------------------------------------------------- helpers

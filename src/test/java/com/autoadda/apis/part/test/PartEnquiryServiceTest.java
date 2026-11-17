@@ -372,7 +372,7 @@ class PartEnquiryServiceTest {
 
 	@Test
 	void countNeedsAMake() {
-		assertThrows(ValidationException.class, () -> service.countMatchingShops(" ", null, null, List.of()));
+		assertThrows(ValidationException.class, () -> service.countMatchingShops(" ", null, null, null, List.of()));
 		verify(supplierRepository, never()).count(any(Specification.class));
 	}
 }
