@@ -147,6 +147,12 @@ public class GlobalExceptionHandler {
         return buildResponse (  HttpStatus.CONFLICT, ex.getMessage () );
     }
 
+    @ExceptionHandler(UpstreamUnavailableException.class)
+    public ResponseEntity<GenericResponse> handleUpstreamUnavailable(UpstreamUnavailableException ex) {
+        log.warn ( "Upstream unavailable: {}", ex.getMessage ( ) );
+        return buildResponse ( HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage ( ) );
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<GenericResponse> handleGenericException(Exception ex) {
         log.error ( "Unhandled exception", ex );

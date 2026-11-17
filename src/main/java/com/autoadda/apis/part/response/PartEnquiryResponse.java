@@ -1,5 +1,6 @@
 package com.autoadda.apis.part.response;
 
+import com.autoadda.apis.part.util.BuyerType;
 import com.autoadda.apis.part.util.EnquiryRecipientStatus;
 import com.autoadda.apis.part.util.EnquiryStatus;
 import com.autoadda.apis.part.util.ProductCondition;
@@ -24,6 +25,18 @@ import java.util.List;
 public class PartEnquiryResponse {
     private Integer id;
     private EnquiryStatus status;
+    /** CUSTOMER or GARAGE. */
+    private BuyerType buyerType;
+    /** Garage enquiries: the garage, and the job the part is for. */
+    private Integer garageId;
+    private String garageName;
+    private Integer workOrderId;
+    private Integer jobCardId;
+    private Integer partRequestItemId;
+    /** Garage contact and delivery address: for the garage itself, and for the shop whose quote it accepted. */
+    private String garagePhone;
+    private String garageAddress;
+    private String garageMapLink;
     private String makeId;
     private String makeName;
     private String modelId;

@@ -30,6 +30,8 @@ import com.autoadda.apis.part.response.AcceptQuoteResponse;
 import com.autoadda.apis.part.response.PartEnquiryResponse;
 import com.autoadda.apis.part.response.PartQuoteResponse;
 import com.autoadda.apis.part.specification.ShopMatchSpecification;
+import com.autoadda.apis.part.clients.garage.GaragePartContext;
+import com.autoadda.apis.part.util.BuyerType;
 import com.autoadda.apis.part.util.CallerIdentity;
 import com.autoadda.apis.part.util.EnquiryRecipientStatus;
 import com.autoadda.apis.part.util.EnquiryStatus;
@@ -70,6 +72,8 @@ public class PartEnquiryService {
     public static final int ENQUIRY_OPEN_HOURS = 48;
     public static final int QUOTE_VALID_HOURS = 72;
     public static final int MAX_OPEN_ENQUIRIES = 5;
+    /** Garages work on many cars at once. */
+    public static final int MAX_OPEN_GARAGE_ENQUIRIES = 20;
     public static final int MAX_IMAGES = 5;
     public static final int MAX_DESCRIPTION = 2000;
     private static final Set<EnquiryStatus> ACTIVE = EnumSet.of(EnquiryStatus.OPEN, EnquiryStatus.QUOTED);
@@ -86,6 +90,7 @@ public class PartEnquiryService {
     private final MediaFileRepository mediaFileRepository;
     private final InventoryPartRepository inventoryPartRepository;
     private final CategoryHierarchy categoryHierarchy;
+    private final GarageBuyerResolver garageBuyerResolver;
 
     // ================================================================ matching
 
@@ -109,12 +114,81 @@ public class PartEnquiryService {
     @Transactional
     public PartEnquiryResponse create(String autoAddaId, Integer vehicleOwnerId, PartEnquiryRequest request) {
         ownCustomer(autoAddaId, vehicleOwnerId);
-        PartEnquiry enquiry = validateNewEnquiry(vehicleOwnerId, request);
-
+        if (request.getPartRequestItemId() != null) {
+            throw new ValidationException("partRequestItemId is only for garage enquiries");
+        }
+        PartEnquiry enquiry = validateNewEnquiry(request);
         long open = enquiryRepository.countByVehicleOwnerIdAndStatusIn(vehicleOwnerId, ACTIVE);
         if (open >= MAX_OPEN_ENQUIRIES) {
             throw new ConflictException("You already have " + open + " open enquiries; close one before sending another");
         }
+        enquiry.setBuyerType(BuyerType.CUSTOMER);
+        enquiry.setVehicleOwnerId(vehicleOwnerId);
+        return send(enquiry);
+    }
+
+    /**
+     * A garage's enquiry, in the garage's name. The caller needs PARTS_PURCHASE in the garage (checked by garage-api).
+     * With partRequestItemId the car, part number and description come from the garage's job when not sent.
+     */
+    @Transactional
+    public PartEnquiryResponse createForGarage(String autoAddaId, Integer garageId, PartEnquiryRequest request) {
+        GarageBuyerResolver.GarageBuyer buyer = garageBuyerResolver.requirePurchaser(autoAddaId, garageId);
+        GaragePartContext job = request.getPartRequestItemId() == null ? null
+                : garageBuyerResolver.itemContext(autoAddaId, garageId, request.getPartRequestItemId());
+        if (job != null) {
+            fillFromJob(request, job);
+        }
+        PartEnquiry enquiry = validateNewEnquiry(request);
+        long open = enquiryRepository.countByGarageIdAndStatusIn(garageId, ACTIVE);
+        if (open >= MAX_OPEN_GARAGE_ENQUIRIES) {
+            throw new ConflictException("The garage already has " + open + " open enquiries; close one before sending another");
+        }
+        enquiry.setBuyerType(BuyerType.GARAGE);
+        enquiry.setGarageId(garageId);
+        enquiry.setPlacedByUserId(buyer.userId());
+        enquiry.setGarage(buyer.snapshot());
+        if (job != null) {
+            enquiry.setWorkOrderId(job.getWorkOrderId());
+            enquiry.setJobCardId(job.getJobCardId());
+            enquiry.setPartRequestItemId(job.getItemId());
+        }
+        return send(enquiry);
+    }
+
+    /** Fills what the garage didn't send from its part request item: vehicle (names looked up), part number, text. */
+    private void fillFromJob(PartEnquiryRequest request, GaragePartContext job) {
+        if (isBlank(request.getMakeId()) && !isBlank(job.getBrand())) {
+            Make make = makeRepository.findByName(job.getBrand().trim());
+            if (make == null) {
+                throw new ValidationException("The car's brand '" + job.getBrand().trim()
+                        + "' isn't in the make list; choose the make");
+            }
+            request.setMakeId(make.getId());
+            if (isBlank(request.getModelId()) && !isBlank(job.getModel())) {
+                List<Model> models = modelRepository.findByMakeIdAndNameIn(make.getId(), List.of(job.getModel().trim()));
+                if (models.size() == 1) {
+                    request.setModelId(models.get(0).getId());
+                }
+            }
+        }
+        if (request.getYear() == null && job.getYear() != null) {
+            java.util.regex.Matcher year = java.util.regex.Pattern.compile("(\\d{4})").matcher(job.getYear());
+            if (year.find()) {
+                request.setYear(Integer.valueOf(year.group(1)));
+            }
+        }
+        if (isBlank(request.getPartNumber()) && !isBlank(job.getPartNumber())) {
+            request.setPartNumber(job.getPartNumber());
+        }
+        if (isBlank(request.getDescription()) && !isBlank(job.getPartName())) {
+            request.setDescription(job.getPartName() + (job.getQuantity() == null ? "" : " x" + job.getQuantity())
+                    + (isBlank(job.getDescription()) ? "" : " - " + job.getDescription()));
+        }
+    }
+
+    /** Routes a validated enquiry to the matching shops and saves it. */
+    private PartEnquiryResponse send(PartEnquiry enquiry) {
 
         List<Supplier> shops = supplierRepository.findAll(
                 matching(enquiry.getMakeId(), enquiry.getModelId(), enquiry.getYear(), enquiry.getCategoryId(),
@@ -125,7 +199,6 @@ public class PartEnquiryService {
         }
 
         LocalDateTime now = LocalDateTime.now();
-        enquiry.setVehicleOwnerId(vehicleOwnerId);
         enquiry.setStatus(EnquiryStatus.OPEN);
         enquiry.setRecipientCount(shops.size());
         enquiry.setCreatedAt(now);
@@ -140,14 +213,12 @@ public class PartEnquiryService {
                         .createdAt(now)
                         .build())
                 .toList());
-        log.info("Enquiry {} from vehicle owner {} sent to {} shops", saved.getId(), vehicleOwnerId, shops.size());
+        log.info("Enquiry {} from {} {} sent to {} shops", saved.getId(), saved.getBuyerType(),
+                saved.getBuyerType() == BuyerType.GARAGE ? saved.getGarageId() : saved.getVehicleOwnerId(), shops.size());
         return customerView(saved, List.of());
     }
 
-    private PartEnquiry validateNewEnquiry(Integer vehicleOwnerId, PartEnquiryRequest request) {
-        if (vehicleOwnerId == null) {
-            throw new ValidationException("vehicleOwnerId is required");
-        }
+    private PartEnquiry validateNewEnquiry(PartEnquiryRequest request) {
         if (isBlank(request.getMakeId())) {
             throw new ValidationException("makeId is required");
         }
@@ -220,9 +291,20 @@ public class PartEnquiryService {
     @Transactional
     public List<PartEnquiryResponse> listForOwner(String autoAddaId, Integer vehicleOwnerId, EnquiryStatus status) {
         ownCustomer(autoAddaId, vehicleOwnerId);
-        List<PartEnquiry> enquiries = status == null
+        return buyerViews(status == null
                 ? enquiryRepository.findByVehicleOwnerIdOrderByCreatedAtDesc(vehicleOwnerId)
-                : enquiryRepository.findByVehicleOwnerIdAndStatusOrderByCreatedAtDesc(vehicleOwnerId, status);
+                : enquiryRepository.findByVehicleOwnerIdAndStatusOrderByCreatedAtDesc(vehicleOwnerId, status));
+    }
+
+    @Transactional
+    public List<PartEnquiryResponse> listForGarage(String autoAddaId, Integer garageId, EnquiryStatus status) {
+        garageBuyerResolver.requirePurchaser(autoAddaId, garageId);
+        return buyerViews(status == null
+                ? enquiryRepository.findByGarageIdOrderByCreatedAtDesc(garageId)
+                : enquiryRepository.findByGarageIdAndStatusOrderByCreatedAtDesc(garageId, status));
+    }
+
+    private List<PartEnquiryResponse> buyerViews(List<PartEnquiry> enquiries) {
         Map<Integer, List<PartQuote>> quotes = quotesByEnquiry(enquiries);
         Lookups lookups = lookups(enquiries, quotes.values().stream().flatMap(List::stream).toList());
         return enquiries.stream()
@@ -233,14 +315,31 @@ public class PartEnquiryService {
     @Transactional
     public PartEnquiryResponse getForOwner(String autoAddaId, Integer vehicleOwnerId, Integer enquiryId) {
         ownCustomer(autoAddaId, vehicleOwnerId);
-        PartEnquiry enquiry = ownedEnquiry(vehicleOwnerId, enquiryId);
+        PartEnquiry enquiry = ownedEnquiry(customerOwns(vehicleOwnerId), enquiryId);
+        return customerView(enquiry, quoteRepository.findByEnquiryIdOrderByUnitPriceAsc(enquiryId));
+    }
+
+    @Transactional
+    public PartEnquiryResponse getForGarage(String autoAddaId, Integer garageId, Integer enquiryId) {
+        garageBuyerResolver.requirePurchaser(autoAddaId, garageId);
+        PartEnquiry enquiry = ownedEnquiry(garageOwns(garageId), enquiryId);
         return customerView(enquiry, quoteRepository.findByEnquiryIdOrderByUnitPriceAsc(enquiryId));
     }
 
     @Transactional
     public PartEnquiryResponse cancel(String autoAddaId, Integer vehicleOwnerId, Integer enquiryId) {
         ownCustomer(autoAddaId, vehicleOwnerId);
-        PartEnquiry enquiry = ownedEnquiry(vehicleOwnerId, enquiryId);
+        return cancel(ownedEnquiry(customerOwns(vehicleOwnerId), enquiryId));
+    }
+
+    @Transactional
+    public PartEnquiryResponse cancelForGarage(String autoAddaId, Integer garageId, Integer enquiryId) {
+        garageBuyerResolver.requirePurchaser(autoAddaId, garageId);
+        return cancel(ownedEnquiry(garageOwns(garageId), enquiryId));
+    }
+
+    private PartEnquiryResponse cancel(PartEnquiry enquiry) {
+        Integer enquiryId = enquiry.getId();
         if (!ACTIVE.contains(enquiry.getStatus())) {
             throw new ConflictException("Enquiry is already " + enquiry.getStatus());
         }
@@ -256,8 +355,19 @@ public class PartEnquiryService {
     @Transactional
     public AcceptQuoteResponse accept(String autoAddaId, Integer vehicleOwnerId, Integer enquiryId, Integer quoteId) {
         ownCustomer(autoAddaId, vehicleOwnerId);
+        return accept(customerOwns(vehicleOwnerId), enquiryId, quoteId);
+    }
+
+    /** A garage accepts a quote; the returned inventoryPartId goes into a garage order. */
+    @Transactional
+    public AcceptQuoteResponse acceptForGarage(String autoAddaId, Integer garageId, Integer enquiryId, Integer quoteId) {
+        garageBuyerResolver.requirePurchaser(autoAddaId, garageId);
+        return accept(garageOwns(garageId), enquiryId, quoteId);
+    }
+
+    private AcceptQuoteResponse accept(java.util.function.Predicate<PartEnquiry> owns, Integer enquiryId, Integer quoteId) {
         PartEnquiry enquiry = enquiryRepository.findByIdForUpdate(enquiryId)
-                .filter(e -> e.getVehicleOwnerId().equals(vehicleOwnerId))
+                .filter(owns)
                 .orElseThrow(() -> new ResourceNotFoundException(ENQUIRY_NOT_FOUND));
         if (enquiry.getStatus() != EnquiryStatus.QUOTED) {
             throw new ConflictException(enquiry.getStatus() == EnquiryStatus.OPEN
@@ -309,10 +419,19 @@ public class PartEnquiryService {
                 .build();
     }
 
-    private PartEnquiry ownedEnquiry(Integer vehicleOwnerId, Integer enquiryId) {
+    /** Someone else's enquiry answers 404. */
+    private PartEnquiry ownedEnquiry(java.util.function.Predicate<PartEnquiry> owns, Integer enquiryId) {
         return enquiryRepository.findById(enquiryId)
-                .filter(e -> e.getVehicleOwnerId().equals(vehicleOwnerId))
+                .filter(owns)
                 .orElseThrow(() -> new ResourceNotFoundException(ENQUIRY_NOT_FOUND));
+    }
+
+    private static java.util.function.Predicate<PartEnquiry> customerOwns(Integer vehicleOwnerId) {
+        return e -> e.getBuyerType() != BuyerType.GARAGE && vehicleOwnerId.equals(e.getVehicleOwnerId());
+    }
+
+    private static java.util.function.Predicate<PartEnquiry> garageOwns(Integer garageId) {
+        return e -> e.getBuyerType() == BuyerType.GARAGE && garageId.equals(e.getGarageId());
     }
 
     /** Close the enquiry; quotes still SENT become REJECTED. */
@@ -334,6 +453,13 @@ public class PartEnquiryService {
 
     @Transactional
     public List<PartEnquiryResponse> listForShop(String autoAddaId, Integer supplierId, EnquiryRecipientStatus status) {
+        return listForShop(autoAddaId, supplierId, status, null);
+    }
+
+    /** A shop's enquiries; buyerType (CUSTOMER / GARAGE) shows only those, null shows all. */
+    @Transactional
+    public List<PartEnquiryResponse> listForShop(String autoAddaId, Integer supplierId, EnquiryRecipientStatus status,
+                                                 BuyerType buyerType) {
         ownShop(autoAddaId, supplierId);
         List<EnquiryRecipient> received = status == null
                 ? recipientRepository.findBySupplierIdOrderByCreatedAtDesc(supplierId)
@@ -347,6 +473,7 @@ public class PartEnquiryService {
         Lookups lookups = lookups(enquiries.values(), myQuotes.values());
         return received.stream()
                 .filter(r -> enquiries.containsKey(r.getEnquiryId()))
+                .filter(r -> buyerType == null || buyerTypeOf(enquiries.get(r.getEnquiryId())) == buyerType)
                 .map(r -> shopView(enquiries.get(r.getEnquiryId()), r, myQuotes.get(r.getEnquiryId()), lookups))
                 .toList();
     }
@@ -523,7 +650,20 @@ public class PartEnquiryService {
                 .map(q -> quoteView(q, lookups))
                 .toList());
         response.setAcceptedQuoteId(enquiry.getAcceptedQuoteId());
+        withGarageContact(response, enquiry);
         return response;
+    }
+
+    private static void withGarageContact(PartEnquiryResponse response, PartEnquiry enquiry) {
+        if (enquiry.getGarage() != null) {
+            response.setGaragePhone(enquiry.getGarage().getGaragePhone());
+            response.setGarageAddress(enquiry.getGarage().getGarageAddress());
+            response.setGarageMapLink(enquiry.getGarage().getGarageMapLink());
+        }
+    }
+
+    private static BuyerType buyerTypeOf(PartEnquiry enquiry) {
+        return enquiry.getBuyerType() == null ? BuyerType.CUSTOMER : enquiry.getBuyerType();
     }
 
     private PartEnquiryResponse shopView(PartEnquiry enquiry, EnquiryRecipient recipient, PartQuote myQuote, Lookups lookups) {
@@ -531,7 +671,9 @@ public class PartEnquiryService {
         response.setMyStatus(recipient.getStatus());
         response.setMyQuote(myQuote == null ? null : quoteView(myQuote, lookups));
         if (myQuote != null && myQuote.getStatus() == QuoteStatus.ACCEPTED) {
-            response.setVehicleOwnerId(enquiry.getVehicleOwnerId()); // contact shared only with the chosen shop
+            // contact shared only with the chosen shop
+            response.setVehicleOwnerId(enquiry.getVehicleOwnerId());
+            withGarageContact(response, enquiry);
         }
         return response;
     }
@@ -540,6 +682,12 @@ public class PartEnquiryService {
         return PartEnquiryResponse.builder()
                 .id(e.getId())
                 .status(e.getStatus())
+                .buyerType(buyerTypeOf(e))
+                .garageId(e.getGarageId())
+                .garageName(e.getGarage() == null ? null : e.getGarage().getGarageName())
+                .workOrderId(e.getWorkOrderId())
+                .jobCardId(e.getJobCardId())
+                .partRequestItemId(e.getPartRequestItemId())
                 .makeId(e.getMakeId())
                 .makeName(lookups.makes().get(e.getMakeId()))
                 .modelId(e.getModelId())
