@@ -1,14 +1,14 @@
 # Website integration: product search
 
 How the customer website searches spare parts, shows product pages and sends a chosen offer to the cart.
-Covers every search endpoint in part-api. Backend branch: `feature/vehicle-fit-search` (vehicle search and
-`inventoryPartId` need it).
+Covers every search endpoint in part-api, and the "Request this part" fallback when nothing is found.
+Everything here is on `main`.
 
 ## 0. Before you start (blocking items)
 
-| # | Item | Status |a
+| # | Item | Status |
 |---|---|---|
-| 1 | Backend `feature/vehicle-fit-search` deployed and the vehicle backfill run (`POST /api/v1/products/vehicle-data/backfill`) | pending |
+| 1 | Backend `main` deployed and the vehicle backfill run (`POST /api/v1/products/vehicle-data/backfill`) | pending |
 | 2 | Gateway: open the read-only search endpoints to visitors (below). Today only `POST .../products/search/paginated` is public, so product pages and vehicle search need a login | **gateway change needed** |
 | 3 | Gateway: the public make/model picker routes only accept numeric ids (`{id:\d+}`) but make/model ids are UUIDs, so `GET /models/make/{uuid}` fails for visitors | **gateway change needed** |
 
@@ -27,6 +27,7 @@ Gateway change (`gateway-api/src/main/resources/application.yml`, `public-paths`
       - 'GET /part/api/v1/products/search/{id:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}'
       - 'GET /part/api/v1/products/search/{id:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}/suppliers'
       - GET /part/api/v1/attributes            # names for the product page specs table
+      - GET /part/api/v1/enquiries/matching-shops/count   # "N shops may have this" (section 9)
       # make / model ids are UUIDs
       - 'GET /part/api/v1/models/make/{id:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}'
       - 'GET /part/api/v1/engines/model/{id:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}'
@@ -38,7 +39,7 @@ Gateway change (`gateway-api/src/main/resources/application.yml`, `public-paths`
 - Through the gateway: `https://<gateway-host>/part/api/v1/...`. Below, paths start at `/api/v1`
   (the website's `partApi` base is `VITE_PART_URL`, i.e. `<gateway>/part`).
 - Search, product pages, dropdown data, images: **no login** (after section 0).
-- Cart and orders: **login required** (JWT), see section 8.
+- Cart, orders and part enquiries: **login required** (JWT), see sections 8 and 9.
 
 ## 2. Endpoint map
 
@@ -53,6 +54,8 @@ Gateway change (`gateway-api/src/main/resources/application.yml`, `public-paths`
 | Simple lists | `by-name`, `by-other-names`, `by-tag`, `by-category`, `by-manufacturer` | array |
 | Dropdown data | `GET /api/v1/makes`, `GET /api/v1/models/make/{makeId}`, `GET /api/v1/categories/toplevelcategories`, `GET /api/v1/manufacturers` | GenericResponse (`body`) |
 | Attribute names (specs table) | `GET /api/v1/attributes` | GenericResponse (`body`) |
+| Nothing found: how many shops could help | `GET /api/v1/enquiries/matching-shops/count?makeId=...` | `{ "count": n }` |
+| Nothing found: request the part (login) | `POST /api/v1/enquiries/owner/{ownerId}` | the enquiry |
 
 Use **`/paginated` for every listing page**. The `by-*` endpoints return everything that matches, with
 no paging, and are only for small lookups.
@@ -240,7 +243,66 @@ query parameter is no longer used.
 `ONLINE` responses include `payment.paymentUrl` / `qrCodeImage`; redirect the user there and then poll
 `GET /api/v1/orders/{orderId}` for the result. Not logged in → send the visitor to sign-in, then retry.
 
-## 9. Example code (axios)
+## 9. Nothing found: "Request this part" (part enquiry)
+
+When a search returns no products, or a product page has no offers (`availableSupplierCount` is 0 /
+`/{id}/suppliers` answers 404), don't stop at "No results". Let the customer send a **part enquiry**: it goes to
+the shops whose range covers their vehicle, the shops quote, and the customer picks one. The full API is in
+`docs/part-enquiry-integration.md`; this is the website part.
+
+**When to show it**
+- Empty result on `/paginated`, `/advanced` or `by-vehicle` while a make is selected.
+- A product page with no shop offering it.
+- It needs a make (`makeId`): if the customer hasn't picked a vehicle yet, ask for make (and ideally model and
+  year) first.
+
+**1. Show how many shops could help** (public, no login):
+```
+GET /api/v1/enquiries/matching-shops/count?makeId=e123...&modelId=b34d...&year=2019&categoryId=CAT-LIGHTS&conditions=USED
+-> { "count": 12 }
+```
+`count > 0`: "Can't find it? 12 shops may have this part. Request it." `count == 0`: no shop covers this
+vehicle yet; hide the button (sending would be rejected with 409).
+
+**2. Prefill the form from the search** and let the customer add a description, part number and photos:
+
+| Enquiry field | From |
+|---|---|
+| `makeId`, `modelId`, `year` | the vehicle filters |
+| `categoryId` | the category filter |
+| `conditions` | the condition filter |
+| `partNumber` | the part-number search box, if used |
+| `productId` | the product page, when starting there |
+| `description` | the keyword typed, as a starting point |
+| `imageIds` | photos uploaded first with the existing upload API (max 5) |
+
+At least one of `productId`, `partNumber` or `description` is required.
+
+**3. Send it** (login required; `X-Auto-Adda-Id` must be the logged-in customer, as for the cart):
+```
+POST /api/v1/enquiries/owner/{ownerId}
+```
+201 returns the enquiry with `recipientCount` and `expiresAt` (shops can quote for 48 h). Not logged in →
+sign-in, then send. 409 means no shop covers it or the customer already has 5 open enquiries; show `message`.
+
+**4. "My requests" page:** `GET /api/v1/enquiries/owner/{ownerId}` lists enquiries with their quotes (price,
+condition, shop). Accepting a quote (`POST .../{enquiryId}/quotes/{quoteId}/accept`) returns an
+`inventoryPartId`; add it to the cart exactly like an offer from search (section 8).
+
+```js
+const { data } = await partApi.get('/api/v1/enquiries/matching-shops/count', {
+  params: { makeId, modelId, year, categoryId, conditions },
+  paramsSerializer: { indexes: null },          // conditions=USED&conditions=GENUINE
+});
+if (data.count > 0) showRequestPartButton(data.count);
+
+await partApi.post(`/api/v1/enquiries/owner/${ownerId}`, {
+  makeId, modelId, year, categoryId, conditions,
+  partNumber, description, imageIds,
+});
+```
+
+## 10. Example code (axios)
 
 ```js
 import { partApi } from "@/api/axiosInstance";
@@ -283,26 +345,28 @@ export const addToCart = (ownerId, offer, quantity = 1) =>
 For the search box: debounce typing (~400 ms) and cancel the previous request (`AbortController`) so an old
 response can't overwrite a newer one.
 
-## 10. Performance
+## 11. Performance
 
 - `includeSuppliers=true` loads offers per product; use it on the product page, not on large listings
   (show `availableSupplierCount` there instead, e.g. "3 shops").
 - Keep `size` ≤ 20-30 for listings (max 50).
 - Don't call `GET /api/v1/products/search` (all products) or `by-*` endpoints for listing pages.
 
-## 11. Errors
+## 12. Errors
 
 | Status | When | Show |
 |---|---|---|
 | 400 | `size` > 50 or < 1 (`Validation failed: size: ...`), bad `conditions` value, `by-vehicle` with no filter | fix the request; generic "Invalid search" |
 | 404 | `by-part-number` miss, unknown product id, `/{id}/suppliers` with nothing in stock | "Not found" / "Out of stock" |
-| 401 | cart/order calls without login (or a search endpoint not yet public, section 0) | sign-in |
+| 401 | cart/order/enquiry calls without login (or a search endpoint not yet public, section 0) | sign-in |
+| 403 | cart/order/enquiry call where `X-Auto-Adda-Id` isn't the `ownerId` in the path | sign-in again |
+| 409 | enquiry: no shop covers the vehicle and part, or 5 enquiries already open | show `message` |
 | 500 | `sortBy` other than `name`, `partNumber`, `supplierCount` | don't send other values |
 
 Error bodies from part-api are `{ "status": "failed", "code": "...", "message": "..." }`;
 `by-part-number`, `/{id}` and `/{id}/suppliers` 404s have an empty body.
 
-## 12. Known limitations
+## 13. Known limitations
 
 - No single "search everything" keyword field (name / other names / tag / part number are separate filters).
 - Every listed model fits every listed year (no per-model year ranges yet).
