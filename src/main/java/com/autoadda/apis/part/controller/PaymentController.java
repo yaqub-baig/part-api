@@ -1,5 +1,6 @@
 package com.autoadda.apis.part.controller;
 
+import com.autoadda.apis.part.util.CallerIdentity;
 import com.autoadda.apis.part.request.PaymentCallbackRequest;
 import com.autoadda.apis.part.response.GenericResponse;
 import com.autoadda.apis.part.response.OrderResponse;
@@ -41,8 +42,9 @@ public class PaymentController {
 
     /** Lightweight status for the frontend to poll after the redirect. */
     @GetMapping("/orders/{orderId}/status")
-    public ResponseEntity<Map<String, Object>> status(@PathVariable Integer orderId) {
-        OrderResponse order = orderService.getOrder ( orderId );
+    public ResponseEntity<Map<String, Object>> status(@RequestHeader(CallerIdentity.HEADER) String autoAddaId,
+                                                      @PathVariable Integer orderId) {
+        OrderResponse order = orderService.getOrder ( orderId, CallerIdentity.callerId ( autoAddaId ) );
         Map<String, Object> body = new LinkedHashMap<> ( );
         body.put ( "orderId", order.getOrderId ( ) );
         body.put ( "orderStatus", order.getStatus ( ) );
