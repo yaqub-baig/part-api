@@ -44,6 +44,16 @@ public class PartEnquiryController {
         return Map.of("count", partEnquiryService.countMatchingShops(makeId, modelId, year, categoryId, conditions));
     }
 
+    @Operation(summary = "Shops covering this vehicle and part (up to 50), to choose from with supplierIds")
+    @GetMapping("/matching-shops")
+    public List<Map<String, Object>> matchingShops(@RequestParam String makeId,
+                                                   @RequestParam(required = false) String modelId,
+                                                   @RequestParam(required = false) Integer year,
+                                                   @RequestParam(required = false) String categoryId,
+                                                   @RequestParam(required = false) List<ProductCondition> conditions) {
+        return partEnquiryService.matchingShops(makeId, modelId, year, categoryId, conditions);
+    }
+
     // ---------------------------------------------------------------- customer
 
     @Operation(summary = "Send a part enquiry to the shops covering the vehicle and part")

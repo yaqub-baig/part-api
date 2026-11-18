@@ -24,6 +24,7 @@ registration (`docs/shop-coverage-integration.md`).
 | Call | Notes |
 |---|---|
 | `GET /enquiries/matching-shops/count?makeId=&modelId=&year=&categoryId=&conditions=USED&conditions=GENUINE` | `{ "count": 12 }`; makeId required |
+| `GET /enquiries/matching-shops?makeId=&modelId=&year=&categoryId=&conditions=` | up to 50 shops covering it, to choose from: `[{ supplierId, name, brandName, area, city, logoFilePath }]` (login) |
 | `POST /enquiries/owner/{vehicleOwnerId}` | create, 201; body below |
 | `GET /enquiries/owner/{vehicleOwnerId}?status=OPEN` | my enquiries, newest first, with quotes |
 | `GET /enquiries/owner/{vehicleOwnerId}/{enquiryId}` | one enquiry, quotes cheapest first |
@@ -48,6 +49,10 @@ Create body:
 - Describe the part with at least one of `productId` (when starting from a product page), `partNumber`, `description`.
 - `conditions` empty = any. `imageIds`: up to 5, uploaded first through the existing upload API.
 - Max 5 open enquiries per customer.
+- **Choosing shops (optional):** `"supplierIds": [5, 9]` sends the enquiry only to those shops (up to 20). Any
+  active shop can be chosen, also one whose coverage doesn't include the car (e.g. a shop the buyer knows); unknown,
+  inactive or blocked shops → 400. Without `supplierIds` (or with `[]`) it goes to up to 20 matching shops.
+  Pick from `GET /enquiries/matching-shops` or from `GET /suppliers/all`. The response says `shopsChosen: true`.
 
 Accept response:
 ```json
@@ -80,7 +85,7 @@ Quote body:
 
 Response fields shared by both views: `id`, `status`, `makeId/makeName`, `modelId/modelName`, `year`,
 `categoryId/categoryName`, `productId`, `partNumber`, `description`, `conditions`, `images[{id, filePath}]`
-(download `GET /api/v1/uploads/{filePath}`), `recipientCount`, `createdAt`, `expiresAt`, `closedAt`.
+(download `GET /api/v1/uploads/{filePath}`), `recipientCount`, `shopsChosen`, `createdAt`, `expiresAt`, `closedAt`.
 Customer view adds `quotes[]` and `acceptedQuoteId`; shop view adds `myStatus`, `myQuote`, `vehicleOwnerId`.
 
 ## Errors

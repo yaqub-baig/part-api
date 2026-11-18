@@ -275,6 +275,7 @@ vehicle yet; hide the button (sending would be rejected with 409).
 | `productId` | the product page, when starting there |
 | `description` | the keyword typed, as a starting point |
 | `imageIds` | photos uploaded first with the existing upload API (max 5) |
+| `supplierIds` | optional: only these shops (up to 20), picked from `GET /api/v1/enquiries/matching-shops?...` (same filters as the count) |
 
 At least one of `productId`, `partNumber` or `description` is required.
 

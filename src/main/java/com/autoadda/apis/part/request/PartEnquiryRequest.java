@@ -28,4 +28,9 @@ public class PartEnquiryRequest {
      * are filled from it when not sent.
      */
     private Integer partRequestItemId;
+    /**
+     * Optional: send only to these shops (up to 20, any active shop, e.g. the garage's usual suppliers).
+     * Left out or empty: sent to the shops whose coverage matches the vehicle and part.
+     */
+    private List<Integer> supplierIds;
 }
