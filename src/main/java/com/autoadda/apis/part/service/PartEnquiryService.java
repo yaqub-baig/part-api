@@ -124,7 +124,7 @@ public class PartEnquiryService {
         }
         enquiry.setBuyerType(BuyerType.CUSTOMER);
         enquiry.setVehicleOwnerId(vehicleOwnerId);
-        return send(enquiry);
+        return send(enquiry, request.getSupplierIds());
     }
 
     /**
@@ -153,7 +153,7 @@ public class PartEnquiryService {
             enquiry.setJobCardId(job.getJobCardId());
             enquiry.setPartRequestItemId(job.getItemId());
         }
-        return send(enquiry);
+        return send(enquiry, request.getSupplierIds());
     }
 
     /** Fills what the garage didn't send from its part request item: vehicle (names looked up), part number, text. */
@@ -187,16 +187,17 @@ public class PartEnquiryService {
         }
     }
 
-    /** Routes a validated enquiry to the matching shops and saves it. */
-    private PartEnquiryResponse send(PartEnquiry enquiry) {
-
-        List<Supplier> shops = supplierRepository.findAll(
+    /** Routes a validated enquiry to the chosen shops, or else to the matching ones, and saves it. */
+    private PartEnquiryResponse send(PartEnquiry enquiry, List<Integer> supplierIds) {
+        boolean chosen = supplierIds != null && !supplierIds.isEmpty();
+        List<Supplier> shops = chosen ? chosenShops(supplierIds) : supplierRepository.findAll(
                 matching(enquiry.getMakeId(), enquiry.getModelId(), enquiry.getYear(), enquiry.getCategoryId(),
                         enquiry.getConditions()),
                 PageRequest.of(0, MAX_RECIPIENTS, Sort.by("id"))).getContent();
         if (shops.isEmpty()) {
             throw new ConflictException("No shop covers this vehicle and part yet");
         }
+        enquiry.setShopsChosen(chosen);
 
         LocalDateTime now = LocalDateTime.now();
         enquiry.setStatus(EnquiryStatus.OPEN);
@@ -216,6 +217,53 @@ public class PartEnquiryService {
         log.info("Enquiry {} from {} {} sent to {} shops", saved.getId(), saved.getBuyerType(),
                 saved.getBuyerType() == BuyerType.GARAGE ? saved.getGarageId() : saved.getVehicleOwnerId(), shops.size());
         return customerView(saved, List.of());
+    }
+
+    /** The shops the buyer picked: known, active and not blocked; at most MAX_RECIPIENTS. Coverage isn't required. */
+    private List<Supplier> chosenShops(List<Integer> supplierIds) {
+        Set<Integer> ids = supplierIds.stream().filter(Objects::nonNull).collect(Collectors.toCollection(LinkedHashSet::new));
+        if (ids.isEmpty()) {
+            throw new ValidationException("supplierIds must not contain empty values");
+        }
+        if (ids.size() > MAX_RECIPIENTS) {
+            throw new ValidationException("Choose at most " + MAX_RECIPIENTS + " shops");
+        }
+        Map<Integer, Supplier> found = supplierRepository.findAllById(ids).stream()
+                .collect(Collectors.toMap(Supplier::getId, Function.identity()));
+        List<Supplier> shops = new java.util.ArrayList<>();
+        for (Integer id : ids) {
+            Supplier shop = found.get(id);
+            if (shop == null) {
+                throw new ValidationException("Unknown shop id " + id);
+            }
+            if (!shop.isActive() || (shop.getAccountStatus() != null
+                    && ShopMatchSpecification.EXCLUDED_STATUSES.contains(shop.getAccountStatus()))) {
+                throw new ValidationException("Shop '" + shop.getName() + "' isn't taking enquiries");
+            }
+            shops.add(shop);
+        }
+        return shops;
+    }
+
+    /** Shops covering this vehicle / part, to choose from (same matching as automatic sending), up to 50. */
+    public List<Map<String, Object>> matchingShops(String makeId, String modelId, Integer year, String categoryId,
+                                                   Collection<ProductCondition> conditions) {
+        if (isBlank(makeId)) {
+            throw new ValidationException("makeId is required");
+        }
+        return supplierRepository.findAll(matching(makeId.trim(), modelId, year, categoryId, conditions),
+                        PageRequest.of(0, 50, Sort.by("id"))).getContent().stream()
+                .map(shop -> {
+                    Map<String, Object> view = new java.util.LinkedHashMap<>();
+                    view.put("supplierId", shop.getId());
+                    view.put("name", shop.getName());
+                    view.put("brandName", shop.getSupplierBrandName());
+                    view.put("area", shop.getLocation() == null ? null : shop.getLocation().getArea());
+                    view.put("city", shop.getLocation() == null ? null : shop.getLocation().getCity());
+                    view.put("logoFilePath", shop.getShopLogo() == null ? null : shop.getShopLogo().getFilePath());
+                    return view;
+                })
+                .toList();
     }
 
     private PartEnquiry validateNewEnquiry(PartEnquiryRequest request) {
@@ -703,6 +751,7 @@ public class PartEnquiryService {
                         .map(id -> PartEnquiryResponse.Image.builder().id(id).filePath(lookups.images().get(id)).build())
                         .toList())
                 .recipientCount(e.getRecipientCount())
+                .shopsChosen(Boolean.TRUE.equals(e.getShopsChosen()))
                 .createdAt(e.getCreatedAt())
                 .expiresAt(e.getExpiresAt())
                 .closedAt(e.getClosedAt())

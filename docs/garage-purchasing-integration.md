@@ -54,7 +54,9 @@ GET /garage/api/v1/part-requests/item/{itemId}/purchase-context
 | `POST /{enquiryId}/cancel` | |
 | `POST /{enquiryId}/quotes/{quoteId}/accept` | returns `inventoryPartId` → order it (section 5) |
 
-From a job card the body can be just `{ "partRequestItemId": 11 }`. If the car's brand isn't in the make list,
+From a job card the body can be just `{ "partRequestItemId": 11 }`. To send it only to the garage's own
+suppliers add `"supplierIds": [5, 9]` (up to 20 active shops; list covering shops with
+`GET /part/api/v1/enquiries/matching-shops?makeId=...`). Without it the enquiry goes to up to 20 matching shops. If the car's brand isn't in the make list,
 the call answers 400 "choose the make": send `makeId` (and `modelId`) from the dropdowns. A garage can
 have up to 20 open enquiries.
 

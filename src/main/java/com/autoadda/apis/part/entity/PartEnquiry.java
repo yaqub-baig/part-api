@@ -93,6 +93,9 @@ public class PartEnquiry {
 
     @Column(name = "recipient_count")
     private Integer recipientCount;
+    /** True when the buyer chose the shops; false / null when they were matched by coverage. */
+    @Column(name = "shops_chosen")
+    private Boolean shopsChosen;
     @Column(name = "accepted_quote_id")
     private Integer acceptedQuoteId;
 

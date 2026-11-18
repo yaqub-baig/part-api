@@ -50,6 +50,8 @@ public class PartEnquiryResponse {
     private List<ProductCondition> conditions;
     private List<Image> images;
     private Integer recipientCount;
+    /** True when the buyer chose the shops instead of matching by coverage. */
+    private Boolean shopsChosen;
     private LocalDateTime createdAt;
     private LocalDateTime expiresAt;
     private LocalDateTime closedAt;
