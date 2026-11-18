@@ -275,9 +275,26 @@ vehicle yet; hide the button (sending would be rejected with 409).
 | `productId` | the product page, when starting there |
 | `description` | the keyword typed, as a starting point |
 | `imageIds` | photos uploaded first with the existing upload API (max 5) |
-| `supplierIds` | optional: only these shops (up to 20), picked from `GET /api/v1/enquiries/matching-shops?...` (same filters as the count) |
+| `supplierIds` | optional: only the shops the customer picked (step 2b) |
 
 At least one of `productId`, `partNumber` or `description` is required.
+
+**2b. Let the customer choose shops (optional, login required)**
+
+Default is "Send to all matching shops" (no `supplierIds`). Offer "Choose shops" as a second option:
+
+```
+GET /api/v1/enquiries/matching-shops?makeId=e123...&modelId=b34d...&year=2019&categoryId=CAT-LIGHTS&conditions=USED
+-> [ { "supplierId": 5, "name": "Al Noor Auto Parts", "brandName": "Al Noor", "area": "Al Quoz",
+       "city": "Dubai", "logoFilePath": "shops/5/logo.png" }, ... ]   (up to 50, same filters as the count)
+```
+- Show a checkbox list: logo (`GET /api/v1/uploads/{logoFilePath}`), name, area / city.
+- Up to **20** shops; disable further checkboxes at 20.
+- Send the checked ids as `supplierIds`. Sending `[]` or leaving the field out means "all matching shops".
+- The enquiry reaches only those shops. The response has `shopsChosen: true` and `recipientCount` = number chosen.
+- 400 when a chosen shop has since been blocked or deactivated ("Shop '...' isn't taking enquiries"): show the
+  message, reload the list, let the customer pick again.
+- This list needs a login (unlike the count). For visitors, show the count and ask them to sign in to choose.
 
 **3. Send it** (login required; `X-Auto-Adda-Id` must be the logged-in customer, as for the cart):
 ```
@@ -297,9 +314,17 @@ const { data } = await partApi.get('/api/v1/enquiries/matching-shops/count', {
 });
 if (data.count > 0) showRequestPartButton(data.count);
 
+// optional: let the customer pick shops (logged in)
+const { data: shops } = await partApi.get('/api/v1/enquiries/matching-shops', {
+  params: { makeId, modelId, year, categoryId, conditions },
+  paramsSerializer: { indexes: null },
+});
+// ...render checkboxes; chosenIds = ids the customer ticked (max 20), [] = all matching shops
+
 await partApi.post(`/api/v1/enquiries/owner/${ownerId}`, {
   makeId, modelId, year, categoryId, conditions,
   partNumber, description, imageIds,
+  ...(chosenIds.length ? { supplierIds: chosenIds } : {}),
 });
 ```
 
