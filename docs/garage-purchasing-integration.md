@@ -54,11 +54,39 @@ GET /garage/api/v1/part-requests/item/{itemId}/purchase-context
 | `POST /{enquiryId}/cancel` | |
 | `POST /{enquiryId}/quotes/{quoteId}/accept` | returns `inventoryPartId` → order it (section 5) |
 
-From a job card the body can be just `{ "partRequestItemId": 11 }`. To send it only to the garage's own
-suppliers add `"supplierIds": [5, 9]` (up to 20 active shops; list covering shops with
-`GET /part/api/v1/enquiries/matching-shops?makeId=...`). Without it the enquiry goes to up to 20 matching shops. If the car's brand isn't in the make list,
+From a job card the body can be just `{ "partRequestItemId": 11 }`. If the car's brand isn't in the make list,
 the call answers 400 "choose the make": send `makeId` (and `modelId`) from the dropdowns. A garage can
 have up to 20 open enquiries.
+
+### Choosing shops (panel)
+
+The "Request part" dialog has a **Send to** choice:
+
+| Option | What the panel does |
+|---|---|
+| All matching shops (default) | send without `supplierIds`; up to 20 shops covering the car, part and condition |
+| Shops for this car | `GET /part/api/v1/enquiries/matching-shops?makeId=&modelId=&year=&categoryId=&conditions=` → checkbox list (name, area, city, logo) |
+| Our suppliers | the garage's usual shops, picked from `GET /part/api/v1/suppliers/all` (any active shop, even one not covering this car) |
+
+- Send the ticked shops as `"supplierIds": [5, 9]`; at most **20**, so disable more ticks at 20.
+- Keep the garage's usual suppliers in the panel (e.g. saved per garage) to tick them in one click; the backend
+  doesn't store a favourites list yet.
+- The enquiry response has `shopsChosen: true` and `recipientCount`; show "Sent to 3 chosen shops".
+- 400 "Shop '...' isn't taking enquiries" (blocked or deactivated since it was picked) or "Unknown shop id":
+  show the message and refresh the list.
+
+```js
+const shops = (await partApi.get('/api/v1/enquiries/matching-shops', {
+  params: { makeId, modelId, year, categoryId, conditions },
+  paramsSerializer: { indexes: null },
+})).data;
+
+await partApi.post(`/api/v1/garages/${garageId}/enquiries`, {
+  partRequestItemId,                       // from the job card, or makeId/modelId/year for stock
+  conditions,
+  ...(chosenIds.length ? { supplierIds: chosenIds } : {}),
+});
+```
 
 ## 5. Garage orders (`/part/api/v1/garages/{garageId}/orders`)
 
