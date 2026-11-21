@@ -1,5 +1,7 @@
 package com.autoadda.apis.part.controller;
 
+import com.autoadda.apis.part.entity.DeliveryAddress;
+import com.autoadda.apis.part.request.CheckoutRequest;
 import com.autoadda.apis.part.util.CallerIdentity;
 import com.autoadda.apis.part.response.OrderResponse;
 import com.autoadda.apis.part.service.OrderService;
@@ -26,9 +28,11 @@ public class OrderController {
     @PostMapping("/place/{vehicleOwnerId}")
     public ResponseEntity<OrderResponse> placeOrder(@RequestHeader(CallerIdentity.HEADER) String autoAddaId,
                                                     @PathVariable Integer vehicleOwnerId,
-                                                    @RequestParam(defaultValue = "COD") PaymentMethod paymentMethod) {
+                                                    @RequestParam(defaultValue = "COD") PaymentMethod paymentMethod,
+                                                    @RequestBody(required = false) CheckoutRequest body) {
         return ResponseEntity.status ( HttpStatus.CREATED )
-                .body ( orderService.placeOrder ( CallerIdentity.requireSelf ( autoAddaId, vehicleOwnerId ), paymentMethod ) );
+                .body ( orderService.placeOrder ( CallerIdentity.requireSelf ( autoAddaId, vehicleOwnerId ), paymentMethod,
+                        address ( body ) ) );
     }
 
     /** Buy now: order a single part directly, bypassing the cart. */
@@ -36,10 +40,15 @@ public class OrderController {
     public ResponseEntity<OrderResponse> buyNow(@RequestHeader(CallerIdentity.HEADER) String autoAddaId,
                                                 @PathVariable Integer vehicleOwnerId, @RequestParam Integer partId,
                                                 @RequestParam(defaultValue = "1") int quantity,
-                                                @RequestParam(defaultValue = "COD") PaymentMethod paymentMethod) {
+                                                @RequestParam(defaultValue = "COD") PaymentMethod paymentMethod,
+                                                @RequestBody(required = false) CheckoutRequest body) {
         return ResponseEntity.status ( HttpStatus.CREATED )
                 .body ( orderService.buyNow ( CallerIdentity.requireSelf ( autoAddaId, vehicleOwnerId ), partId, quantity,
-                        paymentMethod ) );
+                        paymentMethod, address ( body ) ) );
+    }
+
+    private static DeliveryAddress address(CheckoutRequest body) {
+        return body == null ? null : body.getDeliveryAddress ( );
     }
 
     /** Start a new online payment attempt after the previous one failed. */

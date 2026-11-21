@@ -220,6 +220,7 @@ public class SupplierOrderService {
                 .garageAddress(garage == null ? null : garage.getGarageAddress())
                 .garageMapLink(garage == null ? null : garage.getGarageMapLink())
                 .notes(order.getNotes())
+                .deliveryAddress(order.getDeliveryAddress())
                 .items(items)
                 .shopTotal(total)
                 .build();

@@ -39,6 +39,9 @@ public class Order {
     private GarageSnapshot garage;
     @Column(name = "notes", length = 1000)
     private String notes;
+    /** Customer orders: where to deliver (garage orders deliver to the garage snapshot). */
+    @Embedded
+    private DeliveryAddress deliveryAddress;
     /** Paid online, then lines rejected by a shop: amount to refund to the buyer. */
     @Column(name = "refund_amount")
     private Double refundAmount;
