@@ -43,8 +43,8 @@ class CustomerIdentityTest {
 
 	@Test
 	void placingOrListingOrdersForAnotherCustomerIsForbidden() {
-		assertThrows(ForbiddenException.class, () -> orders.placeOrder("2", 1, PaymentMethod.COD));
-		assertThrows(ForbiddenException.class, () -> orders.buyNow("2", 1, 10, 1, PaymentMethod.COD));
+		assertThrows(ForbiddenException.class, () -> orders.placeOrder("2", 1, PaymentMethod.COD, null));
+		assertThrows(ForbiddenException.class, () -> orders.buyNow("2", 1, 10, 1, PaymentMethod.COD, null));
 		assertThrows(ForbiddenException.class, () -> orders.getOrdersForOwner("2", 1));
 		verifyNoInteractions(orderService);
 	}

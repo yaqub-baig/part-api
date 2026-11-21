@@ -108,7 +108,7 @@ public class GarageOrderService {
         }
 
         Order order = orderService.createOrder(new OrderBuyer(BuyerType.GARAGE, null, garageId, buyer.userId(),
-                buyer.snapshot(), notes), lines, request.getPaymentMethod());
+                buyer.snapshot(), notes, null), lines, request.getPaymentMethod());
         PaymentInitiationResponse payment = orderService.startPaymentIfOnline(order);
         order.getItems().forEach(line -> garageOrderSync.send(line, MarketplaceStep.Stage.ORDERED, buyer.userId()));
         orderRepository.save(order);

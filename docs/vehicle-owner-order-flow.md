@@ -79,6 +79,39 @@ Cart response:
 | Order the whole cart | `POST /api/v1/orders/place/{ownerId}?paymentMethod=COD` (or `ONLINE`) |
 | Buy one offer now (cart untouched) | `POST /api/v1/orders/buy-now/{ownerId}?partId={inventoryPartId}&quantity=1&paymentMethod=COD` |
 
+Both need a **delivery address** in the body (400 without it):
+```json
+{
+  "deliveryAddress": {
+    "contactName": "Sara Khan",
+    "phone": "050 123 4567",
+    "addressLine1": "Villa 12, Street 4",
+    "addressLine2": "Near Mall of the Emirates",
+    "area": "Al Barsha",
+    "city": "Dubai",
+    "emirate": "Dubai",
+    "mapLink": "https://maps.google.com/?q=25.11,55.20",
+    "latitude": 25.11,
+    "longitude": 55.20,
+    "notes": "Call on arrival"
+  }
+}
+```
+| Field | Rule |
+|---|---|
+| `contactName` | required, max 100 |
+| `phone` | required, a UAE number (`0501234567`, `+971501234567`, `00971...`, `04 123 4567`; spaces, dashes and brackets are fine); saved as `+971501234567` |
+| `addressLine1` | required, max 200 (building / villa, street) |
+| `area`, `city` | required, max 100 each |
+| `addressLine2`, `emirate` | optional |
+| `mapLink` | optional (a map pin link, max 1000) |
+| `latitude`, `longitude` | optional, both or neither |
+| `notes` | optional, max 500 ("call on arrival", gate code) |
+
+Prefill name and phone from the customer's profile and let them confirm. The address is stored with the order
+as entered; editing it later in the profile doesn't change past orders. Shops see it in their order inbox
+(`deliveryAddress`), and it comes back on every order response.
+
 What happens:
 - Stock of every line is checked and **deducted** in one step; if one line is short, nothing is ordered (409).
 - `place` empties the cart once the order exists. With ONLINE, if starting the payment fails, nothing is ordered
@@ -97,6 +130,8 @@ Response (201), the same `OrderResponse` shape everywhere:
       "unitPrice": 120.0, "quantity": 3, "lineTotal": 360.0, "condition": "GENUINE",
       "fulfilmentStatus": "PENDING" }
   ],
+  "deliveryAddress": { "contactName": "Sara Khan", "phone": "+971501234567", "addressLine1": "Villa 12, Street 4",
+                       "area": "Al Barsha", "city": "Dubai", "notes": "Call on arrival" },
   "payment": null
 }
 ```
@@ -183,7 +218,7 @@ have. If a shop rejects lines:
 
 | Status | When | Show |
 |---|---|---|
-| 400 | quantity < 1, missing parameter | fix the input |
+| 400 | quantity < 1, missing parameter, delivery address missing or invalid (`message` names the field, e.g. "deliveryAddress.phone must be a UAE number") | fix the input |
 | 401 | not logged in | sign-in, then retry |
 | 403 | `X-Auto-Adda-Id` isn't `ownerId` | sign in again |
 | 404 | unknown offer / order, or someone else's order; removing an item not in the cart | "Not found" |
@@ -197,9 +232,10 @@ have. If a shop rejects lines:
 await partApi.post(`/api/v1/cart/${ownerId}/add`, null, { params: { partId: offer.inventoryPartId, quantity: 1 } });
 
 // checkout
-const { data: order } = await partApi.post(`/api/v1/orders/place/${ownerId}`, null, {
-  params: { paymentMethod },                       // 'COD' | 'ONLINE'
-});
+const { data: order } = await partApi.post(`/api/v1/orders/place/${ownerId}`,
+  { deliveryAddress },                             // { contactName, phone, addressLine1, area, city, ... }
+  { params: { paymentMethod } },                   // 'COD' | 'ONLINE'
+);
 
 if (order.payment?.paymentUrl) {
   window.location.href = order.payment.paymentUrl; // web; apps: show order.payment.qrCodeImage
@@ -228,4 +264,7 @@ window.location.href = retry.payment.paymentUrl;
 - No delivery fee, coupons or VAT lines yet: `totalAmount` is the sum of the lines.
 - Refunds (late payments, paid orders cancelled or partly rejected) are done manually.
 - The customer can't confirm receipt; the shop marks customer orders delivered.
+- No saved address book yet: the frontend keeps the customer's addresses (or prefills from the profile).
+- Delivery only: **self pickup** at the shop is planned (it will add a delivery method, with the address
+  optional for pickup orders).
 - Accepted enquiry quotes create a normal offer, which other customers can also see.

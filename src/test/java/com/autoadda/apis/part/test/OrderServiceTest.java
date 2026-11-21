@@ -61,6 +61,9 @@ class OrderServiceTest {
 	@InjectMocks
 	private OrderService service;
 
+	static final com.autoadda.apis.part.entity.DeliveryAddress ADDRESS = com.autoadda.apis.part.entity.DeliveryAddress.builder()
+			.contactName("Sara Khan").phone("050 123 4567").addressLine1("Villa 12, Street 4").area("Al Barsha").city("Dubai").build();
+
 	private InventoryPart part(int id, int stock, double price) {
 		return InventoryPart.builder().id(id).partName("Part " + id).quantityInStock(stock).unitPrice(price)
 				.isActive(true).build();
@@ -88,7 +91,7 @@ class OrderServiceTest {
 		when(partRepo.findById(1)).thenReturn(Optional.of(part));
 		when(orderRepo.save(any())).thenAnswer(i -> i.getArguments()[0]);
 
-		OrderResponse order = service.placeOrder(1, PaymentMethod.COD);
+		OrderResponse order = service.placeOrder(1, PaymentMethod.COD, ADDRESS);
 
 		assertEquals(Status.CONFIRMED, order.getStatus());
 		assertEquals(PaymentStatus.PENDING, order.getPaymentStatus());
@@ -109,7 +112,7 @@ class OrderServiceTest {
 		when(orderRepo.save(any())).thenAnswer(i -> i.getArguments()[0]);
 		when(paymentService.initiate(any())).thenReturn(PaymentInitiationResponse.builder().paymentUrl("https://pay/x").build());
 
-		OrderResponse order = service.placeOrder(1, PaymentMethod.ONLINE);
+		OrderResponse order = service.placeOrder(1, PaymentMethod.ONLINE, ADDRESS);
 
 		assertEquals(Status.PENDING_PAYMENT, order.getStatus());
 		assertNotNull(order.getPayment());
@@ -127,7 +130,7 @@ class OrderServiceTest {
 		when(orderRepo.save(any())).thenAnswer(i -> i.getArguments()[0]);
 		when(paymentService.initiate(any())).thenThrow(new PaymentGatewayException("down"));
 
-		assertThrows(PaymentGatewayException.class, () -> service.placeOrder(1, PaymentMethod.ONLINE));
+		assertThrows(PaymentGatewayException.class, () -> service.placeOrder(1, PaymentMethod.ONLINE, ADDRESS));
 		// cart is cleared only after payment starts; the @Transactional rollback undoes the stock change in the DB
 		assertEquals(1, cart.getItems().size());
 		verify(cartRepo, never()).save(any());
@@ -139,14 +142,14 @@ class OrderServiceTest {
 		when(cartRepo.findByVehicleOwnerId(1)).thenReturn(Optional.of(cartWith(part, 3)));
 		when(partRepo.findById(1)).thenReturn(Optional.of(part));
 
-		assertThrows(ConflictException.class, () -> service.placeOrder(1, PaymentMethod.COD));
+		assertThrows(ConflictException.class, () -> service.placeOrder(1, PaymentMethod.COD, ADDRESS));
 		verify(orderRepo, never()).save(any());
 	}
 
 	@Test
 	void placeOrderFailsWhenCartEmpty() {
 		when(cartRepo.findByVehicleOwnerId(1)).thenReturn(Optional.of(ShoppingCart.builder().vehicleOwnerId(1).build()));
-		assertThrows(ConflictException.class, () -> service.placeOrder(1, PaymentMethod.COD));
+		assertThrows(ConflictException.class, () -> service.placeOrder(1, PaymentMethod.COD, ADDRESS));
 	}
 
 	@Test
@@ -155,7 +158,7 @@ class OrderServiceTest {
 		when(partRepo.findById(5)).thenReturn(Optional.of(part));
 		when(orderRepo.save(any())).thenAnswer(i -> i.getArguments()[0]);
 
-		OrderResponse order = service.buyNow(7, 5, 2, PaymentMethod.COD);
+		OrderResponse order = service.buyNow(7, 5, 2, PaymentMethod.COD, ADDRESS);
 
 		assertEquals(7, order.getVehicleOwnerId());
 		assertEquals(199.0, order.getTotalAmount());

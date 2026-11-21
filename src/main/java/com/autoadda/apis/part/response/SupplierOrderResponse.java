@@ -35,6 +35,8 @@ public class SupplierOrderResponse {
     private String garageAddress;
     private String garageMapLink;
     private String notes;
+    /** Customer orders: deliver here (garage orders: the garage fields above). */
+    private com.autoadda.apis.part.entity.DeliveryAddress deliveryAddress;
     private List<OrderItemResponse> items;
     /** Sum of this shop's lines that weren't rejected. */
     private Double shopTotal;

@@ -1,5 +1,6 @@
 package com.autoadda.apis.part.service;
 
+import com.autoadda.apis.part.entity.DeliveryAddress;
 import com.autoadda.apis.part.entity.GarageSnapshot;
 import com.autoadda.apis.part.entity.InventoryPart;
 import com.autoadda.apis.part.entity.InventoryTransaction;
@@ -51,9 +52,11 @@ public class OrderService {
 
     /** Who the order is for. Customer: vehicleOwnerId. Garage: garageId, the user acting for it and its snapshot. */
     public record OrderBuyer(BuyerType type, Integer vehicleOwnerId, Integer garageId, Integer placedByUserId,
-                             GarageSnapshot garage, String notes) {
-        public static OrderBuyer customer(Integer vehicleOwnerId) {
-            return new OrderBuyer ( BuyerType.CUSTOMER, vehicleOwnerId, null, null, null, null );
+                             GarageSnapshot garage, String notes, DeliveryAddress deliveryAddress) {
+        /** A customer order delivered to {@code address} (validated and cleaned here). */
+        public static OrderBuyer customer(Integer vehicleOwnerId, DeliveryAddress address) {
+            return new OrderBuyer ( BuyerType.CUSTOMER, vehicleOwnerId, null, null, null, null,
+                    DeliveryAddresses.validated ( address ) );
         }
     }
 
@@ -76,7 +79,8 @@ public class OrderService {
      * ONLINE orders also start a gateway payment; if that fails everything rolls back and the cart is kept.
      */
     @Transactional
-    public OrderResponse placeOrder(Integer vehicleOwnerId, PaymentMethod paymentMethod) {
+    public OrderResponse placeOrder(Integer vehicleOwnerId, PaymentMethod paymentMethod, DeliveryAddress deliveryAddress) {
+        OrderBuyer buyer = OrderBuyer.customer ( vehicleOwnerId, deliveryAddress );
         ShoppingCart cart = cartRepo.findByVehicleOwnerId ( vehicleOwnerId )
                 .orElseThrow ( () -> new ResourceNotFoundException ( "Cart not found for vehicle owner " + vehicleOwnerId ) );
         if ( cart.getItems ( ).isEmpty ( ) ) {
@@ -86,7 +90,7 @@ public class OrderService {
         Map<Integer, Integer> quantities = new LinkedHashMap<> ( );
         cart.getItems ( ).forEach ( ci -> quantities.merge ( ci.getPart ( ).getId ( ), ci.getQuantity ( ), Integer::sum ) );
 
-        Order order = createOrder ( OrderBuyer.customer ( vehicleOwnerId ), lines ( quantities ), paymentMethod );
+        Order order = createOrder ( buyer, lines ( quantities ), paymentMethod );
         PaymentInitiationResponse payment = startPaymentIfOnline ( order );
 
         cart.getItems ( ).clear ( );
@@ -97,9 +101,10 @@ public class OrderService {
 
     /** "Buy now": orders a single part directly without touching the cart. */
     @Transactional
-    public OrderResponse buyNow(Integer vehicleOwnerId, Integer partId, int quantity, PaymentMethod paymentMethod) {
+    public OrderResponse buyNow(Integer vehicleOwnerId, Integer partId, int quantity, PaymentMethod paymentMethod,
+                                DeliveryAddress deliveryAddress) {
         ShoppingCartService.requirePositive ( quantity );
-        Order order = createOrder ( OrderBuyer.customer ( vehicleOwnerId ), List.of ( new OrderLine ( partId, quantity ) ), paymentMethod );
+        Order order = createOrder ( OrderBuyer.customer ( vehicleOwnerId, deliveryAddress ), List.of ( new OrderLine ( partId, quantity ) ), paymentMethod );
         return withPayment ( toResponse ( order ), startPaymentIfOnline ( order ) );
     }
 
@@ -226,7 +231,7 @@ public class OrderService {
         PaymentMethod method = paymentMethod == null ? PaymentMethod.COD : paymentMethod;
         Order order = Order.builder ( ).vehicleOwnerId ( buyer.vehicleOwnerId ( ) ).orderDate ( LocalDateTime.now ( ) )
                 .buyerType ( buyer.type ( ) ).garageId ( buyer.garageId ( ) ).placedByUserId ( buyer.placedByUserId ( ) )
-                .garage ( buyer.garage ( ) ).notes ( buyer.notes ( ) )
+                .garage ( buyer.garage ( ) ).notes ( buyer.notes ( ) ).deliveryAddress ( buyer.deliveryAddress ( ) )
                 .paymentMethod ( method )
                 .status ( method == PaymentMethod.COD ? Status.CONFIRMED : Status.PENDING_PAYMENT )
                 .paymentStatus ( method == PaymentMethod.COD ? PaymentStatus.PENDING : PaymentStatus.NOT_INITIATED )
@@ -370,6 +375,7 @@ public class OrderService {
                 .garageAddress ( garage == null ? null : garage.getGarageAddress ( ) )
                 .garageMapLink ( garage == null ? null : garage.getGarageMapLink ( ) )
                 .notes ( order.getNotes ( ) ).refundAmount ( order.getRefundAmount ( ) )
+                .deliveryAddress ( order.getDeliveryAddress ( ) )
                 .status ( order.getStatus ( ) ).orderDate ( order.getOrderDate ( ) ).cancelledAt ( order.getCancelledAt ( ) )
                 .paymentMethod ( order.getPaymentMethod ( ) ).paymentStatus ( order.getPaymentStatus ( ) )
                 .paymentExpiresAt ( order.getPaymentExpiresAt ( ) ).paymentCompletedAt ( order.getPaymentCompletedAt ( ) )

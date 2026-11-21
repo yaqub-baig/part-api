@@ -26,6 +26,8 @@ public class OrderResponse {
     private String garageAddress;
     private String garageMapLink;
     private String notes;
+    /** Customer orders: where to deliver (contact name, phone, address, map link, notes). */
+    private com.autoadda.apis.part.entity.DeliveryAddress deliveryAddress;
     /** Paid online and then lines rejected by a shop: amount to refund. */
     private Double refundAmount;
     private Status status;
