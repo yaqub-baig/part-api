@@ -55,7 +55,22 @@ public class SupplierOrderController {
         return supplierOrderService.dispatch(autoAddaId, supplierId, orderId);
     }
 
-    @Operation(summary = "Customer orders only: confirm delivery")
+    @Operation(summary = "Pickup orders: the shop's lines are packed and waiting at the shop")
+    @PostMapping("/{orderId}/ready-for-pickup")
+    public SupplierOrderResponse readyForPickup(@RequestHeader(CallerIdentity.HEADER) String autoAddaId,
+                                                @PathVariable Integer supplierId, @PathVariable Integer orderId) {
+        return supplierOrderService.readyForPickup(autoAddaId, supplierId, orderId);
+    }
+
+    @Operation(summary = "Customer pickup orders: handed over; body {\"pickupCode\": \"123456\"} from the customer")
+    @PostMapping("/{orderId}/collected")
+    public SupplierOrderResponse collected(@RequestHeader(CallerIdentity.HEADER) String autoAddaId,
+                                           @PathVariable Integer supplierId, @PathVariable Integer orderId,
+                                           @RequestBody(required = false) Map<String, String> body) {
+        return supplierOrderService.collected(autoAddaId, supplierId, orderId, body == null ? null : body.get("pickupCode"));
+    }
+
+    @Operation(summary = "Customer delivery orders only: confirm delivery")
     @PostMapping("/{orderId}/delivered")
     public SupplierOrderResponse delivered(@RequestHeader(CallerIdentity.HEADER) String autoAddaId,
                                            @PathVariable Integer supplierId, @PathVariable Integer orderId) {

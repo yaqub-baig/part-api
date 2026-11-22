@@ -79,7 +79,9 @@ Cart response:
 | Order the whole cart | `POST /api/v1/orders/place/{ownerId}?paymentMethod=COD` (or `ONLINE`) |
 | Buy one offer now (cart untouched) | `POST /api/v1/orders/buy-now/{ownerId}?partId={inventoryPartId}&quantity=1&paymentMethod=COD` |
 
-Both need a **delivery address** in the body (400 without it):
+The body says how the customer gets the parts: `"deliveryMethod": "DELIVERY"` (default) or `"PICKUP"`.
+
+**Delivery** needs a **delivery address** (400 without it):
 ```json
 {
   "deliveryAddress": {
@@ -111,6 +113,13 @@ Both need a **delivery address** in the body (400 without it):
 Prefill name and phone from the customer's profile and let them confirm. The address is stored with the order
 as entered; editing it later in the profile doesn't change past orders. Shops see it in their order inbox
 (`deliveryAddress`), and it comes back on every order response.
+
+**Self pickup** needs only who collects (400 without it):
+```json
+{ "deliveryMethod": "PICKUP",
+  "pickupContact": { "contactName": "Sara Khan", "phone": "050 123 4567", "notes": "Coming after 6pm" } }
+```
+`contactName` and a UAE `phone` are required. No delivery address is needed. See section 5b for the rest.
 
 What happens:
 - Stock of every line is checked and **deducted** in one step; if one line is short, nothing is ordered (409).
@@ -179,6 +188,25 @@ Only the gateway's server-to-server webhook marks an order paid, so the browser 
 | One order | `GET /api/v1/orders/{orderId}` |
 | Payment status (light) | `GET /api/v1/payments/orders/{orderId}/status` |
 
+## 5b. Self pickup
+
+The customer collects the parts at the shop(s) instead of delivery.
+1. Checkout with `deliveryMethod: PICKUP` and `pickupContact` (above). Payment works the same:
+   - **COD** means pay at the shop;
+   - **ONLINE** means pay now and collect later.
+2. The order response has:
+   - `pickupCode`: 6 digits. Show it prominently ("Show this code at the shop"). Only the customer sees it; shops never get it.
+   - `pickupPoints[]`: one per shop in the order, with `name`, `phone`, `address`, `mapLink`, `workingDays`, `openingHours` and `closingHours`. Show a "Directions" button (`mapLink`) and the opening hours.
+   - `pickupContact`, and `deliveryAddress: null`.
+3. Each shop packs its lines and marks them **ready for pickup**. The line becomes `READY_FOR_PICKUP`, and when
+   every remaining line is ready the order becomes `READY_FOR_PICKUP`: tell the customer "Ready to collect".
+4. At the shop, the customer gives the code. The shop enters it and hands the parts over. The lines become
+   `RECEIVED` ("Collected"), and when everything is collected the order becomes **`COLLECTED`**.
+5. An order with parts from several shops means one visit per shop. Each pickup point lists that shop's lines
+   (match `items[].supplierId` with `pickupPoints[].supplierId`).
+
+The customer can cancel while the parts wait at the shop (stock goes back), but not after collecting any of them.
+
 ### Order status (show to the customer)
 
 | `status` | Meaning | Customer can |
@@ -187,6 +215,8 @@ Only the gateway's server-to-server webhook marks an order paid, so the browser 
 | `CONFIRMED` | placed (COD) or paid; shops are preparing it | cancel (until a shop dispatches) |
 | `SHIPPED` | every line is on its way | wait |
 | `DELIVERED` | every line delivered | nothing |
+| `READY_FOR_PICKUP` | pickup: every line is waiting at the shops | go and collect (show `pickupCode`), cancel |
+| `COLLECTED` | pickup: everything collected | nothing |
 | `CANCELLED` | cancelled by the customer, by expiry, or every line rejected by the shops | order again |
 | `PENDING_REFUND` | cancelled after money was received; refund pending | nothing |
 
@@ -197,7 +227,8 @@ Only the gateway's server-to-server webhook marks an order paid, so the browser 
 | `PENDING` | "Waiting for the shop" |
 | `ACCEPTED` | "Shop is preparing it" (`acceptedAt`) |
 | `DISPATCHED` | "On the way" (`dispatchedAt`) |
-| `RECEIVED` | "Delivered" (`receivedAt`) |
+| `READY_FOR_PICKUP` | pickup: "Ready to collect at <shop>" (`dispatchedAt` = when it was ready) |
+| `RECEIVED` | "Delivered", or "Collected" for pickup (`receivedAt`) |
 | `REJECTED` | "Not available from this shop" (+ `rejectReason`); the line isn't charged |
 
 Lines from different shops move separately; the order turns `SHIPPED` / `DELIVERED` when **all** remaining lines
@@ -209,8 +240,8 @@ have. If a shop rejects lines:
 ## 7. Cancel
 
 `POST /api/v1/orders/{orderId}/cancel`
-- Allowed in `PENDING_PAYMENT` and `CONFIRMED`, **until any shop has dispatched** a line (then 409 "a shop has
-  already sent part of it").
+- Allowed in `PENDING_PAYMENT`, `CONFIRMED` and `READY_FOR_PICKUP`, **until any shop has dispatched a line or the
+  customer has collected one** (then 409 "a shop has already sent part of it").
 - Stock goes back to the shops.
 - `paymentStatus` becomes `CANCELLED`, or `REFUND_PENDING` if it was already paid online (manual refund).
 
@@ -265,6 +296,4 @@ window.location.href = retry.payment.paymentUrl;
 - Refunds (late payments, paid orders cancelled or partly rejected) are done manually.
 - The customer can't confirm receipt; the shop marks customer orders delivered.
 - No saved address book yet: the frontend keeps the customer's addresses (or prefills from the profile).
-- Delivery only: **self pickup** at the shop is planned (it will add a delivery method, with the address
-  optional for pickup orders).
 - Accepted enquiry quotes create a normal offer, which other customers can also see.

@@ -13,6 +13,11 @@ import com.autoadda.apis.part.repository.InventoryPartRepository;
 import com.autoadda.apis.part.repository.InventoryTransactionRepository;
 import com.autoadda.apis.part.repository.OrderRepository;
 import com.autoadda.apis.part.repository.ShoppingCartRepository;
+import com.autoadda.apis.part.repository.SupplierRepository;
+import com.autoadda.apis.part.entity.Supplier;
+import com.autoadda.apis.part.response.PickupPointResponse;
+import com.autoadda.apis.part.util.DeliveryMethod;
+import java.security.SecureRandom;
 import com.autoadda.apis.part.response.OrderItemResponse;
 import com.autoadda.apis.part.response.OrderResponse;
 import com.autoadda.apis.part.response.PaymentInitiationResponse;
@@ -46,18 +51,36 @@ import java.util.function.Predicate;
 public class OrderService {
 
     /** Orders in these states can still be cancelled (stock is returned to inventory). */
-    private static final Set<Status> CANCELLABLE = Set.of ( Status.CREATED, Status.CONFIRMED, Status.PENDING_PAYMENT );
-    /** Once a shop has sent a line, the order can no longer be cancelled by the buyer. */
+    private static final Set<Status> CANCELLABLE = Set.of ( Status.CREATED, Status.CONFIRMED, Status.PENDING_PAYMENT,
+            Status.READY_FOR_PICKUP );
+    /** Once a shop has sent a line (or it was collected), the order can no longer be cancelled by the buyer. */
     private static final Set<FulfilmentStatus> ON_THE_WAY = EnumSet.of ( FulfilmentStatus.DISPATCHED, FulfilmentStatus.RECEIVED );
+    /** Lines that are with the buyer or waiting for them: drives SHIPPED / READY_FOR_PICKUP. */
+    private static final Set<FulfilmentStatus> HANDED_OVER_OR_READY =
+            EnumSet.of ( FulfilmentStatus.DISPATCHED, FulfilmentStatus.READY_FOR_PICKUP, FulfilmentStatus.RECEIVED );
+    private static final SecureRandom RANDOM = new SecureRandom ( );
 
     /** Who the order is for. Customer: vehicleOwnerId. Garage: garageId, the user acting for it and its snapshot. */
     public record OrderBuyer(BuyerType type, Integer vehicleOwnerId, Integer garageId, Integer placedByUserId,
-                             GarageSnapshot garage, String notes, DeliveryAddress deliveryAddress) {
+                             GarageSnapshot garage, String notes, DeliveryMethod deliveryMethod,
+                             DeliveryAddress deliveryAddress) {
         /** A customer order delivered to {@code address} (validated and cleaned here). */
         public static OrderBuyer customer(Integer vehicleOwnerId, DeliveryAddress address) {
-            return new OrderBuyer ( BuyerType.CUSTOMER, vehicleOwnerId, null, null, null, null,
-                    DeliveryAddresses.validated ( address ) );
+            return customer ( vehicleOwnerId, new Checkout ( DeliveryMethod.DELIVERY, address, null ) );
         }
+
+        /** A customer order: delivery needs the address, pickup needs who collects (validated here). */
+        public static OrderBuyer customer(Integer vehicleOwnerId, Checkout checkout) {
+            DeliveryMethod method = checkout.method ( ) == null ? DeliveryMethod.DELIVERY : checkout.method ( );
+            DeliveryAddress where = method == DeliveryMethod.PICKUP
+                    ? DeliveryAddresses.validatedContact ( checkout.pickupContact ( ) )
+                    : DeliveryAddresses.validated ( checkout.deliveryAddress ( ) );
+            return new OrderBuyer ( BuyerType.CUSTOMER, vehicleOwnerId, null, null, null, null, method, where );
+        }
+    }
+
+    /** How the customer gets the parts: method, delivery address or pickup contact. */
+    public record Checkout(DeliveryMethod method, DeliveryAddress deliveryAddress, DeliveryAddress pickupContact) {
     }
 
     /** One order line: the listing, how many, and anything extra to record on the line (car, garage job). */
@@ -73,6 +96,7 @@ public class OrderService {
     private final InventoryTransactionRepository txnRepo;
     private final EntityManager entityManager;
     private final PaymentService paymentService;
+    private final SupplierRepository supplierRepo;
 
     /**
      * Checks out the whole cart: validates and deducts stock, creates the order, empties the cart.
@@ -80,7 +104,12 @@ public class OrderService {
      */
     @Transactional
     public OrderResponse placeOrder(Integer vehicleOwnerId, PaymentMethod paymentMethod, DeliveryAddress deliveryAddress) {
-        OrderBuyer buyer = OrderBuyer.customer ( vehicleOwnerId, deliveryAddress );
+        return placeOrder ( vehicleOwnerId, paymentMethod, new Checkout ( DeliveryMethod.DELIVERY, deliveryAddress, null ) );
+    }
+
+    @Transactional
+    public OrderResponse placeOrder(Integer vehicleOwnerId, PaymentMethod paymentMethod, Checkout checkout) {
+        OrderBuyer buyer = OrderBuyer.customer ( vehicleOwnerId, checkout );
         ShoppingCart cart = cartRepo.findByVehicleOwnerId ( vehicleOwnerId )
                 .orElseThrow ( () -> new ResourceNotFoundException ( "Cart not found for vehicle owner " + vehicleOwnerId ) );
         if ( cart.getItems ( ).isEmpty ( ) ) {
@@ -103,8 +132,16 @@ public class OrderService {
     @Transactional
     public OrderResponse buyNow(Integer vehicleOwnerId, Integer partId, int quantity, PaymentMethod paymentMethod,
                                 DeliveryAddress deliveryAddress) {
+        return buyNow ( vehicleOwnerId, partId, quantity, paymentMethod,
+                new Checkout ( DeliveryMethod.DELIVERY, deliveryAddress, null ) );
+    }
+
+    @Transactional
+    public OrderResponse buyNow(Integer vehicleOwnerId, Integer partId, int quantity, PaymentMethod paymentMethod,
+                                Checkout checkout) {
+        OrderBuyer buyer = OrderBuyer.customer ( vehicleOwnerId, checkout );
         ShoppingCartService.requirePositive ( quantity );
-        Order order = createOrder ( OrderBuyer.customer ( vehicleOwnerId, deliveryAddress ), List.of ( new OrderLine ( partId, quantity ) ), paymentMethod );
+        Order order = createOrder ( buyer, List.of ( new OrderLine ( partId, quantity ) ), paymentMethod );
         return withPayment ( toResponse ( order ), startPaymentIfOnline ( order ) );
     }
 
@@ -232,6 +269,9 @@ public class OrderService {
         Order order = Order.builder ( ).vehicleOwnerId ( buyer.vehicleOwnerId ( ) ).orderDate ( LocalDateTime.now ( ) )
                 .buyerType ( buyer.type ( ) ).garageId ( buyer.garageId ( ) ).placedByUserId ( buyer.placedByUserId ( ) )
                 .garage ( buyer.garage ( ) ).notes ( buyer.notes ( ) ).deliveryAddress ( buyer.deliveryAddress ( ) )
+                .deliveryMethod ( buyer.deliveryMethod ( ) == null ? DeliveryMethod.DELIVERY : buyer.deliveryMethod ( ) )
+                .pickupCode ( buyer.deliveryMethod ( ) == DeliveryMethod.PICKUP && buyer.type ( ) == BuyerType.CUSTOMER
+                        ? String.format ( "%06d", RANDOM.nextInt ( 1_000_000 ) ) : null )
                 .paymentMethod ( method )
                 .status ( method == PaymentMethod.COD ? Status.CONFIRMED : Status.PENDING_PAYMENT )
                 .paymentStatus ( method == PaymentMethod.COD ? PaymentStatus.PENDING : PaymentStatus.NOT_INITIATED )
@@ -336,8 +376,8 @@ public class OrderService {
     }
 
     /**
-     * Order status from its lines: all rejected -> CANCELLED, all others received -> DELIVERED,
-     * all others dispatched or received -> SHIPPED. Orders not yet confirmed (unpaid) are left alone.
+     * Order status from its lines: all rejected -> CANCELLED, all others received -> DELIVERED (pickup: COLLECTED),
+     * all others dispatched / ready / received -> SHIPPED (pickup: READY_FOR_PICKUP). Unpaid orders are left alone.
      */
     public static void refreshStatus(Order order) {
         if ( order.getStatus ( ) == Status.PENDING_PAYMENT || order.getStatus ( ) == Status.CANCELLED ) {
@@ -349,9 +389,9 @@ public class OrderService {
             order.setStatus ( Status.CANCELLED );
             order.setCancelledAt ( LocalDateTime.now ( ) );
         } else if ( live.stream ( ).allMatch ( st -> st == FulfilmentStatus.RECEIVED ) ) {
-            order.setStatus ( Status.DELIVERED );
-        } else if ( live.stream ( ).allMatch ( ON_THE_WAY::contains ) ) {
-            order.setStatus ( Status.SHIPPED );
+            order.setStatus ( order.effectiveDeliveryMethod ( ) == DeliveryMethod.PICKUP ? Status.COLLECTED : Status.DELIVERED );
+        } else if ( live.stream ( ).allMatch ( HANDED_OVER_OR_READY::contains ) ) {
+            order.setStatus ( order.effectiveDeliveryMethod ( ) == DeliveryMethod.PICKUP ? Status.READY_FOR_PICKUP : Status.SHIPPED );
         }
     }
 
@@ -375,12 +415,45 @@ public class OrderService {
                 .garageAddress ( garage == null ? null : garage.getGarageAddress ( ) )
                 .garageMapLink ( garage == null ? null : garage.getGarageMapLink ( ) )
                 .notes ( order.getNotes ( ) ).refundAmount ( order.getRefundAmount ( ) )
-                .deliveryAddress ( order.getDeliveryAddress ( ) )
+                .deliveryMethod ( order.effectiveDeliveryMethod ( ) )
+                .deliveryAddress ( order.effectiveDeliveryMethod ( ) == DeliveryMethod.DELIVERY ? order.getDeliveryAddress ( ) : null )
+                .pickupContact ( order.effectiveDeliveryMethod ( ) == DeliveryMethod.PICKUP ? order.getDeliveryAddress ( ) : null )
+                .pickupCode ( order.getPickupCode ( ) )
+                .pickupPoints ( order.effectiveDeliveryMethod ( ) == DeliveryMethod.PICKUP ? pickupPoints ( order ) : null )
                 .status ( order.getStatus ( ) ).orderDate ( order.getOrderDate ( ) ).cancelledAt ( order.getCancelledAt ( ) )
                 .paymentMethod ( order.getPaymentMethod ( ) ).paymentStatus ( order.getPaymentStatus ( ) )
                 .paymentExpiresAt ( order.getPaymentExpiresAt ( ) ).paymentCompletedAt ( order.getPaymentCompletedAt ( ) )
                 .items ( items ).totalItems ( items.stream ( ).mapToInt ( OrderItemResponse::getQuantity ).sum ( ) )
                 .totalAmount ( order.getTotalAmount ( ) ).build ( );
+    }
+
+    /** One pickup point per shop in the order, with its address and opening hours. */
+    private List<PickupPointResponse> pickupPoints(Order order) {
+        Set<String> shopIds = new java.util.LinkedHashSet<> ( );
+        order.getItems ( ).stream ( ).filter ( oi -> oi.effectiveStatus ( ) != FulfilmentStatus.REJECTED )
+                .forEach ( oi -> shopIds.add ( oi.getPart ( ).getSupplierId ( ) ) );
+        return shopIds.stream ( ).map ( id -> {
+            Supplier shop = null;
+            try {
+                shop = id == null ? null : supplierRepo.findById ( Integer.valueOf ( id ) ).orElse ( null );
+            } catch ( NumberFormatException ignored ) {
+                // unknown shop id format: show the id only
+            }
+            if ( shop == null ) {
+                return PickupPointResponse.builder ( ).supplierId ( id ).build ( );
+            }
+            var loc = shop.getLocation ( );
+            String address = loc == null ? null : java.util.stream.Stream.of ( loc.getStreetAddress1 ( ), loc.getStreetAddress2 ( ),
+                            loc.getArea ( ), loc.getCity ( ), loc.getState ( ) )
+                    .filter ( v -> v != null && !v.isBlank ( ) ).map ( String::trim )
+                    .collect ( java.util.stream.Collectors.joining ( ", " ) );
+            return PickupPointResponse.builder ( ).supplierId ( id ).name ( shop.getName ( ) )
+                    .phone ( shop.getMobileNumber ( ) != null ? shop.getMobileNumber ( ) : shop.getPhoneNumber ( ) )
+                    .address ( address == null || address.isEmpty ( ) ? null : address )
+                    .mapLink ( loc == null ? null : loc.getGmap ( ) )
+                    .workingDays ( shop.getWorkingDays ( ) ).openingHours ( shop.getOpeningHours ( ) )
+                    .closingHours ( shop.getClosingHours ( ) ).build ( );
+        } ).toList ( );
     }
 
     public static OrderItemResponse itemResponse(OrderItem oi) {
