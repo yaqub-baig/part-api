@@ -1,6 +1,5 @@
 package com.autoadda.apis.part.controller;
 
-import com.autoadda.apis.part.entity.DeliveryAddress;
 import com.autoadda.apis.part.request.CheckoutRequest;
 import com.autoadda.apis.part.util.CallerIdentity;
 import com.autoadda.apis.part.response.OrderResponse;
@@ -32,7 +31,7 @@ public class OrderController {
                                                     @RequestBody(required = false) CheckoutRequest body) {
         return ResponseEntity.status ( HttpStatus.CREATED )
                 .body ( orderService.placeOrder ( CallerIdentity.requireSelf ( autoAddaId, vehicleOwnerId ), paymentMethod,
-                        address ( body ) ) );
+                        checkout ( body ) ) );
     }
 
     /** Buy now: order a single part directly, bypassing the cart. */
@@ -44,11 +43,12 @@ public class OrderController {
                                                 @RequestBody(required = false) CheckoutRequest body) {
         return ResponseEntity.status ( HttpStatus.CREATED )
                 .body ( orderService.buyNow ( CallerIdentity.requireSelf ( autoAddaId, vehicleOwnerId ), partId, quantity,
-                        paymentMethod, address ( body ) ) );
+                        paymentMethod, checkout ( body ) ) );
     }
 
-    private static DeliveryAddress address(CheckoutRequest body) {
-        return body == null ? null : body.getDeliveryAddress ( );
+    private static OrderService.Checkout checkout(CheckoutRequest body) {
+        return body == null ? new OrderService.Checkout ( null, null, null )
+                : new OrderService.Checkout ( body.getDeliveryMethod ( ), body.getDeliveryAddress ( ), body.getPickupContact ( ) );
     }
 
     /** Start a new online payment attempt after the previous one failed. */

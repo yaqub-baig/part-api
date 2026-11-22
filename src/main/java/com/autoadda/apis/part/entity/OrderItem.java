@@ -2,6 +2,8 @@ package com.autoadda.apis.part.entity;
 
 import com.autoadda.apis.part.clients.garage.MarketplaceStep;
 import com.autoadda.apis.part.util.FulfilmentStatus;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import java.time.LocalDateTime;
 
 import lombok.*;
@@ -32,6 +34,7 @@ public class OrderItem {
 
     /** Delivery progress of this line; null on old rows = PENDING. */
     @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "fulfilment_status", length = 20)
     private FulfilmentStatus fulfilmentStatus;
     @Column(name = "accepted_at")

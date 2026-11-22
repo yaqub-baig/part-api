@@ -1,6 +1,9 @@
 package com.autoadda.apis.part.entity;
 
 import com.autoadda.apis.part.util.BuyerType;
+import com.autoadda.apis.part.util.DeliveryMethod;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import com.autoadda.apis.part.util.PaymentMethod;
 import com.autoadda.apis.part.util.PaymentStatus;
 import com.autoadda.apis.part.util.Status;
@@ -39,9 +42,24 @@ public class Order {
     private GarageSnapshot garage;
     @Column(name = "notes", length = 1000)
     private String notes;
-    /** Customer orders: where to deliver (garage orders deliver to the garage snapshot). */
+    /** DELIVERY (default; null on old rows) or PICKUP at the shops. */
+    @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "delivery_method", length = 20)
+    private DeliveryMethod deliveryMethod;
+    /**
+     * Customer orders: where to deliver; for PICKUP only the contact name, phone and notes are set.
+     * Garage orders deliver to the garage snapshot.
+     */
     @Embedded
     private DeliveryAddress deliveryAddress;
+    /** Customer PICKUP orders: code the customer shows at the shop; the shop enters it to hand over the parts. */
+    @Column(name = "pickup_code", length = 6)
+    private String pickupCode;
+
+    public DeliveryMethod effectiveDeliveryMethod() {
+        return deliveryMethod == null ? DeliveryMethod.DELIVERY : deliveryMethod;
+    }
     /** Paid online, then lines rejected by a shop: amount to refund to the buyer. */
     @Column(name = "refund_amount")
     private Double refundAmount;
@@ -56,7 +74,9 @@ public class Order {
     private Double totalAmount;
 
     @Enumerated(EnumType.STRING)
-    private Status status; // PENDING_PAYMENT -> CONFIRMED -> SHIPPED -> DELIVERED, or CANCELLED / PENDING_REFUND
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(length = 30)
+    private Status status; // PENDING_PAYMENT -> CONFIRMED -> SHIPPED -> DELIVERED (pickup: READY_FOR_PICKUP -> COLLECTED), or CANCELLED / PENDING_REFUND
 
     private LocalDateTime cancelledAt;
 

@@ -99,7 +99,7 @@ class GarageOrderTest {
 
 	@BeforeEach
 	void setUp() {
-		OrderService orderService = new OrderService(cartRepo, orderRepo, partRepo, txnRepo, entityManager, paymentService);
+		OrderService orderService = new OrderService(cartRepo, orderRepo, partRepo, txnRepo, entityManager, paymentService, supplierRepository);
 		sync = new GarageOrderSync(garageBuyerResolver, supplierRepository, orderItemRepository);
 		garageOrders = new GarageOrderService(orderService, orderRepo, garageBuyerResolver, sync, makeRepository, modelRepository);
 		shopOrders = new SupplierOrderService(supplierRepository, orderItemRepository, orderRepo, orderService, sync);
@@ -352,7 +352,7 @@ class GarageOrderTest {
 	@Test
 	void customerOrdersDontShowUpAsTheGaragesAndViceVersa() {
 		placeForJob();
-		OrderService orderService = new OrderService(cartRepo, orderRepo, partRepo, txnRepo, entityManager, paymentService);
+		OrderService orderService = new OrderService(cartRepo, orderRepo, partRepo, txnRepo, entityManager, paymentService, supplierRepository);
 		assertThrows(ResourceNotFoundException.class, () -> orderService.getOrder(42, 3)); // vehicle owner 3 != garage 3
 		List<Order> none = new ArrayList<>();
 		when(orderRepo.findByGarageIdOrderByOrderDateDesc(3)).thenReturn(none);

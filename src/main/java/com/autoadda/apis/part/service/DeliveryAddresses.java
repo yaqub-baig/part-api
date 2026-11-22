@@ -42,6 +42,18 @@ public final class DeliveryAddresses {
         return out;
     }
 
+    /** Pickup orders: just who collects (name and phone required, notes optional). */
+    public static DeliveryAddress validatedContact(DeliveryAddress in) {
+        if (in == null) {
+            throw new ValidationException("pickupContact is required for pickup orders");
+        }
+        return DeliveryAddress.builder()
+                .contactName(required(in.getContactName(), "contactName", 100))
+                .phone(phone(in.getPhone()))
+                .notes(optional(in.getNotes(), "notes", 500))
+                .build();
+    }
+
     private static String phone(String raw) {
         if (raw == null || raw.isBlank()) {
             throw new ValidationException("deliveryAddress.phone is required");

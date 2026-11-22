@@ -16,6 +16,8 @@ import java.util.List;
 public class GarageOrderRequest {
     /** COD (default) or ONLINE. */
     private PaymentMethod paymentMethod;
+    /** DELIVERY to the garage (default) or PICKUP: garage staff collect at the shops. */
+    private com.autoadda.apis.part.util.DeliveryMethod deliveryMethod;
     private String notes;
     private List<Item> items;
 

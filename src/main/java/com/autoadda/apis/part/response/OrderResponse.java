@@ -26,8 +26,16 @@ public class OrderResponse {
     private String garageAddress;
     private String garageMapLink;
     private String notes;
-    /** Customer orders: where to deliver (contact name, phone, address, map link, notes). */
+    /** DELIVERY or PICKUP. */
+    private com.autoadda.apis.part.util.DeliveryMethod deliveryMethod;
+    /** DELIVERY customer orders: where to deliver (contact name, phone, address, map link, notes). */
     private com.autoadda.apis.part.entity.DeliveryAddress deliveryAddress;
+    /** PICKUP customer orders: who collects (contactName, phone, notes). */
+    private com.autoadda.apis.part.entity.DeliveryAddress pickupContact;
+    /** PICKUP customer orders: show it at the shop; the shop enters it to hand over the parts. */
+    private String pickupCode;
+    /** PICKUP orders: the shops to collect from (one per shop in the order). */
+    private List<PickupPointResponse> pickupPoints;
     /** Paid online and then lines rejected by a shop: amount to refund. */
     private Double refundAmount;
     private Status status;

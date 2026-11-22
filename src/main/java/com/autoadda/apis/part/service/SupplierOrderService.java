@@ -16,6 +16,7 @@ import com.autoadda.apis.part.response.OrderItemResponse;
 import com.autoadda.apis.part.response.SupplierOrderResponse;
 import com.autoadda.apis.part.util.BuyerType;
 import com.autoadda.apis.part.util.CallerIdentity;
+import com.autoadda.apis.part.util.DeliveryMethod;
 import com.autoadda.apis.part.util.FulfilmentStatus;
 import com.autoadda.apis.part.util.PaymentStatus;
 import com.autoadda.apis.part.util.Status;
@@ -40,8 +41,11 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class SupplierOrderService {
 
-    private static final Set<Status> ACTIONABLE = EnumSet.of(Status.CONFIRMED, Status.SHIPPED);
+    private static final Set<Status> ACTIONABLE = EnumSet.of(Status.CONFIRMED, Status.SHIPPED, Status.READY_FOR_PICKUP);
     private static final Set<FulfilmentStatus> OPEN = EnumSet.of(FulfilmentStatus.PENDING, FulfilmentStatus.ACCEPTED);
+    /** Lines a shop can still reject: not sent, not collected (a pickup line waiting at the shop can be). */
+    private static final Set<FulfilmentStatus> REJECTABLE =
+            EnumSet.of(FulfilmentStatus.PENDING, FulfilmentStatus.ACCEPTED, FulfilmentStatus.READY_FOR_PICKUP);
 
     private final SupplierRepository supplierRepository;
     private final OrderItemRepository orderItemRepository;
@@ -93,9 +97,10 @@ public class SupplierOrderService {
             throw new ValidationException("Reason is longer than 500 characters");
         }
         return act(autoAddaId, supplierId, orderId, (order, lines, now) -> {
-            List<OrderItem> open = lines.stream().filter(l -> OPEN.contains(l.effectiveStatus())).toList();
+            List<OrderItem> open = lines.stream().filter(l -> REJECTABLE.contains(l.effectiveStatus())).toList();
             if (open.isEmpty()) {
-                throw new ConflictException("Nothing to reject in order " + orderId + "; dispatched lines can't be rejected");
+                throw new ConflictException("Nothing to reject in order " + orderId
+                        + "; dispatched or collected lines can't be rejected");
             }
             double amount = 0;
             for (OrderItem l : open) {
@@ -125,6 +130,9 @@ public class SupplierOrderService {
     @Transactional
     public SupplierOrderResponse dispatch(String autoAddaId, Integer supplierId, Integer orderId) {
         return act(autoAddaId, supplierId, orderId, (order, lines, now) -> {
+            if (order.effectiveDeliveryMethod() == DeliveryMethod.PICKUP) {
+                throw new ConflictException("Order " + orderId + " is collected at the shop; mark it ready for pickup");
+            }
             List<OrderItem> open = lines.stream().filter(l -> OPEN.contains(l.effectiveStatus())).toList();
             if (open.isEmpty()) {
                 throw new ConflictException("Nothing to dispatch in order " + orderId);
@@ -140,10 +148,63 @@ public class SupplierOrderService {
         });
     }
 
-    /** Customer orders: the shop confirms delivery (garages confirm receipt themselves). */
+    /** Pickup orders: the shop's open lines are packed and waiting at the shop. */
+    @Transactional
+    public SupplierOrderResponse readyForPickup(String autoAddaId, Integer supplierId, Integer orderId) {
+        return act(autoAddaId, supplierId, orderId, (order, lines, now) -> {
+            if (order.effectiveDeliveryMethod() != DeliveryMethod.PICKUP) {
+                throw new ConflictException("Order " + orderId + " is delivered; use dispatch");
+            }
+            List<OrderItem> open = lines.stream().filter(l -> OPEN.contains(l.effectiveStatus())).toList();
+            if (open.isEmpty()) {
+                throw new ConflictException("Nothing to prepare in order " + orderId);
+            }
+            open.forEach(l -> {
+                if (l.getAcceptedAt() == null) {
+                    l.setAcceptedAt(now);
+                }
+                l.setFulfilmentStatus(FulfilmentStatus.READY_FOR_PICKUP);
+                l.setDispatchedAt(now);
+            });
+            OrderService.refreshStatus(order);
+        });
+    }
+
+    /**
+     * Customer pickup orders: the customer collected the shop's ready lines. The shop enters the customer's pickup
+     * code (400 when wrong). Garage pickups are confirmed by the garage instead.
+     */
+    @Transactional
+    public SupplierOrderResponse collected(String autoAddaId, Integer supplierId, Integer orderId, String pickupCode) {
+        return act(autoAddaId, supplierId, orderId, (order, lines, now) -> {
+            if (order.effectiveDeliveryMethod() != DeliveryMethod.PICKUP) {
+                throw new ConflictException("Order " + orderId + " is delivered, not collected");
+            }
+            if (order.getBuyerType() == BuyerType.GARAGE) {
+                throw new ConflictException("The garage confirms collection of garage orders");
+            }
+            if (pickupCode == null || !pickupCode.trim().equals(order.getPickupCode())) {
+                throw new ValidationException("Wrong pickup code");
+            }
+            List<OrderItem> ready = lines.stream().filter(l -> l.effectiveStatus() == FulfilmentStatus.READY_FOR_PICKUP).toList();
+            if (ready.isEmpty()) {
+                throw new ConflictException("Mark the parts ready for pickup first");
+            }
+            ready.forEach(l -> {
+                l.setFulfilmentStatus(FulfilmentStatus.RECEIVED);
+                l.setReceivedAt(now);
+            });
+            OrderService.refreshStatus(order);
+        });
+    }
+
+    /** Customer delivery orders: the shop confirms delivery (garages confirm receipt themselves). */
     @Transactional
     public SupplierOrderResponse delivered(String autoAddaId, Integer supplierId, Integer orderId) {
         return act(autoAddaId, supplierId, orderId, (order, lines, now) -> {
+            if (order.effectiveDeliveryMethod() == DeliveryMethod.PICKUP) {
+                throw new ConflictException("Order " + orderId + " is a pickup order; use collected with the pickup code");
+            }
             if (order.getBuyerType() == BuyerType.GARAGE) {
                 throw new ConflictException("The garage confirms receipt of garage orders");
             }
@@ -220,7 +281,9 @@ public class SupplierOrderService {
                 .garageAddress(garage == null ? null : garage.getGarageAddress())
                 .garageMapLink(garage == null ? null : garage.getGarageMapLink())
                 .notes(order.getNotes())
-                .deliveryAddress(order.getDeliveryAddress())
+                .deliveryMethod(order.effectiveDeliveryMethod())
+                .deliveryAddress(order.effectiveDeliveryMethod() == DeliveryMethod.DELIVERY ? order.getDeliveryAddress() : null)
+                .pickupContact(order.effectiveDeliveryMethod() == DeliveryMethod.PICKUP ? order.getDeliveryAddress() : null)
                 .items(items)
                 .shopTotal(total)
                 .build();

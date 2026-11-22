@@ -87,9 +87,10 @@ class DeliveryAddressTest {
 		ShoppingCartRepository cartRepo = mock(ShoppingCartRepository.class);
 		OrderRepository orderRepo = mock(OrderRepository.class);
 		OrderService service = new OrderService(cartRepo, orderRepo, mock(InventoryPartRepository.class),
-				mock(InventoryTransactionRepository.class), mock(EntityManager.class), mock(PaymentService.class));
-		assertThrows(ValidationException.class, () -> service.placeOrder(1, PaymentMethod.COD, null));
-		assertThrows(ValidationException.class, () -> service.buyNow(1, 5, 1, PaymentMethod.COD, null));
+				mock(InventoryTransactionRepository.class), mock(EntityManager.class), mock(PaymentService.class),
+				mock(SupplierRepository.class));
+		assertThrows(ValidationException.class, () -> service.placeOrder(1, PaymentMethod.COD, (DeliveryAddress) null));
+		assertThrows(ValidationException.class, () -> service.buyNow(1, 5, 1, PaymentMethod.COD, (DeliveryAddress) null));
 		verify(cartRepo, never()).findByVehicleOwnerId(any());
 		verify(orderRepo, never()).save(any());
 	}
@@ -100,7 +101,7 @@ class DeliveryAddressTest {
 		OrderRepository orderRepo = mock(OrderRepository.class);
 		InventoryPartRepository partRepo = mock(InventoryPartRepository.class);
 		OrderService service = new OrderService(cartRepo, orderRepo, partRepo, mock(InventoryTransactionRepository.class),
-				mock(EntityManager.class), mock(PaymentService.class));
+				mock(EntityManager.class), mock(PaymentService.class), mock(SupplierRepository.class));
 		InventoryPart part = InventoryPart.builder().id(5).supplierId("9").partName("Pad").quantityInStock(3)
 				.unitPrice(50.0).isActive(true).build();
 		ShoppingCart cart = ShoppingCart.builder().vehicleOwnerId(1).items(new ArrayList<>()).build();

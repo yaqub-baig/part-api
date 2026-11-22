@@ -95,6 +95,7 @@ Garage orders don't use a cart. One order can hold parts from several shops and 
 POST /part/api/v1/garages/3/orders
 {
   "paymentMethod": "COD",
+  "deliveryMethod": "DELIVERY",
   "notes": "Deliver before 4pm",
   "items": [
     { "inventoryPartId": 555, "partRequestItemId": 11 },
@@ -104,6 +105,9 @@ POST /part/api/v1/garages/3/orders
 }
 ```
 - `quantity` defaults to the job's quantity (or 1).
+- `deliveryMethod`:
+  - **DELIVERY** (default): delivered to the garage.
+  - **PICKUP:** garage staff collect at the shops. The response lists `pickupPoints` (shop address, map link, hours). Shops mark lines ready for pickup, and the garage confirms with `/received` once collected. No pickup code is used for garages.
 - `paymentMethod`:
   - **COD**: the order is confirmed at once.
   - **ONLINE**: the response has `payment.paymentUrl`. Unpaid orders expire like customer orders, and `POST /{orderId}/pay` retries the payment.
@@ -141,8 +145,10 @@ The shop owner sees customer **and** garage orders, but only the shop's own line
 | `GET /{orderId}` | one order |
 | `POST /{orderId}/accept` | PENDING lines → ACCEPTED |
 | `POST /{orderId}/reject` | body `{ "reason": "Out of stock" }`; lines not yet dispatched → REJECTED |
-| `POST /{orderId}/dispatch` | open lines → DISPATCHED (out for delivery) |
-| `POST /{orderId}/delivered` | customer orders only; garages confirm receipt themselves |
+| `POST /{orderId}/dispatch` | delivery orders: open lines → DISPATCHED (out for delivery) |
+| `POST /{orderId}/delivered` | customer delivery orders only; garages confirm receipt themselves |
+| `POST /{orderId}/ready-for-pickup` | pickup orders: open lines → READY_FOR_PICKUP (packed, waiting at the shop) |
+| `POST /{orderId}/collected` | customer pickup orders: body `{ "pickupCode": "123456" }` from the customer; wrong code → 400. Garage pickups are confirmed by the garage |
 
 Each order shows:
 - `buyerType`, then:
@@ -159,7 +165,10 @@ What changes as the shop acts:
   - the garage's job card item is freed;
   - if every line is rejected, the order is cancelled.
 - **Unpaid online orders** can't be handled yet (409 "awaiting online payment").
-- **Order status** follows the lines: all sent → SHIPPED; all received → DELIVERED.
+- **Order status** follows the lines: all sent → SHIPPED; all received → DELIVERED. For pickup orders: all
+  ready → READY_FOR_PICKUP; all collected → COLLECTED.
+- **Pickup orders** (`deliveryMethod: PICKUP`) show `pickupContact` (who collects, for customers) instead of a
+  delivery address. A line waiting at the shop can still be rejected.
 
 **Garage enquiries** reach shops the same way as customer enquiries (`GET /enquiries/supplier/{id}?buyerType=GARAGE`).
 - They show `garageName`, the car and `workOrderId`.

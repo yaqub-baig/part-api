@@ -47,7 +47,8 @@ import java.util.regex.Pattern;
 public class GarageOrderService {
 
     public static final int MAX_ITEMS = 50;
-    private static final Set<FulfilmentStatus> RECEIVABLE = EnumSet.of(FulfilmentStatus.ACCEPTED, FulfilmentStatus.DISPATCHED);
+    private static final Set<FulfilmentStatus> RECEIVABLE = EnumSet.of(FulfilmentStatus.ACCEPTED, FulfilmentStatus.DISPATCHED,
+            FulfilmentStatus.READY_FOR_PICKUP);
     private static final Pattern YEAR = Pattern.compile("(\\d{4})");
 
     private final OrderService orderService;
@@ -108,7 +109,7 @@ public class GarageOrderService {
         }
 
         Order order = orderService.createOrder(new OrderBuyer(BuyerType.GARAGE, null, garageId, buyer.userId(),
-                buyer.snapshot(), notes, null), lines, request.getPaymentMethod());
+                buyer.snapshot(), notes, request.getDeliveryMethod(), null), lines, request.getPaymentMethod());
         PaymentInitiationResponse payment = orderService.startPaymentIfOnline(order);
         order.getItems().forEach(line -> garageOrderSync.send(line, MarketplaceStep.Stage.ORDERED, buyer.userId()));
         orderRepository.save(order);
@@ -175,7 +176,7 @@ public class GarageOrderService {
         for (OrderItem line : chosen) {
             if (!RECEIVABLE.contains(line.effectiveStatus())) {
                 throw new ConflictException("Line " + line.getId() + " is " + line.effectiveStatus()
-                        + "; only accepted or dispatched lines can be received");
+                        + "; only accepted, dispatched or ready-for-pickup lines can be received");
             }
             line.setFulfilmentStatus(FulfilmentStatus.RECEIVED);
             line.setReceivedAt(now);

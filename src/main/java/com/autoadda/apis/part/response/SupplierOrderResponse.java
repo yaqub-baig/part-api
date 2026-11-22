@@ -35,8 +35,12 @@ public class SupplierOrderResponse {
     private String garageAddress;
     private String garageMapLink;
     private String notes;
-    /** Customer orders: deliver here (garage orders: the garage fields above). */
+    /** DELIVERY or PICKUP (the buyer collects at the shop). */
+    private com.autoadda.apis.part.util.DeliveryMethod deliveryMethod;
+    /** DELIVERY customer orders: deliver here (garage orders: the garage fields above). */
     private com.autoadda.apis.part.entity.DeliveryAddress deliveryAddress;
+    /** PICKUP customer orders: who will collect. The pickup code is never shown to the shop. */
+    private com.autoadda.apis.part.entity.DeliveryAddress pickupContact;
     private List<OrderItemResponse> items;
     /** Sum of this shop's lines that weren't rejected. */
     private Double shopTotal;
