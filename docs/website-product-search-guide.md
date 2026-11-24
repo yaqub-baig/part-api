@@ -240,8 +240,9 @@ query parameter is no longer used.
 | Buy one offer now | `POST /api/v1/orders/buy-now/{ownerId}?partId={inventoryPartId}&quantity=1&paymentMethod=COD` (or `ONLINE`) |
 | Checkout the cart | `POST /api/v1/orders/place/{ownerId}?paymentMethod=COD` (or `ONLINE`) |
 
-Both order calls need a JSON body with the delivery address: `{ "deliveryAddress": { "contactName", "phone",
-"addressLine1", "area", "city", ... } }`. Field rules and the full checkout flow are in
+Both order calls need a JSON body with the delivery address: `{ "addressId": 7 }` (one of the customer's saved
+addresses, identity-api `/addresses`) or `{ "deliveryAddress": { "contactName", "phone", "addressLine1", "area",
+"city", ... } }`. Field rules and the full checkout flow are in
 `docs/vehicle-owner-order-flow.md`.
 
 `ONLINE` responses include `payment.paymentUrl` / `qrCodeImage`; redirect the user there and then poll

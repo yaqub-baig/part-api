@@ -15,7 +15,9 @@ import lombok.NoArgsConstructor;
 public class CheckoutRequest {
     /** DELIVERY (default) or PICKUP at the shops. */
     private DeliveryMethod deliveryMethod;
-    /** Required for DELIVERY: where the shops deliver. */
+    /** DELIVERY: one of the customer's saved addresses (identity-api /addresses). Use this or deliveryAddress. */
+    private Long addressId;
+    /** DELIVERY: an address typed at checkout, when not using a saved one (addressId). */
     private DeliveryAddress deliveryAddress;
     /** Required for PICKUP: who collects (contactName, phone; notes optional). Other fields are ignored. */
     private DeliveryAddress pickupContact;
