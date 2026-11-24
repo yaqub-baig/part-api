@@ -37,4 +37,9 @@ public interface AuthClient {
 
     @PostMapping("/notifications/send")
     ResponseEntity<Map<String, Object>> sendNotification(@RequestBody SendNotificationRequest request);
+
+    /** A user's saved address (404 when it isn't that user's). Internal endpoint, blocked at the gateway. */
+    @GetMapping("/addresses/internal/{addressId}")
+    com.autoadda.apis.part.clients.identity.SavedAddress getSavedAddress(@PathVariable("addressId") Long addressId,
+                                                                        @RequestParam("userId") Integer userId);
 }

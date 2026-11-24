@@ -1,6 +1,7 @@
 package com.autoadda.apis.part.controller;
 
 import com.autoadda.apis.part.request.CheckoutRequest;
+import com.autoadda.apis.part.service.CheckoutAddressResolver;
 import com.autoadda.apis.part.util.CallerIdentity;
 import com.autoadda.apis.part.response.OrderResponse;
 import com.autoadda.apis.part.service.OrderService;
@@ -19,6 +20,7 @@ import java.util.List;
 public class OrderController {
 
     private final OrderService orderService;
+    private final CheckoutAddressResolver checkoutAddresses;
 
     /**
      * Checkout: place an order for everything in the cart.
@@ -31,7 +33,7 @@ public class OrderController {
                                                     @RequestBody(required = false) CheckoutRequest body) {
         return ResponseEntity.status ( HttpStatus.CREATED )
                 .body ( orderService.placeOrder ( CallerIdentity.requireSelf ( autoAddaId, vehicleOwnerId ), paymentMethod,
-                        checkout ( body ) ) );
+                        checkoutAddresses.resolve ( vehicleOwnerId, body ) ) );
     }
 
     /** Buy now: order a single part directly, bypassing the cart. */
@@ -43,13 +45,10 @@ public class OrderController {
                                                 @RequestBody(required = false) CheckoutRequest body) {
         return ResponseEntity.status ( HttpStatus.CREATED )
                 .body ( orderService.buyNow ( CallerIdentity.requireSelf ( autoAddaId, vehicleOwnerId ), partId, quantity,
-                        paymentMethod, checkout ( body ) ) );
+                        paymentMethod, checkoutAddresses.resolve ( vehicleOwnerId, body ) ) );
     }
 
-    private static OrderService.Checkout checkout(CheckoutRequest body) {
-        return body == null ? new OrderService.Checkout ( null, null, null )
-                : new OrderService.Checkout ( body.getDeliveryMethod ( ), body.getDeliveryAddress ( ), body.getPickupContact ( ) );
-    }
+
 
     /** Start a new online payment attempt after the previous one failed. */
     @PostMapping("/{orderId}/pay")

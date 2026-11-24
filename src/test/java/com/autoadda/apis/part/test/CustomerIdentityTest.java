@@ -22,7 +22,9 @@ class CustomerIdentityTest {
 	private final ShoppingCartService cartService = mock(ShoppingCartService.class);
 	private final OrderService orderService = mock(OrderService.class);
 	private final ShoppingCartController cart = new ShoppingCartController(cartService);
-	private final OrderController orders = new OrderController(orderService);
+	private final com.autoadda.apis.part.service.CheckoutAddressResolver addresses =
+			mock(com.autoadda.apis.part.service.CheckoutAddressResolver.class);
+	private final OrderController orders = new OrderController(orderService, addresses);
 
 	@Test
 	void anotherCustomersCartIsForbidden() {
@@ -47,6 +49,7 @@ class CustomerIdentityTest {
 		assertThrows(ForbiddenException.class, () -> orders.buyNow("2", 1, 10, 1, PaymentMethod.COD, null));
 		assertThrows(ForbiddenException.class, () -> orders.getOrdersForOwner("2", 1));
 		verifyNoInteractions(orderService);
+		verifyNoInteractions(addresses); // no saved-address lookup for someone else
 	}
 
 	@Test

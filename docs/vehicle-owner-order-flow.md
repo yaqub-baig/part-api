@@ -114,6 +114,43 @@ Prefill name and phone from the customer's profile and let them confirm. The add
 as entered; editing it later in the profile doesn't change past orders. Shops see it in their order inbox
 (`deliveryAddress`), and it comes back on every order response.
 
+### Saved addresses (address book)
+
+Customers keep several addresses (Home, Work, ...) in **identity-api**: `<gateway>/identity/api/v1/addresses`.
+Login is required; the user comes from the JWT.
+
+| Action | Call |
+|---|---|
+| My addresses (default first) | `GET /addresses` |
+| One | `GET /addresses/{id}` |
+| Add | `POST /addresses` (201); the first one becomes the default |
+| Replace | `PUT /addresses/{id}` (send all fields) |
+| Make default | `PUT /addresses/{id}/default` |
+| Delete | `DELETE /addresses/{id}` (204); deleting the default makes the newest remaining one default |
+
+Body:
+- the same fields as `deliveryAddress` above;
+- `label` (max 50, e.g. "Home");
+- `isDefault: true` to make it the default.
+
+The response adds `id`, `isDefault`, `createdAt` and `updatedAt`. The same validation rules apply, and the phone
+is stored as `+971...`. At most 20 addresses per user. Errors: 400 with `message`, or 404 for someone else's address.
+
+**At checkout**, send the chosen address's id instead of the fields:
+```json
+{ "deliveryMethod": "DELIVERY", "addressId": 7 }
+```
+- part-api reads that address (it must belong to the logged-in customer, otherwise 404) and stores a copy with the order.
+- Send `addressId` **or** `deliveryAddress`, not both (400).
+- For a one-off address, send `deliveryAddress` as before. To keep it, save it with `POST /addresses` first.
+- **Pickup** with only `addressId`: the saved address's name and phone are used as `pickupContact`.
+- 503 means identity-api is unavailable; ask the customer to retry.
+
+**Checkout screen:**
+1. Load `GET /addresses` and preselect the `isDefault` one.
+2. Show the others as radio cards (label, address lines, area, city).
+3. Offer "Add new address": it opens the form, `POST /addresses`, then select the new one.
+
 **Self pickup** needs only who collects (400 without it):
 ```json
 { "deliveryMethod": "PICKUP",
