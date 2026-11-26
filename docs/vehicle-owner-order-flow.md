@@ -30,7 +30,8 @@ search / product page / accepted quote
         │                                            ▼                             ▼
         │                                        CONFIRMED                CANCELLED (EXPIRED), stock back
         ▼                                            │
-  shop accepts → dispatches → SHIPPED → shop marks delivered → DELIVERED   (cash collected on COD)
+  delivery: shop accepts → dispatches → SHIPPED → shop marks delivered → DELIVERED   (cash collected on COD)
+  pickup:   shop accepts → ready for pickup → READY_FOR_PICKUP → customer shows code → COLLECTED
 ```
 "Buy now" skips the cart and goes straight to checkout with one offer.
 
@@ -217,6 +218,88 @@ Response (201), the same `OrderResponse` shape everywhere:
 
 Only the gateway's server-to-server webhook marks an order paid, so the browser redirect can never fake a payment.
 
+## 5b. Self pickup
+
+The customer collects the parts at the shop(s) instead of having them delivered.
+
+### Checkout screen
+- Add a **"How do you want to get it?"** choice above the address form:
+  - **Delivery** (default): show the address form and send `deliveryMethod: "DELIVERY"` + `deliveryAddress`.
+  - **Pick up at the shop**: hide the address form and show only name and phone (prefilled from the profile),
+    plus optional notes ("coming after 6 pm"). Send `deliveryMethod: "PICKUP"` + `pickupContact`.
+- Under the pickup option, list the shops the customer will visit and their area, so the choice is informed.
+  Each cart line has `supplierId`; group the lines by shop. The shop names come from the offers the customer
+  added (`supplierName`). The order response gives the full addresses.
+- Payment labels for pickup: **COD** = "Pay at the shop", **ONLINE** = "Pay now, collect later". The online
+  payment flow (link / QR, polling, pay again) is the same as for delivery.
+- Validation errors are the same 400s (`pickupContact is required for pickup orders`, phone format).
+
+### Order confirmation / order details screen (pickup)
+The order response has:
+- **`pickupCode`**: 6 digits. Show it large, at the top ("Show this code at the shop"), and on the order details
+  page. Only the customer gets it; shops never see it, and it's not sent for garage orders.
+- **`pickupPoints[]`**: one per shop, with `supplierId`, `name`, `phone`, `address`, `mapLink`, `workingDays`,
+  `openingHours` and `closingHours`. For each, show:
+  - the shop card: name, address, hours;
+  - a **Directions** button (`mapLink`) and a **Call** button (`phone`);
+  - that shop's lines: `items` where `items[].supplierId === point.supplierId`, with each line's status.
+- `pickupContact` (who collects) instead of `deliveryAddress` (which is `null`).
+
+Per-line state to show (`items[].fulfilmentStatus`):
+
+| Value | Show |
+|---|---|
+| `PENDING` / `ACCEPTED` | "Being prepared by <shop>" |
+| `READY_FOR_PICKUP` | **"Ready to collect at <shop>"** (since `dispatchedAt`) |
+| `RECEIVED` | "Collected" (`receivedAt`) |
+| `REJECTED` | "Not available from <shop>" (+ `rejectReason`) |
+
+Order-level state (`status`):
+- `CONFIRMED`: being prepared.
+- **`READY_FOR_PICKUP`**: every remaining line is waiting; push "Your parts are ready to collect".
+- **`COLLECTED`**: everything collected.
+
+With several shops, some lines can be ready while others are still being prepared. Show it per shop.
+
+- **Refresh:** poll `GET /api/v1/orders/{orderId}` when the page opens (no push notifications yet).
+- **Cancel:** show the button while nothing has been collected (`CONFIRMED` or `READY_FOR_PICKUP`). It's hidden once any line is `RECEIVED` or `DISPATCHED`.
+
+### Shop panel: handing over a pickup order
+Order inbox `GET /api/v1/suppliers/{supplierId}/orders` shows:
+- `deliveryMethod: "PICKUP"`;
+- `pickupContact` (who will come: name and phone);
+- no delivery address.
+
+Use a **Pickup** badge and these buttons:
+
+| Step | Button | Call |
+|---|---|---|
+| parts packed | **Ready for pickup** | `POST /api/v1/suppliers/{supplierId}/orders/{orderId}/ready-for-pickup` |
+| customer at the counter | **Hand over**: ask for the 6-digit code | `POST /api/v1/suppliers/{supplierId}/orders/{orderId}/collected` with `{ "pickupCode": "123456" }` |
+| can't supply it | **Reject** (still allowed while it waits) | `POST .../reject` with `{ "reason": "..." }` |
+
+- Hide **Dispatch** and **Delivered** for pickup orders (they answer 409), and **Ready for pickup** for delivery
+  orders.
+- Wrong code: 400 "Wrong pickup code". Keep the dialog open to try again.
+- COD pickup: collect the cash at hand-over.
+- Garage pickups (`buyerType: GARAGE`): there is no code; the garage confirms collection in its own panel, so
+  hide **Hand over** for them.
+
+### Example (axios)
+```js
+// checkout for pickup
+const { data: order } = await partApi.post(`/api/v1/orders/place/${ownerId}`,
+  { deliveryMethod: 'PICKUP', pickupContact: { contactName, phone, notes } },
+  { params: { paymentMethod } },                     // 'COD' = pay at the shop
+);
+showPickupCode(order.pickupCode);
+order.pickupPoints.forEach(point => renderShop(point,
+  order.items.filter(item => item.supplierId === point.supplierId)));
+
+// shop panel: hand over
+await partApi.post(`/api/v1/suppliers/${supplierId}/orders/${orderId}/collected`, { pickupCode: codeTyped });
+```
+
 ## 6. My orders
 
 | Action | Call |
@@ -224,25 +307,6 @@ Only the gateway's server-to-server webhook marks an order paid, so the browser 
 | List (newest first) | `GET /api/v1/orders/owner/{ownerId}` |
 | One order | `GET /api/v1/orders/{orderId}` |
 | Payment status (light) | `GET /api/v1/payments/orders/{orderId}/status` |
-
-## 5b. Self pickup
-
-The customer collects the parts at the shop(s) instead of delivery.
-1. Checkout with `deliveryMethod: PICKUP` and `pickupContact` (above). Payment works the same:
-   - **COD** means pay at the shop;
-   - **ONLINE** means pay now and collect later.
-2. The order response has:
-   - `pickupCode`: 6 digits. Show it prominently ("Show this code at the shop"). Only the customer sees it; shops never get it.
-   - `pickupPoints[]`: one per shop in the order, with `name`, `phone`, `address`, `mapLink`, `workingDays`, `openingHours` and `closingHours`. Show a "Directions" button (`mapLink`) and the opening hours.
-   - `pickupContact`, and `deliveryAddress: null`.
-3. Each shop packs its lines and marks them **ready for pickup**. The line becomes `READY_FOR_PICKUP`, and when
-   every remaining line is ready the order becomes `READY_FOR_PICKUP`: tell the customer "Ready to collect".
-4. At the shop, the customer gives the code. The shop enters it and hands the parts over. The lines become
-   `RECEIVED` ("Collected"), and when everything is collected the order becomes **`COLLECTED`**.
-5. An order with parts from several shops means one visit per shop. Each pickup point lists that shop's lines
-   (match `items[].supplierId` with `pickupPoints[].supplierId`).
-
-The customer can cancel while the parts wait at the shop (stock goes back), but not after collecting any of them.
 
 ### Order status (show to the customer)
 
@@ -299,9 +363,9 @@ have. If a shop rejects lines:
 // add an offer to the cart
 await partApi.post(`/api/v1/cart/${ownerId}/add`, null, { params: { partId: offer.inventoryPartId, quantity: 1 } });
 
-// checkout
+// checkout (delivery; for pickup see section 5b)
 const { data: order } = await partApi.post(`/api/v1/orders/place/${ownerId}`,
-  { deliveryAddress },                             // { contactName, phone, addressLine1, area, city, ... }
+  { deliveryMethod: 'DELIVERY', deliveryAddress }, // { contactName, phone, addressLine1, area, city, ... }
   { params: { paymentMethod } },                   // 'COD' | 'ONLINE'
 );
 
@@ -332,5 +396,4 @@ window.location.href = retry.payment.paymentUrl;
 - No delivery fee, coupons or VAT lines yet: `totalAmount` is the sum of the lines.
 - Refunds (late payments, paid orders cancelled or partly rejected) are done manually.
 - The customer can't confirm receipt; the shop marks customer orders delivered.
-- No saved address book yet: the frontend keeps the customer's addresses (or prefills from the profile).
 - Accepted enquiry quotes create a normal offer, which other customers can also see.

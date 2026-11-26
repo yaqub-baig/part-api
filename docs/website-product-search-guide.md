@@ -240,10 +240,15 @@ query parameter is no longer used.
 | Buy one offer now | `POST /api/v1/orders/buy-now/{ownerId}?partId={inventoryPartId}&quantity=1&paymentMethod=COD` (or `ONLINE`) |
 | Checkout the cart | `POST /api/v1/orders/place/{ownerId}?paymentMethod=COD` (or `ONLINE`) |
 
-Both order calls need a JSON body with the delivery address: `{ "addressId": 7 }` (one of the customer's saved
-addresses, identity-api `/addresses`) or `{ "deliveryAddress": { "contactName", "phone", "addressLine1", "area",
-"city", ... } }`. Field rules and the full checkout flow are in
-`docs/vehicle-owner-order-flow.md`.
+Both order calls need a JSON body that says how the customer gets the parts:
+- **Delivery, saved address:** `{ "deliveryMethod": "DELIVERY", "addressId": 7 }` (one of the customer's saved
+  addresses, identity-api `/addresses`).
+- **Delivery, typed address:** `{ "deliveryMethod": "DELIVERY", "deliveryAddress": { "contactName", "phone", "addressLine1", "area", "city", ... } }`.
+- **Self pickup:** `{ "deliveryMethod": "PICKUP", "pickupContact": { "contactName", "phone" } }`. The response
+  has a 6-digit `pickupCode` to show at the shop and `pickupPoints` (shop address, map link, hours).
+
+Field rules, saved addresses, the pickup screens and the full checkout flow are in
+`docs/vehicle-owner-order-flow.md` (sections 5 and 5b).
 
 `ONLINE` responses include `payment.paymentUrl` / `qrCodeImage`; redirect the user there and then poll
 `GET /api/v1/orders/{orderId}` for the result. Not logged in → send the visitor to sign-in, then retry.
